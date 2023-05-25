@@ -1,6 +1,6 @@
 import jwt
 from rest_framework import authentication, exceptions
-from user_manager.models import User
+from acl.models import User
 from rest_framework import status
 from datetime import datetime, timedelta
 from django.conf import settings
