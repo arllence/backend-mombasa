@@ -10,6 +10,7 @@ from django.db.models import  Q
 from django.db import transaction
 from api import models
 from api import serializers
+from django.db import IntegrityError, DatabaseError
 
 
 
@@ -61,51 +62,6 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     sectors = models.Sector.objects.all().order_by('name')
                     sectors = serializers.FetchSectorSerializer(sectors,many=True).data
                     return Response(sector, status=status.HTTP_200_OK)
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-                
-
-    @action(methods=["POST", "GET"],
-            detail=False,
-            url_path="department",
-            url_name="department")
-    def department(self, request):
-        if request.method == "POST":
-            payload = request.data
-            serializer = serializers.GeneralNameSerializer(
-                data=payload, many=False)
-            if serializer.is_valid():
-                name = payload['name']
-                with transaction.atomic():
-                    raw = {
-                        "name": name
-                    }
-                    models.Department.objects.create(**raw)
-
-                    return Response("Success", status=status.HTTP_200_OK)
-            else:
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-            
-        elif request.method == "GET":
-            request_id = request.query_params.get('request_id')
-            if request_id:
-                try:
-                    department = models.Department.objects.get(Q(id=request_id))
-                    department = serializers.FetchDepartmentSerializer(department,many=False).data
-                    return Response(department, status=status.HTTP_200_OK)
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                try:
-                    departments = models.Department.objects.all().order_by('name')
-                    departments = serializers.FetchDepartmentSerializer(departments,many=True).data
-                    return Response(departments, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
@@ -434,7 +390,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             elif thematic_area:
                 try:
                     members = models.TeamMembers.objects.filter(Q(thematic_area=thematic_area)).order_by('name')
-                    members = serializers.FetchTeamMembersSerializer(area,many=True).data
+                    members = serializers.FetchTeamMembersSerializer(members,many=True).data
                     return Response(members, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
@@ -446,6 +402,80 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     members = models.TeamMembers.objects.all().order_by('name')
                     members = serializers.FetchTeamMembersSerializer(members,many=True).data
                     return Response(members, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+
+class DepartmentViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    queryset = models.Department.objects.all().order_by('id')
+    serializer_class = serializers.CreateDepartmentSerializer
+    search_fields = ['id', ]
+
+    def get_queryset(self):
+        return []
+
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="department",
+            url_name="department")
+    def department(self, request):
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                with transaction.atomic():
+                    raw = {
+                        "name": name
+                    }
+                    models.Department.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateDepartmentSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                dept_id = payload['request_id']
+                name = payload['name']
+                with transaction.atomic():
+                    try:
+                        dept = models.Department.objects.get(id=dept_id)
+                        dept.name = name
+                        dept.save()
+                    except (ValidationError, ObjectDoesNotExist):
+                        return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    department = models.Department.objects.get(Q(id=request_id))
+                    department = serializers.FetchDepartmentSerializer(department,many=False).data
+                    return Response(department, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    departments = models.Department.objects.all().order_by('name')
+                    departments = serializers.FetchDepartmentSerializer(departments,many=True).data
+                    return Response(departments, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:

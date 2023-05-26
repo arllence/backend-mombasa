@@ -7,8 +7,7 @@ from django.contrib.auth.models import Group
 
 
 class UserDetailSerializer(serializers.Serializer):
-    username = serializers.CharField()
-    id_number = serializers.CharField()
+    email = serializers.CharField()
     first_name = serializers.CharField()
     last_name = serializers.CharField()
 
@@ -18,8 +17,14 @@ class SystemUsersSerializer(serializers.Serializer):
     email = serializers.CharField()
     firstname = serializers.CharField()
     lastname = serializers.CharField()
+    phone_number = serializers.CharField()
+
 
 class GroupSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    name = serializers.CharField()
+
+class RoleSerializer(serializers.Serializer):
     id = serializers.CharField()
     name = serializers.CharField()
 
@@ -31,8 +36,6 @@ class UsersSerializer(serializers.ModelSerializer):
     is_active = serializers.CharField()
     is_suspended = serializers.CharField()
     user_groups = serializers.SerializerMethodField(read_only=True)
-    user_info = serializers.SerializerMethodField(read_only=True)
-
     class Meta:
         model = get_user_model()
         fields = [

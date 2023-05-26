@@ -15,6 +15,9 @@ class FetchSectorSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class UpdateDepartmentSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
 class FetchDepartmentSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -98,3 +101,18 @@ class FetchTeamMembersSerializer(serializers.ModelSerializer):
     class Meta:
         model = api_models.TeamMembers
         fields = '__all__'
+
+
+
+class CreateDepartmentSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+
+
+class EditDepartmentSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
+
+
+class DepartmentSerializer(serializers.Serializer):
+    id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)

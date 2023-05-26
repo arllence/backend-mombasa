@@ -47,8 +47,7 @@ class AccountActivity(models.Model):
     action_time = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        app_label = "user_manager"
-        db_table = "account_activity"
+        db_table = "account_activities"
 
     def __str__(self):
         return str(self.id)

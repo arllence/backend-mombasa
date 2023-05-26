@@ -10,34 +10,14 @@ class SystemApiAuthentication(authentication.BaseAuthentication):
 
     authentication_header_prefix = 'Bearer'
 
+    def get_authorization_header(self, request):
+        auth  = request.headers.get('Authorization',b'')
+        return auth
+
     def authenticate(self, request):
-        """
-        The `authenticate` method is called on every request regardless of
-        whether the endpoint requires authentication. 
-
-        `authenticate` has two possible return values:
-
-        1) `None` - We return `None` if we do not wish to authenticate. Usually
-                    this means we know authentication will fail. An example of
-                    this is when the request does not include a token in the
-                    headers.
-
-        2) `(user, token)` - We return a user/token combination when 
-                             authentication is successful.
-
-                            If neither case is met, that means there's an error 
-                            and we do not return anything.
-                            We simple raise the `AuthenticationFailed` 
-                            exception and let Django REST Framework
-                            handle the rest.
-        """
         request.user = None
 
-        # `auth_header` should be an array with two elements: 1) the name of
-        # the authentication header (in this case, "Token") and 2) the JWT
-        # that we should authenticate against.
-        auth_header = authentication.get_authorization_header(request).split()
-
+        auth_header = self.get_authorization_header(request).split()
         auth_header_prefix = self.authentication_header_prefix.lower()
 
         if not auth_header:
@@ -62,10 +42,11 @@ class SystemApiAuthentication(authentication.BaseAuthentication):
         # if we didn't decode these values.
         try:
 
-            prefix = auth_header[0].decode('utf-8')
-            token = auth_header[1].decode('utf-8')
+            prefix = auth_header[0]
+            token = auth_header[1]
 
-        except:
+        except Exception as e:
+            print(e)
             raise exceptions.NotAcceptable(
                 {"message": "No Token Present", "code": status.HTTP_406_NOT_ACCEPTABLE})
 
@@ -86,7 +67,8 @@ class SystemApiAuthentication(authentication.BaseAuthentication):
         successful, return the user and token. If not, throw an error.
         """
         try:
-            payload = jwt.decode(token, settings.TOKEN_SECRET_CODE,algorithms='HS256')
+            payload = jwt.decode(token, settings.TOKEN_SECRET_CODE, algorithms=['HS256'])
+
         except jwt.ExpiredSignatureError:
             raise exceptions.AuthenticationFailed(
                 {"message": "User Logged Out.Please Try Again", "code": status.HTTP_401_UNAUTHORIZED})

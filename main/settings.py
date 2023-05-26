@@ -195,6 +195,7 @@ X_FRAME_OPTIONS = 'ALLOW-FROM https://127.0.0.1/'
 
 TOKEN_SECRET_CODE = 'county47?Refined'
 TOKEN_EXPIRY = int(os.getenv('TOKEN_EXPIRY_TIME'))
+
 CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_HEADERS = [
     'accept',
@@ -211,4 +212,3 @@ CORS_ALLOW_HEADERS = [
 ]
 
 MAINMEDIA = os.getenv('MAINMEDIA')
-

@@ -4,6 +4,10 @@ from acl import views
 router = DefaultRouter(trailing_slash=False)
 
 router.register('acl',views.AuthenticationViewSet, basename='acl')
+router.register('account-management',
+                views.AccountManagementViewSet, basename='account-management')
+router.register('ict-support',
+                views.ICTSupportViewSet, basename='ict-support')   
    
                          
 urlpatterns = router.urls
