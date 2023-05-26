@@ -86,6 +86,10 @@ class RRIGoals(models.Model):
     thematic_area = models.ForeignKey(
         ThematicArea, related_name="thematic_area", on_delete=models.DO_NOTHING
     )
+    coach = models.ForeignKey(
+        Overseer, related_name="coach", on_delete=models.DO_NOTHING,
+        null=True, blank=True
+    )
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

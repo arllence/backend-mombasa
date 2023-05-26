@@ -16,7 +16,7 @@ from django.db import IntegrityError, DatabaseError
 
 
 class FoundationViewSet(viewsets.ModelViewSet):
-    permission_classes = (AllowAny)
+    permission_classes = (IsAuthenticated,)
     queryset = models.RRIGoals.objects.all().order_by('id')
     serializer_class = serializers.FetchRRIGoalsSerializer
     search_fields = ['id', ]
@@ -45,7 +45,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
-        if request.method == "PUT":
+        elif request.method == "PUT":
             payload = request.data
             serializer = serializers.UpdateDepartmentSerializer(
                 data=payload, many=False)
@@ -82,7 +82,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 try:
                     sectors = models.Sector.objects.all().order_by('name')
                     sectors = serializers.FetchSectorSerializer(sectors,many=True).data
-                    return Response(sector, status=status.HTTP_200_OK)
+                    return Response(sectors, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
@@ -90,7 +90,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 
     
-    @action(methods=["POST", "GET"],
+    @action(methods=["POST", "GET",  "PUT"],
             detail=False,
             url_path="title",
             url_name="title")
@@ -106,6 +106,27 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "name": name
                     }
                     models.Title.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateDepartmentSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                request_id = payload['request_id']
+
+                try:
+                    title = models.Title.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown title!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    title.name = name
+                    title.save()
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -146,11 +167,17 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 data=payload, many=False)
             if serializer.is_valid():
                 name = payload['name']
-                contact = payload['contact']
+                contact = str(payload['contact'])
                 title = payload['title']
 
-                if len(contact) > 10 or len(contact) < 10:
+                if len(contact) > 10 or len(contact) < 9:
                     return Response({"details": "Incorect contact format, use: 0700000000"}, status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    contact = "+254" + contact
+
+                name = name.split()
+                name = [x.capitalize() for x in name]
+                name = " ".join(name)
 
 
                 try:
@@ -229,7 +256,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    sector = models.Overseer.objects.get(Q(id=sector))
+                    sector = models.Sector.objects.get(Q(id=sector))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown sector!"}, status=status.HTTP_400_BAD_REQUEST)
                 
@@ -270,7 +297,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             if request_id:
                 try:
                     area = models.ThematicArea.objects.get(Q(id=request_id))
-                    area = serializers.FetchThematicSerializer(area,many=False).data
+                    area = serializers.FetchThematicAreaSerializer(area,many=False).data
                     return Response(area, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
@@ -280,7 +307,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             elif overseer_id:
                 try:
                     overseer = models.ThematicArea.objects.filter(Q(results_leader=overseer_id) | Q(team_leader=overseer_id) | Q(team_leader=overseer_id)).order_by('date_created')
-                    overseer = serializers.FetchThematicSerializer(overseer,many=True).data
+                    overseer = serializers.FetchThematicAreaSerializer(overseer,many=True).data
                     return Response(overseer, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
@@ -310,17 +337,24 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 data=payload, many=False)
             if serializer.is_valid():
                 goal = payload['goal']
+                coach = payload['coach']
                 thematic_area = payload['thematic_area']
 
                 try:
                     thematic_area = models.ThematicArea.objects.get(Q(id=thematic_area))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown thematic area!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    coach = models.Overseer.objects.get(Q(id=coach))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown coach!"}, status=status.HTTP_400_BAD_REQUEST)
                                 
                 
                 with transaction.atomic():
                     raw = {
                         "goal": goal,
+                        "coach": coach,
                         "thematic_area": thematic_area
                     }
                     models.RRIGoals.objects.create(**raw)
@@ -375,13 +409,17 @@ class FoundationViewSet(viewsets.ModelViewSet):
             serializer = serializers.CreateTeamMembersSerializer(
                 data=payload, many=False)
             if serializer.is_valid():
-                name = payload['name']
+                name = payload['member']
                 thematic_area = payload['thematic_area']
 
                 try:
                     thematic_area = models.ThematicArea.objects.get(Q(id=thematic_area))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown thematic area!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                name = name.split()
+                name = [x.capitalize() for x in name]
+                name = " ".join(name)
                                 
                 
                 with transaction.atomic():

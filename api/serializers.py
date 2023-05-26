@@ -81,10 +81,12 @@ class FetchThematicAreaSerializer(serializers.ModelSerializer):
 
 class CreateRRIGoalsSerializer(serializers.Serializer):
     goal = serializers.CharField(max_length=500)
+    coach = serializers.CharField(max_length=255)
     thematic_area = serializers.CharField(max_length=255)
 
 
 class FetchRRIGoalsSerializer(serializers.ModelSerializer):
+    coach = FetchOverseerSerializer()
     thematic_area = FetchThematicAreaSerializer()
     class Meta:
         model = api_models.RRIGoals
