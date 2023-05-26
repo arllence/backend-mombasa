@@ -43,9 +43,9 @@ class FetchOverseerSerializer(serializers.ModelSerializer):
 
 
 class CreateThematicAreaSerializer(serializers.Serializer):
-    department = serializers.TextField(max_length=255)
-    sector = serializers.TextField(max_length=255)
-    area = serializers.TextField(max_length=255)
+    department = serializers.CharField(max_length=255)
+    sector = serializers.CharField(max_length=255)
+    area = serializers.CharField(max_length=500)
     results_leader = serializers.CharField(max_length=255)
     team_leader = serializers.CharField(max_length=255)
     strategic_leader = serializers.CharField(max_length=255)
@@ -77,7 +77,7 @@ class FetchThematicAreaSerializer(serializers.ModelSerializer):
 
 
 class CreateRRIGoalsSerializer(serializers.Serializer):
-    goal = serializers.TextField()
+    goal = serializers.CharField(max_length=500)
     thematic_area = serializers.CharField(max_length=255)
 
 

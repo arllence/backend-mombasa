@@ -1,8 +1,6 @@
 import logging
 from django.contrib.auth.models import Group
-from user_manager.models import AccountActivity, User
-from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from acl.models import AccountActivity, User
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
@@ -31,30 +29,6 @@ def log_account_activity(actor, recipient, activity, remarks):
     }
     new_activity = AccountActivity.objects.create(**create_activity)
 
-
-
-
-
-def sendmail(recipient,subject,message):
-    try:
-        message = Mail(
-        from_email = settings.EMAIL_HOST,
-        to_emails=recipient,
-        subject = subject,
-        html_content= message + 
-        ''
-        '<br />'
-        'Thanks,<br />'
-        'African Adaptation Acceleration Program <br>(AAAP)')
-        sg = SendGridAPIClient(settings.EMAIL_HOST_PASSWORD)
-        response = sg.send(message)
-        if response.status_code == 200 or response.status_code == 201 or response.status_code == 202:
-            return True
-        else:
-            return False
-    except Exception as e:
-        logger.error(e)
-        return False
 
 
 def award_role(role,account_id):

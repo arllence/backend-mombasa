@@ -27,9 +27,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-&^uxaq82*s7+vl9mqxexybxhd5#^c#8kpwtuxl(6t9g%3ra=1z'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG = True
+if os.getenv('SERVER_DEBUG_MODE') == 'True':
+    DEBUG = True
+else:
+    DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -191,7 +195,7 @@ X_FRAME_OPTIONS = 'ALLOW-FROM https://127.0.0.1/'
 
 TOKEN_SECRET_CODE = 'county47?Refined'
 TOKEN_EXPIRY = int(os.getenv('TOKEN_EXPIRY_TIME'))
-
+CORS_ORIGIN_ALLOW_ALL = True
 CORS_ALLOW_HEADERS = [
     'accept',
     'accept-encoding',
@@ -208,7 +212,3 @@ CORS_ALLOW_HEADERS = [
 
 MAINMEDIA = os.getenv('MAINMEDIA')
 
-if os.getenv('SERVER_DEBUG_MODE') == 'True':
-    DEBUG = True
-else:
-    DEBUG = False
