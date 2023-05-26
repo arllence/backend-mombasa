@@ -24,7 +24,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return []
     
-    @action(methods=["POST", "GET"],
+    @action(methods=["POST", "GET", "PUT"],
             detail=False,
             url_path="sector",
             url_name="sector")
@@ -40,6 +40,27 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "name":name
                     }
                     models.Sector.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateDepartmentSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                request_id = payload['request_id']
+
+                try:
+                    sector = models.Sector.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Sector!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    sector.name = name
+                    sector.save()
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
