@@ -1,3 +1,4 @@
+import json
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.response import Response
@@ -11,6 +12,7 @@ from django.db import transaction
 from api import models
 from api import serializers
 from django.db import IntegrityError, DatabaseError
+from acl.utils import user_util
 
 
 
@@ -467,6 +469,56 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 
+                
+    @action(methods=["GET","POST"], detail=False, url_path="achievements",url_name="achievements")
+    def achievements(self, request):
+        authenticated_user = request.user
+        formfiles = request.FILES
+
+        payload = json.loads(request.data['payload'])
+        serializer = serializers.CreateEvidenceSerializer(
+                data=payload, many=False)
+        if serializer.is_valid():
+            description = payload['description']
+            thematic_area = payload['thematic_area_id']
+
+            try:
+                thematic_area = models.ThematicArea.objects.get(Q(id=thematic_area))
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                achievement = models.Achievement.objects.create(
+                    creator=authenticated_user, description=description, thematic_area=thematic_area)
+
+                if formfiles:
+                    for f in request.FILES.getlist('documents'):
+                        try:
+                            original_file_name = f.name
+
+                            ext = original_file_name.split('.')[1].strip().lower()
+                            # print("printing extension: ", ext)
+                            # exts = ['xlsx','csv']
+                            # if ext not in exts:
+                            #     return Response({"details": "Please upload excel file!"}, status=status.HTTP_400_BAD_REQUEST)
+                            
+                            models.AchievementDocuments.objects.create(
+                                        document=f, original_file_name=original_file_name, 
+                                        achievement=achievement)
+
+                        except Exception as e:
+                            # logger.error(e)
+                            print(e)
+                            return Response({"details": "Invalid File(s)"}, status=status.HTTP_400_BAD_REQUEST)  
+                                            
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Evidence created", "Evidence Creation Executed")
+            return Response('success', status=status.HTTP_200_OK)
+        
+        else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
 
 
 class DepartmentViewSet(viewsets.ViewSet):

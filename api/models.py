@@ -1,4 +1,5 @@
 import uuid
+from acl.models import User
 from django.db import models
 
 class Department(models.Model):
@@ -112,3 +113,37 @@ class TeamMembers(models.Model):
 
     class Meta:
         db_table = "team_members"
+
+
+class Achievement(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    creator = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, related_name="achievement_creator"
+    )
+    thematic_area = models.ForeignKey(
+       ThematicArea, on_delete=models.DO_NOTHING, related_name="achievement_thematic_area"
+    )
+    description = models.TextField()
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        db_table = "achievements"
+
+    def __str__(self):
+        return str(self.description)
+    
+    
+class AchievementDocuments(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    achievement = models.ForeignKey(
+       Achievement, on_delete=models.DO_NOTHING, related_name="achievement_creator"
+    )
+    document = models.FileField(upload_to='county47_documents')
+    original_file_name = models.CharField(max_length=255)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        db_table = "achievement_documents"
+
+    def __str__(self):
+        return str(self.description)

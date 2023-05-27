@@ -97,6 +97,10 @@ class CreateTeamMembersSerializer(serializers.Serializer):
     member = serializers.CharField(max_length=255)
     thematic_area = serializers.CharField(max_length=255)
 
+class CreateEvidenceSerializer(serializers.Serializer):
+    thematic_area_id = serializers.CharField(max_length=255)
+    description = serializers.CharField(max_length=1000)
+
 
 class FetchTeamMembersSerializer(serializers.ModelSerializer):
     thematic_area = FetchThematicAreaSerializer()
