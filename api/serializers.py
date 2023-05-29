@@ -88,9 +88,22 @@ class CreateRRIGoalsSerializer(serializers.Serializer):
 class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     coach = FetchOverseerSerializer()
     thematic_area = FetchThematicAreaSerializer()
+    achievements = serializers.SerializerMethodField()
     class Meta:
         model = api_models.RRIGoals
         fields = '__all__'
+
+    def get_achievements(self, obj):
+        try:
+            documents = api_models.Achievement.objects.filter(Q(thematic_area=obj.thematic_area))
+            serializer = FetchAchievementSerializer(documents, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
 
 
 class CreateTeamMembersSerializer(serializers.Serializer):
@@ -100,6 +113,34 @@ class CreateTeamMembersSerializer(serializers.Serializer):
 class CreateEvidenceSerializer(serializers.Serializer):
     thematic_area_id = serializers.CharField(max_length=255)
     description = serializers.CharField(max_length=1000)
+    upload_status = serializers.CharField(max_length=255)
+
+
+class FetchAchievementDocumentsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = api_models.AchievementDocuments
+        fields = '__all__'
+
+class FetchAchievementSerializer(serializers.ModelSerializer):
+    # thematic_area = FetchThematicAreaSerializer()
+    documents = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = api_models.Achievement
+        fields = '__all__'
+    
+    def get_documents(self, obj):
+        print(obj.__dict__,'\n')
+        try:
+            documents = api_models.AchievementDocuments.objects.filter(Q(achievement=obj))
+            serializer = FetchAchievementDocumentsSerializer(documents, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
 
 
 class FetchTeamMembersSerializer(serializers.ModelSerializer):

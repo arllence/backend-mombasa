@@ -13,6 +13,7 @@ from api import models
 from api import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
+from api.utils.file_type import identify_file_type 
 
 
 
@@ -481,30 +482,33 @@ class FoundationViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             description = payload['description']
             thematic_area = payload['thematic_area_id']
+            category = payload['upload_status']
 
             try:
                 thematic_area = models.ThematicArea.objects.get(Q(id=thematic_area))
             except (ValidationError, ObjectDoesNotExist):
                 return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             
+            if formfiles:
+                exts = ['jpeg','jpg','png','tiff','pdf']
+                for f in request.FILES.getlist('documents'):
+                    original_file_name = f.name
+                    ext = original_file_name.split('.')[1].strip().lower()
+                    if ext not in exts:
+                        return Response({"details": "Only Images and PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
+            
             with transaction.atomic():
                 achievement = models.Achievement.objects.create(
-                    creator=authenticated_user, description=description, thematic_area=thematic_area)
+                    creator=authenticated_user, description=description, thematic_area=thematic_area, category=category)
 
-                if formfiles:
+                if formfiles:                        
                     for f in request.FILES.getlist('documents'):
+                        file_type = identify_file_type(original_file_name.split('.')[1].strip().lower())
                         try:
-                            original_file_name = f.name
-
-                            ext = original_file_name.split('.')[1].strip().lower()
-                            # print("printing extension: ", ext)
-                            # exts = ['xlsx','csv']
-                            # if ext not in exts:
-                            #     return Response({"details": "Please upload excel file!"}, status=status.HTTP_400_BAD_REQUEST)
-                            
+                            original_file_name = f.name                            
                             models.AchievementDocuments.objects.create(
                                         document=f, original_file_name=original_file_name, 
-                                        achievement=achievement)
+                                        achievement=achievement, file_type=file_type)
 
                         except Exception as e:
                             # logger.error(e)

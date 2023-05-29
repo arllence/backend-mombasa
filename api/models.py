@@ -124,6 +124,7 @@ class Achievement(models.Model):
        ThematicArea, on_delete=models.DO_NOTHING, related_name="achievement_thematic_area"
     )
     description = models.TextField()
+    category = models.CharField(max_length=50, null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
     class Meta:
@@ -140,10 +141,11 @@ class AchievementDocuments(models.Model):
     )
     document = models.FileField(upload_to='county47_documents')
     original_file_name = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=50,default='FILE')
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
     class Meta:
         db_table = "achievement_documents"
 
     def __str__(self):
-        return str(self.description)
+        return str(self.achievement)
