@@ -57,13 +57,13 @@ reports
 venv
 __pycache__
 .idea
-# db.sqlite3
-# *db.sqlite3
+db.sqlite3
+*db.sqlite3
 edms/templates
 documents
 local.py
 media/
-# .sqlite3
+.sqlite3
 .history/
 .env
 env
