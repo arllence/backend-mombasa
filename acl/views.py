@@ -1,3 +1,4 @@
+import json
 import logging
 import random
 import re
@@ -313,7 +314,7 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         """
         authenticated_user = request.user
         role = user_util.fetchusergroups(authenticated_user.id)
-        print(role)
+
         rolename = {
             "group_name": role
         }

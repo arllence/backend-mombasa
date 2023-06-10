@@ -130,7 +130,6 @@ class FetchAchievementSerializer(serializers.ModelSerializer):
         fields = '__all__'
     
     def get_documents(self, obj):
-        print(obj.__dict__,'\n')
         try:
             documents = api_models.AchievementDocuments.objects.filter(Q(achievement=obj))
             serializer = FetchAchievementDocumentsSerializer(documents, many=True)
