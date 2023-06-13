@@ -21,6 +21,7 @@ from django.db.models import  Q
 from django.db import transaction
 from acl import models
 from acl import serializers
+from acl.utils import mailgun_general
 
 logger = logging.getLogger(__name__)
 
@@ -396,11 +397,22 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     user_details = get_user_model().objects.get(id=userid)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-                new_password = str(user_details.username)
+
+                new_password = self.password_generator()
                 hashed_password = make_password(new_password)
                 user_details.password = hashed_password
                 user_details.is_defaultpassword = True
                 user_details.save()
+
+                subject = "Access Details [Nairobi RRi]"
+                message = f"\
+                                Dear user, \n\
+                                Your email is {user_details.email}.\n\
+                                Your password is: {new_password}.\n\
+                                If you encounter any challenge while navigating the platform, please let us know.\
+                            "
+                mailgun_general.send_mail(user_details.first_name,user_details.email,subject,message)
+                
                 user_util.log_account_activity(
                     authenticated_user, user_details, "Password Reset", "Password Reset Executed")
                 return Response("Password Reset Successful", status=status.HTTP_200_OK)
@@ -688,6 +700,17 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 }
                 create_user = get_user_model().objects.create(**newuser)
                 group_details.user_set.add(create_user)
+
+
+                subject = "Platform Access Details [Nairobi RRi]"
+                message = f"\
+                                Dear user, \n\
+                                Your email is {email}.\n\
+                                Your password is: {password}.\n\
+                                If you encounter any challenge while navigating the platform, please let us know.\
+                            "
+                mailgun_general.send_mail(first_name,email,subject,message)
+
                 user_util.log_account_activity(
                     authenticated_user, create_user, "Account Creation",
                     "USER CREATED")
