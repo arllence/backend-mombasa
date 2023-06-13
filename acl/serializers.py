@@ -11,6 +11,8 @@ class UserDetailSerializer(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
 
+class UserIdSerializer(serializers.Serializer):
+    user_id = serializers.CharField()
 
 class SystemUsersSerializer(serializers.Serializer):
     UserId = serializers.CharField()

@@ -4,8 +4,7 @@ from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 
 
-class UserIdSerializer(serializers.Serializer):
-    user_id = serializers.CharField()
+
 
 class GeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
