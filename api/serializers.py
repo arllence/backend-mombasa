@@ -1,4 +1,5 @@
 from django.db.models import  Q
+from acl.serializers import UsersSerializer
 from api import models as api_models
 from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -20,10 +21,32 @@ class FetchSectorSerializer(serializers.ModelSerializer):
 class UpdateDepartmentSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
     name = serializers.CharField(max_length=255)
+    
 class FetchDepartmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = api_models.Department
+        fields = '__all__'
+
+
+class CreateWaveSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    lead_coach = serializers.CharField(max_length=255)
+    start_date = serializers.CharField(max_length=255)
+    end_date = serializers.CharField(max_length=255)
+
+
+class UpdateWaveSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
+    start_date = serializers.CharField(max_length=255)
+    end_date = serializers.CharField(max_length=255)
+    lead_coach = serializers.CharField(max_length=255)
+    
+class FetchWaveSerializer(serializers.ModelSerializer):
+    lead_coach = UsersSerializer()
+    class Meta:
+        model = api_models.Wave
         fields = '__all__'
 
 
@@ -82,12 +105,22 @@ class FetchThematicAreaSerializer(serializers.ModelSerializer):
 
 
 class CreateRRIGoalsSerializer(serializers.Serializer):
+    wave = serializers.CharField(max_length=255)
     goal = serializers.CharField(max_length=500)
     coach = serializers.CharField(max_length=255)
     thematic_area = serializers.CharField(max_length=255)
 
 
+class UpdateRRIGoalsSerializer(serializers.Serializer):
+    wave = serializers.CharField(max_length=500)
+    goal = serializers.CharField(max_length=500)
+    coach = serializers.CharField(max_length=255)
+    thematic_area = serializers.CharField(max_length=255)
+    request_id = serializers.CharField(max_length=255)
+
+
 class FetchRRIGoalsSerializer(serializers.ModelSerializer):
+    wave = FetchWaveSerializer()
     coach = FetchOverseerSerializer()
     thematic_area = FetchThematicAreaSerializer()
     achievements = serializers.SerializerMethodField()

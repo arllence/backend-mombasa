@@ -259,6 +259,7 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         selected_users = get_user_model().objects.filter(groups__name=role.name)
         user_info = serializers.UsersSerializer(selected_users, many=True)
         return Response(user_info.data, status=status.HTTP_200_OK)
+    
 
     @action(methods=["GET"], detail=False, url_path="get-account-activity", url_name="get-account-activity")
     def get_account_activity(self, request):
@@ -279,6 +280,7 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         user_info = serializers.AccountActivitySerializer(
             selected_records, many=True)
         return Response(user_info.data, status=status.HTTP_200_OK)
+    
 
     @action(methods=["GET"], detail=False, url_path="get-account-activity-detail", url_name="get-account-activity-detail")
     def get_account_activity_detail(self, request):
@@ -297,6 +299,7 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         account_info = serializers.AccountActivityDetailSerializer(
             account_activity_instance, many=False)
         return Response(account_info.data, status=status.HTTP_200_OK)
+    
 
     @action(methods=["GET"], detail=False, url_path="list-roles", url_name="list-roles")
     def list_roles(self, request):
@@ -401,7 +404,6 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 new_password = self.password_generator()
                 hashed_password = make_password(new_password)
                 user_details.password = hashed_password
-                user_details.is_defaultpassword = True
                 user_details.save()
 
                 subject = "Access Details [Nairobi RRi]"
@@ -412,10 +414,13 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                                 If you encounter any challenge while navigating the platform, please let us know.\
                             "
                 mailgun_general.send_mail(user_details.first_name,user_details.email,subject,message)
+
+                if not settings.DEBUG:
+                    new_password = '<REDACTED>'
                 
                 user_util.log_account_activity(
                     authenticated_user, user_details, "Password Reset", "Password Reset Executed")
-                return Response("Password Reset Successful", status=status.HTTP_200_OK)
+                return Response(f"Password Reset Successful. Pass: {new_password}", status=status.HTTP_200_OK)
         else:
             return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -714,9 +719,14 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 user_util.log_account_activity(
                     authenticated_user, create_user, "Account Creation",
                     "USER CREATED")
+                
+                if not settings.DEBUG:
+                    password = ''
+
 
                 info = {
                     'success': 'User Created Successfully',
+                    'password': password
                 }
                 return Response(info, status=status.HTTP_200_OK)
 

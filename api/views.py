@@ -1,3 +1,4 @@
+import datetime
 import json
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
@@ -14,6 +15,7 @@ from api import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
 from api.utils.file_type import identify_file_type 
+from api.utils import shared_fxns
 
 
 
@@ -339,7 +341,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-    @action(methods=["POST", "GET"],
+    @action(methods=["POST", "GET", "PUT"],
             detail=False,
             url_path="rri-goals",
             url_name="rri-goals")
@@ -349,6 +351,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             serializer = serializers.CreateRRIGoalsSerializer(
                 data=payload, many=False)
             if serializer.is_valid():
+                wave = payload['wave']
                 goal = payload['goal']
                 coach = payload['coach']
                 thematic_area = payload['thematic_area']
@@ -362,15 +365,66 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     coach = models.Overseer.objects.get(Q(id=coach))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown coach!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    wave = models.Wave.objects.get(Q(id=wave))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown wave!"}, status=status.HTTP_400_BAD_REQUEST)
                                 
                 
                 with transaction.atomic():
                     raw = {
+                        "wave": wave,
                         "goal": goal,
                         "coach": coach,
                         "thematic_area": thematic_area
                     }
                     models.RRIGoals.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        if request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateRRIGoalsSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                wave = payload['wave']
+                goal = payload['goal']
+                coach = payload['coach']
+                thematic_area = payload['thematic_area']
+                request_id = payload['request_id']
+
+                try:
+                    rri = models.RRIGoals.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request!"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    thematic_area = models.ThematicArea.objects.get(Q(id=thematic_area))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown thematic area!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    coach = models.Overseer.objects.get(Q(id=coach))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown coach!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    wave = models.Wave.objects.get(Q(id=wave))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown wave!"}, status=status.HTTP_400_BAD_REQUEST)
+                                
+                
+                with transaction.atomic():
+
+                    rri.goal = goal
+                    rri.wave = wave
+                    rri.coach = coach
+                    rri.thematic_area = thematic_area
+                    rri.save()
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -513,7 +567,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
 
                 if formfiles:                        
                     for f in request.FILES.getlist('documents'):
-                        file_type = identify_file_type(original_file_name.split('.')[1].strip().lower())
+                        file_type = shared_fxns.identify_file_type(original_file_name.split('.')[1].strip().lower())
                         try:
                             original_file_name = f.name                            
                             models.AchievementDocuments.objects.create(
@@ -532,6 +586,120 @@ class FoundationViewSet(viewsets.ModelViewSet):
         
         else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+
+    
+    @action(methods=["POST", "GET",  "PUT"],
+            detail=False,
+            url_path="waves",
+            url_name="waves")
+    def waves(self, request):
+        if request.method == "POST":
+            payload = request.data
+            
+            serializer = serializers.CreateWaveSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                name = payload['name']
+                start_date = payload['start_date']
+                end_date = payload['end_date']
+                lead_coach = payload['lead_coach']
+
+                # check existance of same wave name
+                if models.Wave.objects.filter(name__icontains=name).exists():
+                    return Response({"details": f"{name} already exists!"}, status=status.HTTP_400_BAD_REQUEST) 
+
+                # validate lead coach
+                try:
+                    lead_coach = get_user_model().objects.get(Q(id=lead_coach))
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Unknown Lead Coach"}, status=status.HTTP_400_BAD_REQUEST) 
+                    
+
+                # find difference in dates / validate dates
+                days = shared_fxns.find_date_difference(start_date,end_date,'days')
+                            
+                try:
+                    days = int(days)
+                except Exception as e:
+                    return Response({"details": f"Invalid dates!"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+                if days < 100:
+                    return Response({"details": f"Period is less than 100 days!"}, status=status.HTTP_400_BAD_REQUEST) 
+
+                
+
+                with transaction.atomic():
+                    raw = {
+                        "name": name,
+                        "start_date": start_date,
+                        "end_date": end_date,
+                        "lead_coach": lead_coach,
+                    }
+                    models.Wave.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateWaveSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                start_date = payload['start_date']
+                end_date = payload['end_date']
+                lead_coach = payload['lead_coach']
+                request_id = payload['request_id']
+
+                try:
+                    wave = models.Wave.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown wave!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # validate lead coach
+                try:
+                    lead_coach = get_user_model().objects.get(Q(id=lead_coach))
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Unknown Lead Coach"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+                with transaction.atomic():
+                    wave.name = name
+                    wave.start_date = start_date
+                    wave.end_date = end_date
+                    wave.lead_coach = lead_coach
+                    wave.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    wave = models.Wave.objects.get(Q(id=request_id))
+                    wave = serializers.FetchWaveSerializer(wave,many=False).data
+                    return Response(wave, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown wave!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    waves = models.Wave.objects.all().order_by('name')
+                    waves = serializers.FetchWaveSerializer(waves,many=True).data
+                    return Response(waves, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             
 
 

@@ -2,6 +2,24 @@ import uuid
 from acl.models import User
 from django.db import models
 
+
+class Wave(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    lead_coach = models.ForeignKey(
+        User, related_name="wave_lead_coach", on_delete=models.DO_NOTHING, null=True, blank=True
+    )
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "waves"
+
+
 class Department(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50)
@@ -89,6 +107,10 @@ class RRIGoals(models.Model):
     )
     coach = models.ForeignKey(
         Overseer, related_name="coach", on_delete=models.DO_NOTHING,
+        null=True, blank=True
+    )
+    wave = models.ForeignKey(
+        Wave, related_name="wave", on_delete=models.DO_NOTHING,
         null=True, blank=True
     )
     date_created = models.DateTimeField(auto_now_add=True)
