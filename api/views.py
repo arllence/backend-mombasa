@@ -247,7 +247,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-    @action(methods=["POST", "GET"],
+    @action(methods=["POST", "GET", "PUT"],
             detail=False,
             url_path="thematic-areas",
             url_name="thematic-areas")
@@ -301,6 +301,65 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "sector": sector,
                     }
                     models.ThematicArea.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateThematicAreaSerializer(  
+                data=payload, many=False)
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                area = payload['area']
+                sector = payload['sector']
+                department = payload['department']
+                results_leader = payload['results_leader']
+                team_leader = payload['team_leader']
+                strategic_leader = payload['strategic_leader']
+
+                try:
+                    models.ThematicArea.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown thematic area!"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    department = models.Department.objects.get(Q(id=department))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    sector = models.Sector.objects.get(Q(id=sector))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown sector!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    results_leader = models.Overseer.objects.get(Q(id=results_leader))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    team_leader = models.Overseer.objects.get(Q(id=team_leader))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    strategic_leader = models.Overseer.objects.get(Q(id=strategic_leader))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+                with transaction.atomic():
+                    raw = {
+                        "area": area,
+                        "results_leader": results_leader,
+                        "team_leader": team_leader,
+                        "strategic_leader": strategic_leader,
+                        "department": department,
+                        "sector": sector,
+                    }
+                    models.ThematicArea.objects.filter(Q(id=request_id)).update(**raw)
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -535,7 +594,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 
-    @action(methods=["GET","POST"], detail=False, url_path="achievements",url_name="achievements")
+    @action(methods=["POST"], detail=False, url_path="achievements",url_name="achievements")
     def achievements(self, request):
         authenticated_user = request.user
         formfiles = request.FILES
@@ -626,7 +685,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     return Response({"details": f"Invalid dates!"}, status=status.HTTP_400_BAD_REQUEST) 
                 
-                if days < 100:
+                if days < 100 or days < 0:
                     return Response({"details": f"Period is less than 100 days!"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 
@@ -701,6 +760,140 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             
+    @action(methods=["GET","POST"], detail=False, url_path="weekly-reports",url_name="weekly-reports")
+    def weekly_reports(self, request):
+        authenticated_user = request.user
+        payload = request.data
+        
+        if request.method == "POST":
+            serializer = serializers.WeeklyReportSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                milestone = payload['milestone']
+                thematic_area = payload['thematic_area_id']
+                steps = payload['steps']
+                start_date = payload['start_date']
+                end_date = payload['end_date']
+
+                # find difference in dates / validate dates
+                days = shared_fxns.find_date_difference(start_date,end_date,'days')
+                            
+                try:
+                    days = int(days)
+                except Exception as e:
+                    return Response({"details": f"Invalid dates!"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+                if days < 7 or days < 0:
+                    return Response({"details": f"Period is less than a week!"}, status=status.HTTP_400_BAD_REQUEST) 
+
+                try:
+                    thematic_area = models.ThematicArea.objects.get(Q(id=thematic_area))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Thematic Area!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+                with transaction.atomic():
+                    raw = {
+                        "start_date" : start_date,
+                        "end_date" : end_date,
+                        "milestone" : milestone,
+                        "thematic_area" : thematic_area,
+                        "steps" : steps
+                    }
+
+                    report = models.WeeklyReports.objects.create(**raw)
+                                                
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Weekly Report created", f"Weekly Report Creation Executed: {report.id}")
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if request.method == "PUT":
+            serializer = serializers.UpdateWeeklyReportSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                milestone = payload['milestone']
+                thematic_area = payload['thematic_area_id']
+                steps = payload['steps']
+                start_date = payload['start_date']
+                end_date = payload['end_date']
+
+                # find difference in dates / validate dates
+                days = shared_fxns.find_date_difference(start_date,end_date,'days')
+                            
+                try:
+                    days = int(days)
+                except Exception as e:
+                    return Response({"details": f"Invalid dates!"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+                if days < 7 or days < 0:
+                    return Response({"details": f"Period is less than a week!"}, status=status.HTTP_400_BAD_REQUEST) 
+
+                try:
+                    thematic_area = models.ThematicArea.objects.get(Q(id=thematic_area))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Thematic Area!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+                with transaction.atomic():
+                    raw = {
+                        "start_date" : start_date,
+                        "end_date" : end_date,
+                        "milestone" : milestone,
+                        "thematic_area" : thematic_area,
+                        "steps" : steps
+                    }
+
+                    report = models.WeeklyReports.objects.create(**raw)
+                                                
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Weekly Report created", f"Weekly Report Creation Executed: {report.id}")
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            thematic_area = request.query_params.get('thematic_area')
+            if request_id:
+                try:
+                    report = models.WeeklyReports.objects.get(Q(id=request_id))
+                    report = serializers.FetchWeeklyReportSerializer(report,many=False).data
+                    return Response(report, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            elif thematic_area:
+                try:
+                    reports = models.WeeklyReports.objects.filter(Q(thematic_area=thematic_area)).order_by('-date_created')
+                    reports = serializers.FetchWeeklyReportSerializer(reports,many=True).data
+                    return Response(reports, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    reports = models.WeeklyReports.objects.all().order_by('-date_created')
+                    reports = serializers.FetchWeeklyReportSerializer(reports,many=True).data
+                    return Response(reports, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+        
 
 
 class DepartmentViewSet(viewsets.ViewSet):

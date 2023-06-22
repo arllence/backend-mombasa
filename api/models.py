@@ -1,3 +1,4 @@
+from tracemalloc import start
 import uuid
 from acl.models import User
 from django.db import models
@@ -171,3 +172,25 @@ class AchievementDocuments(models.Model):
 
     def __str__(self):
         return str(self.achievement)
+    
+
+class WeeklyReports(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    creator = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, related_name="weekly_report_creator"
+    )
+    thematic_area = models.ForeignKey(
+       ThematicArea, on_delete=models.DO_NOTHING, related_name="weekly_report_thematic_area"
+    )
+    milestone = models.CharField(max_length=50)
+    steps = models.JSONField()
+    start_date = models.DateField()
+    end_date = models.DateField()
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "weekly_reports"
+
+    def __str__(self):
+        return str(self.milestone)

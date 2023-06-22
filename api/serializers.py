@@ -1,3 +1,4 @@
+from urllib import request
 from django.db.models import  Q
 from acl.serializers import UsersSerializer
 from api import models as api_models
@@ -71,6 +72,16 @@ class FetchOverseerSerializer(serializers.ModelSerializer):
 
 
 class CreateThematicAreaSerializer(serializers.Serializer):
+    department = serializers.CharField(max_length=255)
+    sector = serializers.CharField(max_length=255)
+    area = serializers.CharField(max_length=500)
+    results_leader = serializers.CharField(max_length=255)
+    team_leader = serializers.CharField(max_length=255)
+    strategic_leader = serializers.CharField(max_length=255)
+
+
+class UpdateThematicAreaSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
     department = serializers.CharField(max_length=255)
     sector = serializers.CharField(max_length=255)
     area = serializers.CharField(max_length=500)
@@ -197,3 +208,27 @@ class EditDepartmentSerializer(serializers.Serializer):
 class DepartmentSerializer(serializers.Serializer):
     id = serializers.CharField(max_length=255)
     name = serializers.CharField(max_length=255)
+
+
+class WeeklyReportSerializer(serializers.Serializer):
+    start_date = serializers.CharField(max_length=255)
+    end_date = serializers.CharField(max_length=255)
+    milestone = serializers.CharField(max_length=255)
+    thematic_area = serializers.CharField(max_length=255)
+    steps = serializers.JSONField()
+
+
+class UpdateWeeklyReportSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    start_date = serializers.CharField(max_length=255)
+    end_date = serializers.CharField(max_length=255)
+    milestone = serializers.CharField(max_length=255)
+    thematic_area = serializers.CharField(max_length=255)
+    steps = serializers.JSONField()
+
+
+class FetchWeeklyReportSerializer(serializers.ModelSerializer):
+    thematic_area = FetchThematicAreaSerializer()
+    class Meta:
+        model = api_models.WeeklyReports
+        fields = '__all__'
