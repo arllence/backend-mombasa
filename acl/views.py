@@ -352,10 +352,15 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         username = request.query_params.get('username')
         if username is None:
             return Response({'details': 'Invalid Filter Criteria'}, status=status.HTTP_400_BAD_REQUEST)
+        
         try:
-            user_details = get_user_model().objects.filter(Q(email__icontains=username) | Q(first_name__icontains=username) | Q(last_name__icontains=username))
+            if username == "all":
+                user_details = get_user_model().objects.all()
+            else:
+                user_details = get_user_model().objects.filter(Q(email__icontains=username) | Q(first_name__icontains=username) | Q(last_name__icontains=username))
         except (ValidationError, ObjectDoesNotExist):
             return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        
         user_info = serializers.UsersSerializer(user_details, many=True)
         return Response(user_info.data, status=status.HTTP_200_OK)
 

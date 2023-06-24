@@ -22,7 +22,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = "email"
 
     def __str__(self):
-        return '%s => %s' % (str(self.id), self.email)
+        return '%s' % (str(self.id))
 
     def has_perm(self, perm, obj=None):
         return True

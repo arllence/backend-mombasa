@@ -759,8 +759,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
             
-    @action(methods=["GET","POST"], detail=False, url_path="weekly-reports",url_name="weekly-reports")
+    @action(methods=["GET","POST", "PUT"], detail=False, url_path="weekly-reports",url_name="weekly-reports")
     def weekly_reports(self, request):
         authenticated_user = request.user
         payload = request.data
@@ -771,10 +772,15 @@ class FoundationViewSet(viewsets.ModelViewSet):
             
             if serializer.is_valid():
                 milestone = payload['milestone']
-                thematic_area = payload['thematic_area_id']
+                rri_goal = payload['rri_goal']
                 steps = payload['steps']
                 start_date = payload['start_date']
                 end_date = payload['end_date']
+
+
+                if not steps:
+                    return Response({"details": f"Action steps required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                
 
                 # find difference in dates / validate dates
                 days = shared_fxns.find_date_difference(start_date,end_date,'days')
@@ -782,15 +788,17 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 try:
                     days = int(days)
                 except Exception as e:
-                    return Response({"details": f"Invalid dates!"}, status=status.HTTP_400_BAD_REQUEST) 
+                    return Response({"details": f"Invalid dates !"}, status=status.HTTP_400_BAD_REQUEST) 
                 
-                if days < 7 or days < 0:
-                    return Response({"details": f"Period is less than a week!"}, status=status.HTTP_400_BAD_REQUEST) 
+                if days < 7:
+                    return Response({"details": f"Period is less than a week !"}, status=status.HTTP_400_BAD_REQUEST) 
+                elif days > 7:
+                    return Response({"details": f"Period is beyond a week !"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 try:
-                    thematic_area = models.ThematicArea.objects.get(Q(id=thematic_area))
+                    rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Thematic Area!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown RRI Goal !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 
                 with transaction.atomic():
@@ -798,8 +806,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "start_date" : start_date,
                         "end_date" : end_date,
                         "milestone" : milestone,
-                        "thematic_area" : thematic_area,
-                        "steps" : steps
+                        "rri_goal" : rri_goal,
+                        "steps" : steps,
+                        "creator": authenticated_user
                     }
 
                     report = models.WeeklyReports.objects.create(**raw)
@@ -819,7 +828,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 milestone = payload['milestone']
-                thematic_area = payload['thematic_area_id']
+                rri_goal = payload['rri_goal']
                 steps = payload['steps']
                 start_date = payload['start_date']
                 end_date = payload['end_date']
@@ -830,15 +839,22 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 try:
                     days = int(days)
                 except Exception as e:
-                    return Response({"details": f"Invalid dates!"}, status=status.HTTP_400_BAD_REQUEST) 
+                    return Response({"details": f"Invalid dates !"}, status=status.HTTP_400_BAD_REQUEST) 
                 
-                if days < 7 or days < 0:
-                    return Response({"details": f"Period is less than a week!"}, status=status.HTTP_400_BAD_REQUEST) 
+                if days < 7:
+                    return Response({"details": f"Period is less than a week !"}, status=status.HTTP_400_BAD_REQUEST) 
+                elif days > 7:
+                    return Response({"details": f"Period is beyond a week !"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 try:
-                    thematic_area = models.ThematicArea.objects.get(Q(id=thematic_area))
+                    rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Thematic Area!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    models.WeeklyReports.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Report!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 
                 with transaction.atomic():
@@ -846,15 +862,17 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "start_date" : start_date,
                         "end_date" : end_date,
                         "milestone" : milestone,
-                        "thematic_area" : thematic_area,
-                        "steps" : steps
+                        "rri_goal" : rri_goal,
+                        "steps" : steps,
+                        "creator": authenticated_user
                     }
 
-                    report = models.WeeklyReports.objects.create(**raw)
+                    # report = models.WeeklyReports.objects.update(**raw)
+                    models.WeeklyReports.objects.filter(Q(id=request_id)).update(**raw)
                                                 
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Weekly Report created", f"Weekly Report Creation Executed: {report.id}")
+                    authenticated_user, authenticated_user, "Weekly Report updated", f"Weekly Report updation Executed: {report.id}")
                 return Response('success', status=status.HTTP_200_OK)
             
             else:
@@ -862,7 +880,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
-            thematic_area = request.query_params.get('thematic_area')
+            rri_goal = request.query_params.get('rri_goal')
             if request_id:
                 try:
                     report = models.WeeklyReports.objects.get(Q(id=request_id))
@@ -873,9 +891,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-            elif thematic_area:
+            elif rri_goal:
                 try:
-                    reports = models.WeeklyReports.objects.filter(Q(thematic_area=thematic_area)).order_by('-date_created')
+                    reports = models.WeeklyReports.objects.filter(Q(rri_goal=rri_goal)).order_by('-date_created')
                     reports = serializers.FetchWeeklyReportSerializer(reports,many=True).data
                     return Response(reports, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -888,6 +906,187 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     reports = models.WeeklyReports.objects.all().order_by('-date_created')
                     reports = serializers.FetchWeeklyReportSerializer(reports,many=True).data
                     return Response(reports, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+        
+    @action(methods=["GET","POST", "PUT"], detail=False, url_path="workplan",url_name="workplan")
+    def workplan(self, request):
+        authenticated_user = request.user
+        payload = request.data
+        
+        if request.method == "POST":
+            serializer = serializers.WWorkPlanSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                milestone = payload['milestone']
+                rri_goal = payload['rri_goal']
+                steps = payload['steps']
+                start_date = payload['start_date']
+                end_date = payload['end_date']
+                person_incharge = payload['person_incharge']
+                budget = payload['budget']
+                plan_status = payload['status']
+                remarks = payload['remarks']
+
+
+                if not steps:
+                    return Response({"details": f"Action steps required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+
+                # find difference in dates / validate dates
+                days = shared_fxns.find_date_difference(start_date,end_date,'days')
+
+                try:
+                    budget = int(budget)
+                except Exception as e:
+                    return Response({"details": f"Invalid budget format !"}, status=status.HTTP_400_BAD_REQUEST) 
+                            
+                try:
+                    days = int(days)
+                except Exception as e:
+                    return Response({"details": f"Invalid dates !"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+                if days < 0:
+                    return Response({"details": f"Invalid dates entered !"}, status=status.HTTP_400_BAD_REQUEST) 
+
+                try:
+                    rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown RRI Goal !"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    person_incharge = get_user_model().objects.get(Q(id=person_incharge))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Invalid Person Incharge !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+                with transaction.atomic():
+                    raw = {
+                        "start_date" : start_date,
+                        "end_date" : end_date,
+                        "milestone" : milestone,
+                        "rri_goal" : rri_goal,
+                        "steps" : steps,
+                        "creator": authenticated_user,
+                        "person_incharge": person_incharge,
+                        "budget": budget,
+                        "remarks": remarks,
+                        "status": plan_status,
+                    }
+
+                    plan = models.WorkPlan.objects.create(**raw)
+                                                
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Workplan created", f"Workplan Creation Executed: {plan.id}")
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if request.method == "PUT":
+            serializer = serializers.UpdateWWorkPlanSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                milestone = payload['milestone']
+                rri_goal = payload['rri_goal']
+                steps = payload['steps']
+                start_date = payload['start_date']
+                end_date = payload['end_date']
+                person_incharge = payload['person_incharge']
+                budget = payload['budget']
+                plan_status = payload['status']
+                remarks = payload['remarks']
+
+
+                # find difference in dates / validate dates
+                days = shared_fxns.find_date_difference(start_date,end_date,'days')
+                            
+                try:
+                    days = int(days)
+                except Exception as e:
+                    return Response({"details": f"Invalid dates !"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+                try:
+                    budget = int(budget)
+                except Exception as e:
+                    return Response({"details": f"Invalid budget format !"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+                if days < 0:
+                    return Response({"details": f"Invalid dates entered !"}, status=status.HTTP_400_BAD_REQUEST) 
+
+                try:
+                    rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown RRI Goal!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    person_incharge = get_user_model().objects.get(Q(id=person_incharge))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Invalid Person Incharge !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+                
+                
+                with transaction.atomic():
+                    raw = {
+                        "start_date" : start_date,
+                        "end_date" : end_date,
+                        "milestone" : milestone,
+                        "rri_goal" : rri_goal,
+                        "steps" : steps,
+                        "creator": authenticated_user,
+                        "person_incharge": person_incharge,
+                        "budget": budget,
+                        "remarks": remarks,
+                        "status": plan_status,
+                    }
+
+                    models.WorkPlan.objects.filter(Q(id=request_id)).update(**raw)
+                                                
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Workplan updated", f"Workplan updation Executed: {request_id}")
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            rri_goal = request.query_params.get('rri_goal')
+            if request_id:
+                try:
+                    worplan = models.WorkPlan.objects.get(Q(id=request_id))
+                    worplan = serializers.FetchWorkPlanSerializer(worplan,many=False).data
+                    return Response(worplan, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            elif rri_goal:
+                try:
+                    worplans = models.WorkPlan.objects.filter(Q(rri_goal=rri_goal)).order_by('-date_created')
+                    worplans = serializers.FetchWorkPlanSerializer(worplans,many=True).data
+                    return Response(worplans, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    worplans = models.WorkPlan.objects.all().order_by('-date_created')
+                    worplans = serializers.FetchWorkPlanSerializer(worplans,many=True).data
+                    return Response(worplans, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
