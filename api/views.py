@@ -1092,6 +1092,132 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["GET","POST", "PUT"], detail=False, url_path="results-chain",url_name="results-chain")
+    def resultchain(self, request):
+        authenticated_user = request.user
+        payload = request.data
+        
+        if request.method == "POST":
+            serializer = serializers.ResultChainSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                rri_goal = payload['rri_goal']
+                activities = payload['activities']
+                input = payload['input']
+                output = payload['output']
+                outcome = payload['outcome']
+                impact = payload['impact']
+
+
+                if not activities:
+                    return Response({"details": f"Activities required !"}, status=status.HTTP_400_BAD_REQUEST) 
+
+                try:
+                    rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown RRI Goal !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+                with transaction.atomic():
+                    raw = {
+                        "rri_goal" : rri_goal,
+                        "activities" : activities,
+                        "creator": authenticated_user,
+                        "input": input,
+                        "output": output,
+                        "outcome": outcome,
+                        "impact": impact,
+                    }
+
+                    chain = models.ResultChain.objects.create(**raw)
+                                                
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "ResultChain created", f"ResultChain Creation Executed: {chain.id}")
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if request.method == "PUT":
+            serializer = serializers.UpdateResultChainSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                rri_goal = payload['rri_goal']
+                activities = payload['activities']
+                input = payload['input']
+                output = payload['output']
+                outcome = payload['outcome']
+                impact = payload['impact']
+
+                if not activities:
+                    return Response({"details": f"Activities required !"}, status=status.HTTP_400_BAD_REQUEST) 
+
+                try:
+                    rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown RRI Goal!"}, status=status.HTTP_400_BAD_REQUEST)          
+                
+                
+                with transaction.atomic():
+                    raw = {
+                        "rri_goal" : rri_goal,
+                        "activities" : activities,
+                        "creator": authenticated_user,
+                        "input": input,
+                        "output": output,
+                        "outcome": outcome,
+                        "impact": impact,
+                    }
+
+                    models.ResultChain.objects.filter(Q(id=request_id)).update(**raw)
+                                                
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "ResultChain updated", f"ResultChain updation Executed: {request_id}")
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            rri_goal = request.query_params.get('rri_goal')
+            if request_id:
+                try:
+                    chain = models.ResultChain.objects.get(Q(id=request_id))
+                    chain = serializers.FetchResultChainSerializer(chain,many=False).data
+                    return Response(chain, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            elif rri_goal:
+                try:
+                    chains = models.ResultChain.objects.filter(Q(rri_goal=rri_goal)).order_by('-date_created')
+                    chains = serializers.FetchResultChainSerializer(chains,many=True).data
+                    return Response(chains, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    chains = models.ResultChain.objects.all().order_by('-date_created')
+                    chains = serializers.FetchResultChainSerializer(chains,many=True).data
+                    return Response(chains, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
         
 
 

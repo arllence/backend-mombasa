@@ -137,6 +137,7 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     achievements = serializers.SerializerMethodField()
     weekly_reports = serializers.SerializerMethodField()
     workplan = serializers.SerializerMethodField()
+    result_chain = serializers.SerializerMethodField()
 
     class Meta:
         model = api_models.RRIGoals
@@ -170,6 +171,18 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
         try:
             plans = api_models.WorkPlan.objects.filter(Q(rri_goal=obj.id))
             serializer = FetchWorkPlanSerializer(plans, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
+    
+    def get_result_chain(self, obj):
+        try:
+            plans = api_models.ResultChain.objects.filter(Q(rri_goal=obj.id))
+            serializer = FetchResultChainSerializer(plans, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return []
@@ -290,4 +303,31 @@ class FetchWorkPlanSerializer(serializers.ModelSerializer):
     person_incharge = UsersSerializer()
     class Meta:
         model = api_models.WorkPlan
+        fields = '__all__'
+
+
+class ResultChainSerializer(serializers.Serializer):
+    rri_goal = serializers.CharField(max_length=255)
+    impact = serializers.CharField(max_length=800)
+    outcome = serializers.CharField(max_length=800)
+    output = serializers.CharField(max_length=800)
+    input = serializers.CharField(max_length=800)
+    activities = serializers.JSONField()
+
+
+
+class UpdateResultChainSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    rri_goal = serializers.CharField(max_length=255)
+    impact = serializers.CharField(max_length=800)
+    outcome = serializers.CharField(max_length=800)
+    output = serializers.CharField(max_length=800)
+    input = serializers.CharField(max_length=800)
+    activities = serializers.JSONField()
+
+
+
+class FetchResultChainSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = api_models.ResultChain
         fields = '__all__'

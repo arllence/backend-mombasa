@@ -224,3 +224,27 @@ class WorkPlan(models.Model):
 
     def __str__(self):
         return str(self.milestone)
+    
+
+class ResultChain(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    creator = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, related_name="result_chain_creator"
+    )
+    rri_goal = models.ForeignKey(
+       RRIGoals, on_delete=models.DO_NOTHING, related_name="result_chain_rri_goal"
+    )
+    
+    activities = models.JSONField()
+    input = models.TextField()
+    output = models.TextField()
+    outcome = models.TextField()
+    impact = models.TextField()
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "result_chain"
+
+    def __str__(self):
+        return str(self.milestone)
