@@ -444,7 +444,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
-        if request.method == "PUT":
+        elif request.method == "PUT":
             payload = request.data
             serializer = serializers.UpdateRRIGoalsSerializer(
                 data=payload, many=False)
@@ -821,7 +821,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             else:
                     return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
-        if request.method == "PUT":
+        elif request.method == "PUT":
             serializer = serializers.UpdateWeeklyReportSerializer(
                 data=payload, many=False)
             
@@ -989,7 +989,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             else:
                     return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
-        if request.method == "PUT":
+        elif request.method == "PUT":
             serializer = serializers.UpdateWWorkPlanSerializer(
                 data=payload, many=False)
             
@@ -1142,7 +1142,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             else:
                     return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
-        if request.method == "PUT":
+        elif request.method == "PUT":
             serializer = serializers.UpdateResultChainSerializer(
                 data=payload, many=False)
             
