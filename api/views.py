@@ -1,6 +1,7 @@
 import datetime
 import json
 from os import name
+from requests import delete
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.response import Response
@@ -249,7 +250,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-    @action(methods=["POST", "GET", "PUT"],
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
             url_path="thematic-areas",
             url_name="thematic-areas")
@@ -341,7 +342,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             elif overseer_id:
                 try:
-                    overseer = models.ThematicArea.objects.filter(Q(results_leader=overseer_id) | Q(team_leader=overseer_id) | Q(team_leader=overseer_id)).order_by('date_created')
+                    overseer = models.ThematicArea.objects.filter((Q(results_leader=overseer_id) | Q(team_leader=overseer_id) | Q(team_leader=overseer_id)) & Q(is_deleted=False)).order_by('date_created')
                     overseer = serializers.FetchThematicAreaSerializer(overseer,many=True).data
                     return Response(overseer, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -351,7 +352,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    area = models.ThematicArea.objects.all().order_by('date_created')
+                    area = models.ThematicArea.objects.filter(Q(is_deleted=False)).order_by('date_created')
                     area = serializers.FetchThematicAreaSerializer(area,many=True).data
                     return Response(area, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -359,6 +360,15 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                models.ThematicArea.objects.filter(Q(id=request_id)).update({"is_deleted" : True})
+                return Response('200', status=status.HTTP_200_OK)
+            
 
 
     @action(methods=["POST", "GET", "PUT"],
@@ -420,7 +430,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "team_leader": team_leader,
                         "strategic_leader": strategic_leader,
                     }
-                    models.RRIGoals.objects.create(**raw)
+                    rri = models.RRIGoals.objects.create(**raw)
 
                     team_members = payload['team_members']
                     if team_members:
@@ -498,19 +508,21 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "team_leader": team_leader,
                         "strategic_leader": strategic_leader,
                     }
-                    rri = models.RRIGoals.objects.filter(Q(id=request_id)).update(**raw)
+                    models.RRIGoals.objects.filter(Q(id=request_id)).update(**raw)
 
                     # update team members
                     team_members = payload['team_members']
                     if team_members:
+                        # delete existing members
+                        models.TeamMembers.objects.filter(Q(goal=request_id)).delete()
+                        # save new members
                         if isinstance(team_members, list):
                             for member in team_members:
-                                if not  models.TeamMembers.objects.filter(Q(name=member) & Q(goal=request_id)).exists():
-                                    raw = {
-                                        "name": member,
-                                        "goal": rri
-                                    }
-                                    models.TeamMembers.objects.create(**raw)
+                                raw = {
+                                    "name": member,
+                                    "goal": rri
+                                }
+                                models.TeamMembers.objects.create(**raw)
 
 
                     return Response("Success", status=status.HTTP_200_OK)

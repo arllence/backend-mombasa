@@ -82,6 +82,7 @@ class ThematicArea(models.Model):
     department = models.ForeignKey(
         Department, related_name="thematic_area_department", on_delete=models.DO_NOTHING
     )
+    is_deleted = models.BooleanField(default=False)
 
     date_created = models.DateTimeField(auto_now_add=True)
 

@@ -126,7 +126,7 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     weekly_reports = serializers.SerializerMethodField()
     workplan = serializers.SerializerMethodField()
     result_chain = serializers.SerializerMethodField()
-    members = serializers.SerializerMethodField()
+    team_members = serializers.SerializerMethodField()
 
     class Meta:
         model = api_models.RRIGoals
@@ -180,9 +180,9 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return []
         
-    def get_members(self, obj):
+    def get_team_members(self, obj):
         try:
-            finds = api_models.TeamMembers.objects.filter(Q(thematic_area=obj))
+            finds = api_models.TeamMembers.objects.filter(Q(goal=obj.id))
             members = [ member.name for member in finds ]
             return members
         except (ValidationError, ObjectDoesNotExist):
