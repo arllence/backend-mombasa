@@ -177,6 +177,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
 
                 if len(contact) > 10 or len(contact) < 9:
                     return Response({"details": "Incorect contact format, use: 0700000000"}, status=status.HTTP_400_BAD_REQUEST)
+                
                 elif len(contact) == 10:
                     if contact[0] == '0':
                         contact = contact[1:]
