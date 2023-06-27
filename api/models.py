@@ -82,15 +82,7 @@ class ThematicArea(models.Model):
     department = models.ForeignKey(
         Department, related_name="thematic_area_department", on_delete=models.DO_NOTHING
     )
-    results_leader = models.ForeignKey(
-        Overseer, related_name="results_leader", on_delete=models.DO_NOTHING
-    )
-    team_leader = models.ForeignKey(
-        Overseer, related_name="team_leader", on_delete=models.DO_NOTHING
-    )
-    strategic_leader = models.ForeignKey(
-        Overseer, related_name="strategic_leader", on_delete=models.DO_NOTHING
-    )
+
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -114,6 +106,18 @@ class RRIGoals(models.Model):
         Wave, related_name="wave", on_delete=models.DO_NOTHING,
         null=True, blank=True
     )
+    results_leader = models.ForeignKey(
+        Overseer, related_name="results_leader", on_delete=models.DO_NOTHING,
+        null=True, blank=True
+    )
+    team_leader = models.ForeignKey(
+        Overseer, related_name="team_leader", on_delete=models.DO_NOTHING,
+        null=True, blank=True
+    )
+    strategic_leader = models.ForeignKey(
+        Overseer, related_name="strategic_leader", on_delete=models.DO_NOTHING,
+        null=True, blank=True
+    )
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -126,8 +130,9 @@ class RRIGoals(models.Model):
 class TeamMembers(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=150)
-    thematic_area = models.ForeignKey(
-        ThematicArea, related_name="member_thematic_area", on_delete=models.DO_NOTHING
+    goal = models.ForeignKey(
+        RRIGoals, related_name="member_goal", on_delete=models.DO_NOTHING,
+        null=True, blank=True
     )
     date_created = models.DateTimeField(auto_now_add=True)
 

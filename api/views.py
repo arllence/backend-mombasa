@@ -1,5 +1,6 @@
 import datetime
 import json
+from os import name
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.response import Response
@@ -260,10 +261,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             if serializer.is_valid():
                 area = payload['area']
                 sector = payload['sector']
-                department = payload['department']
-                results_leader = payload['results_leader']
-                team_leader = payload['team_leader']
-                strategic_leader = payload['strategic_leader']
+                department = payload['department']       
 
 
                 try:
@@ -276,28 +274,10 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown sector!"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                try:
-                    results_leader = models.Overseer.objects.get(Q(id=results_leader))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                try:
-                    team_leader = models.Overseer.objects.get(Q(id=team_leader))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                try:
-                    strategic_leader = models.Overseer.objects.get(Q(id=strategic_leader))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
-                
                 
                 with transaction.atomic():
                     raw = {
                         "area": area,
-                        "results_leader": results_leader,
-                        "team_leader": team_leader,
-                        "strategic_leader": strategic_leader,
                         "department": department,
                         "sector": sector,
                     }
@@ -316,9 +296,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 area = payload['area']
                 sector = payload['sector']
                 department = payload['department']
-                results_leader = payload['results_leader']
-                team_leader = payload['team_leader']
-                strategic_leader = payload['strategic_leader']
+                
 
                 try:
                     models.ThematicArea.objects.get(Q(id=request_id))
@@ -335,28 +313,10 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown sector!"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                try:
-                    results_leader = models.Overseer.objects.get(Q(id=results_leader))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                try:
-                    team_leader = models.Overseer.objects.get(Q(id=team_leader))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                try:
-                    strategic_leader = models.Overseer.objects.get(Q(id=strategic_leader))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
-                
                 
                 with transaction.atomic():
                     raw = {
                         "area": area,
-                        "results_leader": results_leader,
-                        "team_leader": team_leader,
-                        "strategic_leader": strategic_leader,
                         "department": department,
                         "sector": sector,
                     }
@@ -415,6 +375,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 goal = payload['goal']
                 coach = payload['coach']
                 thematic_area = payload['thematic_area']
+                results_leader = payload['results_leader']
+                team_leader = payload['team_leader']
+                strategic_leader = payload['strategic_leader']
 
                 try:
                     thematic_area = models.ThematicArea.objects.get(Q(id=thematic_area))
@@ -430,6 +393,21 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     wave = models.Wave.objects.get(Q(id=wave))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown wave!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    results_leader = models.Overseer.objects.get(Q(id=results_leader))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    team_leader = models.Overseer.objects.get(Q(id=team_leader))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    strategic_leader = models.Overseer.objects.get(Q(id=strategic_leader))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
                                 
                 
                 with transaction.atomic():
@@ -437,9 +415,22 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "wave": wave,
                         "goal": goal,
                         "coach": coach,
-                        "thematic_area": thematic_area
+                        "thematic_area": thematic_area,
+                        "results_leader": results_leader,
+                        "team_leader": team_leader,
+                        "strategic_leader": strategic_leader,
                     }
                     models.RRIGoals.objects.create(**raw)
+
+                    team_members = payload['team_members']
+                    if team_members:
+                        if isinstance(team_members, list):
+                            for member in team_members:
+                                raw = {
+                                    "name": member,
+                                    "goal": rri
+                                }
+                                models.TeamMembers.objects.create(**raw)
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -456,6 +447,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 coach = payload['coach']
                 thematic_area = payload['thematic_area']
                 request_id = payload['request_id']
+                results_leader = payload['results_leader']
+                team_leader = payload['team_leader']
+                strategic_leader = payload['strategic_leader']
 
                 try:
                     rri = models.RRIGoals.objects.get(Q(id=request_id))
@@ -476,15 +470,48 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     wave = models.Wave.objects.get(Q(id=wave))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown wave!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+                try:
+                    results_leader = models.Overseer.objects.get(Q(id=results_leader))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    team_leader = models.Overseer.objects.get(Q(id=team_leader))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    strategic_leader = models.Overseer.objects.get(Q(id=strategic_leader))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown overseer!"}, status=status.HTTP_400_BAD_REQUEST)
                                 
                 
                 with transaction.atomic():
+                    raw = {
+                        "wave": wave,
+                        "goal": goal,
+                        "coach": coach,
+                        "thematic_area": thematic_area,
+                        "results_leader": results_leader,
+                        "team_leader": team_leader,
+                        "strategic_leader": strategic_leader,
+                    }
+                    rri = models.RRIGoals.objects.filter(Q(id=request_id)).update(**raw)
 
-                    rri.goal = goal
-                    rri.wave = wave
-                    rri.coach = coach
-                    rri.thematic_area = thematic_area
-                    rri.save()
+                    # update team members
+                    team_members = payload['team_members']
+                    if team_members:
+                        if isinstance(team_members, list):
+                            for member in team_members:
+                                if not  models.TeamMembers.objects.filter(Q(name=member) & Q(goal=request_id)).exists():
+                                    raw = {
+                                        "name": member,
+                                        "goal": rri
+                                    }
+                                    models.TeamMembers.objects.create(**raw)
+
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:

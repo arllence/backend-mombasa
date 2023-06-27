@@ -75,9 +75,6 @@ class CreateThematicAreaSerializer(serializers.Serializer):
     department = serializers.CharField(max_length=255)
     sector = serializers.CharField(max_length=255)
     area = serializers.CharField(max_length=500)
-    results_leader = serializers.CharField(max_length=255)
-    team_leader = serializers.CharField(max_length=255)
-    strategic_leader = serializers.CharField(max_length=255)
 
 
 class UpdateThematicAreaSerializer(serializers.Serializer):
@@ -85,34 +82,16 @@ class UpdateThematicAreaSerializer(serializers.Serializer):
     department = serializers.CharField(max_length=255)
     sector = serializers.CharField(max_length=255)
     area = serializers.CharField(max_length=500)
-    results_leader = serializers.CharField(max_length=255)
-    team_leader = serializers.CharField(max_length=255)
-    strategic_leader = serializers.CharField(max_length=255)
+    
 
 
 class FetchThematicAreaSerializer(serializers.ModelSerializer):
     sector = FetchSectorSerializer()
     department = FetchDepartmentSerializer()
-    results_leader = FetchOverseerSerializer()
-    team_leader = FetchOverseerSerializer()
-    strategic_leader = FetchOverseerSerializer()
-    members = serializers.SerializerMethodField()
 
     class Meta:
         model = api_models.ThematicArea
         fields = '__all__'
-
-    def get_members(self, obj):
-        try:
-            finds = api_models.TeamMembers.objects.filter(Q(thematic_area=obj))
-            members = [ member.name for member in finds ]
-            return members
-        except (ValidationError, ObjectDoesNotExist):
-            return []
-        except Exception as e:
-            print(e)
-            # logger.error(e)
-            return []
 
 
 class CreateRRIGoalsSerializer(serializers.Serializer):
@@ -120,6 +99,9 @@ class CreateRRIGoalsSerializer(serializers.Serializer):
     goal = serializers.CharField(max_length=500)
     coach = serializers.CharField(max_length=255)
     thematic_area = serializers.CharField(max_length=255)
+    results_leader = serializers.CharField(max_length=255)
+    team_leader = serializers.CharField(max_length=255)
+    strategic_leader = serializers.CharField(max_length=255)
 
 
 class UpdateRRIGoalsSerializer(serializers.Serializer):
@@ -128,16 +110,23 @@ class UpdateRRIGoalsSerializer(serializers.Serializer):
     coach = serializers.CharField(max_length=255)
     thematic_area = serializers.CharField(max_length=255)
     request_id = serializers.CharField(max_length=255)
+    results_leader = serializers.CharField(max_length=255)
+    team_leader = serializers.CharField(max_length=255)
+    strategic_leader = serializers.CharField(max_length=255)
 
 
 class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     wave = FetchWaveSerializer()
     coach = FetchOverseerSerializer()
+    results_leader = FetchOverseerSerializer()
+    team_leader = FetchOverseerSerializer()
+    strategic_leader = FetchOverseerSerializer()
     thematic_area = FetchThematicAreaSerializer()
     achievements = serializers.SerializerMethodField()
     weekly_reports = serializers.SerializerMethodField()
     workplan = serializers.SerializerMethodField()
     result_chain = serializers.SerializerMethodField()
+    members = serializers.SerializerMethodField()
 
     class Meta:
         model = api_models.RRIGoals
@@ -190,11 +179,19 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return []
+        
+    def get_members(self, obj):
+        try:
+            finds = api_models.TeamMembers.objects.filter(Q(thematic_area=obj))
+            members = [ member.name for member in finds ]
+            return members
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
 
-
-class CreateTeamMembersSerializer(serializers.Serializer):
-    member = serializers.CharField(max_length=255)
-    thematic_area = serializers.CharField(max_length=255)
 
 class CreateEvidenceSerializer(serializers.Serializer):
     thematic_area_id = serializers.CharField(max_length=255)
@@ -227,9 +224,13 @@ class FetchAchievementSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return []
 
+class CreateTeamMembersSerializer(serializers.Serializer):
+    member = serializers.CharField(max_length=255)
+    goal = serializers.CharField(max_length=255)
+
 
 class FetchTeamMembersSerializer(serializers.ModelSerializer):
-    thematic_area = FetchThematicAreaSerializer()
+    goal = FetchRRIGoalsSerializer()
     class Meta:
         model = api_models.TeamMembers
         fields = '__all__'
