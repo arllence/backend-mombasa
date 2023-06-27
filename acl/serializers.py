@@ -56,3 +56,9 @@ class CreateUserSerializer(serializers.Serializer):
     last_name = serializers.CharField()
     password = serializers.CharField()
     confirm_password = serializers.CharField()
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    new_password = serializers.CharField()
+    confirm_password = serializers.CharField()
+    current_password = serializers.CharField()
