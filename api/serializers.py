@@ -280,7 +280,6 @@ class WWorkPlanSerializer(serializers.Serializer):
     end_date = serializers.CharField(max_length=255)
     milestone = serializers.CharField(max_length=255)
     rri_goal = serializers.CharField(max_length=255)
-    person_incharge = serializers.CharField(max_length=255)
     budget = serializers.IntegerField()
     status = serializers.CharField(max_length=255)
     remarks = serializers.CharField(max_length=800)
@@ -293,7 +292,6 @@ class UpdateWWorkPlanSerializer(serializers.Serializer):
     end_date = serializers.CharField(max_length=255)
     milestone = serializers.CharField(max_length=255)
     rri_goal = serializers.CharField(max_length=255)
-    person_incharge = serializers.CharField(max_length=255)
     budget = serializers.IntegerField()
     status = serializers.CharField(max_length=255)
     remarks = serializers.CharField(max_length=800)
@@ -301,7 +299,7 @@ class UpdateWWorkPlanSerializer(serializers.Serializer):
 
 
 class FetchWorkPlanSerializer(serializers.ModelSerializer):
-    person_incharge = UsersSerializer()
+    # person_incharge = UsersSerializer()
     class Meta:
         model = api_models.WorkPlan
         fields = '__all__'

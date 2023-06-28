@@ -22,6 +22,8 @@ from django.db import transaction
 from acl import models
 from acl import serializers
 from acl.utils import mailgun_general
+from api import models as api_models
+from api.serializers import FetchOverseerSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -356,6 +358,11 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         try:
             if username == "all":
                 user_details = get_user_model().objects.all()
+                user_info = serializers.UsersSerializer(user_details, many=True).data
+                overseers = api_models.Overseer.objects.all()
+                seers = FetchOverseerSerializer(overseers, many=True).data
+                resp = user_info + seers
+                return Response(resp, status=status.HTTP_200_OK)
             else:
                 user_details = get_user_model().objects.filter(Q(email__icontains=username) | Q(first_name__icontains=username) | Q(last_name__icontains=username))
         except (ValidationError, ObjectDoesNotExist):

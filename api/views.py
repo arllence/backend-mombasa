@@ -968,7 +968,6 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 steps = payload['steps']
                 start_date = payload['start_date']
                 end_date = payload['end_date']
-                person_incharge = payload['person_incharge']
                 budget = payload['budget']
                 plan_status = payload['status']
                 remarks = payload['remarks']
@@ -998,11 +997,6 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown RRI Goal !"}, status=status.HTTP_400_BAD_REQUEST)
-
-                try:
-                    person_incharge = get_user_model().objects.get(Q(id=person_incharge))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Invalid Person Incharge !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 
                 with transaction.atomic():
@@ -1013,7 +1007,6 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "rri_goal" : rri_goal,
                         "steps" : steps,
                         "creator": authenticated_user,
-                        "person_incharge": person_incharge,
                         "budget": budget,
                         "remarks": remarks,
                         "status": plan_status,
@@ -1040,7 +1033,6 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 steps = payload['steps']
                 start_date = payload['start_date']
                 end_date = payload['end_date']
-                person_incharge = payload['person_incharge']
                 budget = payload['budget']
                 plan_status = payload['status']
                 remarks = payload['remarks']
@@ -1067,13 +1059,6 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown RRI Goal!"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                try:
-                    person_incharge = get_user_model().objects.get(Q(id=person_incharge))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Invalid Person Incharge !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-
-                
                 
                 with transaction.atomic():
                     raw = {
@@ -1083,7 +1068,6 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "rri_goal" : rri_goal,
                         "steps" : steps,
                         "creator": authenticated_user,
-                        "person_incharge": person_incharge,
                         "budget": budget,
                         "remarks": remarks,
                         "status": plan_status,
