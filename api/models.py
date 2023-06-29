@@ -242,10 +242,10 @@ class ResultChain(models.Model):
     )
     
     activities = models.JSONField()
-    input = models.TextField()
-    output = models.TextField()
-    outcome = models.TextField()
-    impact = models.TextField()
+    input = models.JSONField()
+    output = models.JSONField()
+    outcome = models.JSONField()
+    impact = models.JSONField()
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 

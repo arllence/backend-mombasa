@@ -1138,6 +1138,14 @@ class FoundationViewSet(viewsets.ModelViewSet):
 
                 if not activities:
                     return Response({"details": f"Activities required !"}, status=status.HTTP_400_BAD_REQUEST) 
+                if not input:
+                    return Response({"details": f"Inputs required !"}, status=status.HTTP_400_BAD_REQUEST) 
+                if not output:
+                    return Response({"details": f"Outputs required !"}, status=status.HTTP_400_BAD_REQUEST) 
+                if not outcome:
+                    return Response({"details": f"Outcomes required !"}, status=status.HTTP_400_BAD_REQUEST) 
+                if not impact:
+                    return Response({"details": f"Impacts required !"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 try:
                     rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))

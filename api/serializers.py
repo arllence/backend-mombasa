@@ -307,10 +307,10 @@ class FetchWorkPlanSerializer(serializers.ModelSerializer):
 
 class ResultChainSerializer(serializers.Serializer):
     rri_goal = serializers.CharField(max_length=255)
-    impact = serializers.CharField(max_length=800)
-    outcome = serializers.CharField(max_length=800)
-    output = serializers.CharField(max_length=800)
-    input = serializers.CharField(max_length=800)
+    impact = serializers.JSONField()
+    outcome = serializers.JSONField()
+    output = serializers.JSONField()
+    input = serializers.JSONField()
     activities = serializers.JSONField()
 
 
