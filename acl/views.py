@@ -474,35 +474,22 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
         """
         Updates user details. payload['id_number','first_name','last_name','account_id']
         """
-        payload =  json.loads(request.data.get('payload'))
+        payload =  request.data
         authenticated_user = request.user
         serializer = serializers.EditUserSerializer(data=payload, many=False)
         if serializer.is_valid():
-            id_number = payload['id_number']
+            # id_number = payload['id_number']
             first_name = payload['first_name']
             last_name = payload['last_name']
             account_id = payload['account_id']
-            phone_number = payload['phone_number']
-            email = payload['email']
+            # phone_number = payload['phone_number']
+            # email = payload['email']
 
 
-            phoneexists = get_user_model().objects.filter(phone_number=phone_number).exists()
-            emailexists = get_user_model().objects.filter(email=email).exists()
-            if   email == None:
-                return Response({'details': 'Please add an email for the user'}, status=status.HTTP_400_BAD_REQUEST)
-            if  phone_number == None:
-                return Response({'details': 'Please add a phoneNumber for the user'}, status=status.HTTP_400_BAD_REQUEST)
-            try:
-                new_id_number = int(id_number)
-            except (ValidationError, ValueError):
-                return Response({"details": "Invalid ID Number"},
-                                status=status.HTTP_400_BAD_REQUEST)
-            new_phone_number = phone_number
-            verified_number = verify_phone_number(new_phone_number)
-            if verified_number:
-                verified_phone_number = verified_number 
-            else:
-                return Response({'details': "Invalid phone number."}, status=status.HTTP_400_BAD_REQUEST)                    
+            # phoneexists = get_user_model().objects.filter(phone_number=phone_number).exists()
+            # emailexists = get_user_model().objects.filter(email=email).exists()
+
+                            
             try:
                 record_instance = get_user_model().objects.get(id=account_id)
             except (ValidationError, ObjectDoesNotExist):
@@ -510,63 +497,19 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     {'details': 'User does not exist'},
                     status=status.HTTP_400_BAD_REQUEST)
 
-                  
-            attachment = request.FILES.get('document')
-            if not attachment and record_instance.id_card == None:
-                return Response({'details':'Please attach id document'},status=status.HTTP_400_BAD_REQUEST)    
-            elif not attachment:
-                record_instance.first_name = first_name
-                record_instance.last_name = last_name
-                record_instance.id_number = new_id_number
-                record_instance.email = email
-                record_instance.phone_number = verified_phone_number
+                               
 
-                record_instance.save()
+            record_instance.first_name = first_name
+            record_instance.last_name = last_name
 
-                user_util.log_account_activity(
-                            authenticated_user, authenticated_user, "Updated Profile",
-                            "PROFILE UPDATION")
+            record_instance.save()
 
-                return Response("Successfully Updated",
-                                status=status.HTTP_200_OK)
-            else:
-                original_file_name = attachment.name
+            user_util.log_account_activity(
+                        authenticated_user, authenticated_user, "Updated Profile",
+                        "PROFILE UPDATION")
 
-                original_file_exists = models.UserDocumentsUpload.objects.filter(
-                        original_file_name=original_file_name).exists()
-
-                if original_file_exists:
-                    return Response({"details": "Document with Name Already exists"}, status=status.HTTP_400_BAD_REQUEST)        
-                to_attach = {
-                            "document": attachment,
-                            "original_file_name":original_file_name,
-                            "uploader": authenticated_user.id
-                        }
-                if record_instance.id_card is not None:        
-                    original_file_status = models.UserDocumentsUpload.objects.get(
-                            id=record_instance.id_card.id,document_status="DOCUMENT_UPLOADED")
-                    if original_file_status:     
-                        original_file_status.document_status = "DELETED"
-                        original_file_status.save()  
-
-                id_card = models.UserDocumentsUpload.objects.create(**to_attach)
-                
-
-                record_instance.first_name = first_name
-                record_instance.last_name = last_name
-                record_instance.id_number = new_id_number
-                record_instance.id_card = id_card
-                record_instance.email = email
-                record_instance.phone_number = verified_phone_number
-
-                record_instance.save()
-
-                user_util.log_account_activity(
-                            authenticated_user, authenticated_user, "Updated Profile",
-                            "PROFILE UPDATION")
-
-                return Response("Successfully Updated",
-                                status=status.HTTP_200_OK)
+            return Response("Successfully Updated",
+                            status=status.HTTP_200_OK)
 
         else:
             return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
