@@ -474,7 +474,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
         """
         Updates user details. payload['id_number','first_name','last_name','account_id']
         """
-        payload =  request.data.get('payload')
+        payload = json.loads(request.data.get('payload'))
         authenticated_user = request.user
         serializer = serializers.EditUserSerializer(data=payload, many=False)
         if serializer.is_valid():
