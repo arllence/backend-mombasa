@@ -366,7 +366,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
             if not request_id:
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
-                models.ThematicArea.objects.filter(Q(id=request_id)).update({"is_deleted" : True})
+                raw = {"is_deleted" : True}
+                models.ThematicArea.objects.filter(Q(id=request_id)).update(**raw)
                 return Response('200', status=status.HTTP_200_OK)
             
 
