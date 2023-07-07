@@ -34,6 +34,13 @@ class ManageRoleSerializer(serializers.Serializer):
     role_id = serializers.ListField(required=True)
     account_id = serializers.CharField()
 
+class EditUserSerializer(serializers.Serializer):
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    # id_number = serializers.CharField()
+    account_id = serializers.CharField()
+
+
 class UsersSerializer(serializers.ModelSerializer):
     id = serializers.CharField()
     email = serializers.CharField()
