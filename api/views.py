@@ -1253,6 +1253,147 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
         
 
+    @action(methods=["GET","POST", "PUT"], detail=False, url_path="evaluation",url_name="evaluation")
+    def evaluation(self, request):
+        authenticated_user = request.user
+        payload = request.data
+        
+        if request.method == "POST":
+            serializer = serializers.EvaluationSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                rri_goal = payload['rri_goal']
+                data = payload['data']
+                total = 0
+
+                if not data:
+                    return Response({"details": f"Data required !"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+                empty_keys = []
+                for key, value in data.items():
+                    for i, j in data[key].items():
+                        if not j:
+                            empty_keys.append(str(key + '=>' + i + ' is required !'))
+                        else:
+                            if i == 'score':
+                                total = total + int(j)
+
+
+                if empty_keys:
+                    empty_keys = ', '.join(empty_keys)
+                    return Response({"details": f"{empty_keys}"}, status=status.HTTP_400_BAD_REQUEST) 
+
+
+                try:
+                    rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown RRI Goal !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+                with transaction.atomic():
+                    data.update({"total":total})
+                    raw = {
+                        "rri_goal" : rri_goal,
+                        "data" : data,
+                        "evaluator": authenticated_user,
+                    }
+
+                    evaluation = models.Evaluation.objects.create(**raw)
+                                                
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Evaluation created", f"Evaluation Creation Executed: {evaluation.id}")
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "PUT":
+            serializer = serializers.UpdateEvaluationSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                rri_goal = payload['rri_goal']
+                data = payload['data']
+                request_id = payload['request_id']
+                total = 0
+
+                if not data:
+                    return Response({"details": f"Data required !"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+                empty_keys = []
+                for key, value in data.items():
+                    for i, j in data[key].items():
+                        if not j:
+                            empty_keys.append(str(key + '=>' + i + ' is required !'))
+                        else:
+                            if i == 'score':
+                                total = total + int(j)
+
+
+                if empty_keys:
+                    empty_keys = ', '.join(empty_keys)
+                    return Response({"details": f"{empty_keys}"}, status=status.HTTP_400_BAD_REQUEST) 
+
+
+                try:
+                    rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown RRI Goal !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+                with transaction.atomic():
+                    data.update({"total":total})
+                    raw = {
+                        "rri_goal" : rri_goal,
+                        "data" : data,
+                        "evaluator": authenticated_user,
+                    }
+
+                    models.Evaluation.objects.filter(Q(id=request_id)).update(**raw)
+                                                
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Evaluation updated", f"Evaluation updation Executed: {request_id}")
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            rri_goal = request.query_params.get('rri_goal')
+            if request_id:
+                try:
+                    evaluation = models.Evaluation.objects.get(Q(id=request_id))
+                    evaluation = serializers.FetchEvaluationSerializer(evaluation,many=False).data
+                    return Response(evaluation, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            elif rri_goal:
+                try:
+                    evaluations = models.Evaluation.objects.filter(Q(rri_goal=rri_goal)).order_by('-date_created')
+                    evaluations = serializers.FetchEvaluationSerializer(evaluations,many=True).data
+                    return Response(evaluations, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    evaluations = models.Evaluation.objects.all().order_by('-date_created')
+                    evaluations = serializers.FetchEvaluationSerializer(evaluations,many=True).data
+                    return Response(evaluations, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
 class DepartmentViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)

@@ -254,3 +254,24 @@ class ResultChain(models.Model):
 
     def __str__(self):
         return str(self.milestone)
+    
+
+
+class Evaluation(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    evaluator = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, related_name="evaluator"
+    )
+    rri_goal = models.ForeignKey(
+       RRIGoals, on_delete=models.DO_NOTHING, related_name="evaluated_rri_goal"
+    )
+    
+    data = models.JSONField()
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "evaluation"
+
+    def __str__(self):
+        return str(self.rri_goal.goal)

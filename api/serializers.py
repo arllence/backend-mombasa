@@ -127,6 +127,7 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     workplan = serializers.SerializerMethodField()
     result_chain = serializers.SerializerMethodField()
     team_members = serializers.SerializerMethodField()
+    evaluation = serializers.SerializerMethodField()
 
     class Meta:
         model = api_models.RRIGoals
@@ -172,6 +173,18 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
         try:
             plans = api_models.ResultChain.objects.filter(Q(rri_goal=obj.id))
             serializer = FetchResultChainSerializer(plans, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
+        
+    def get_evaluation(self, obj):
+        try:
+            evaluation = api_models.Evaluation.objects.get(Q(rri_goal=obj.id))
+            serializer = FetchEvaluationSerializer(evaluation, many=False)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return []
@@ -329,4 +342,22 @@ class UpdateResultChainSerializer(serializers.Serializer):
 class FetchResultChainSerializer(serializers.ModelSerializer):
     class Meta:
         model = api_models.ResultChain
+        fields = '__all__'
+
+
+class EvaluationSerializer(serializers.Serializer):
+    rri_goal = serializers.CharField(max_length=255)
+    data = serializers.JSONField()
+
+
+class UpdateEvaluationSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    rri_goal = serializers.CharField(max_length=255)
+    data = serializers.JSONField()
+
+
+class FetchEvaluationSerializer(serializers.ModelSerializer):
+    evaluator = UsersSerializer()
+    class Meta:
+        model = api_models.Evaluation
         fields = '__all__'
