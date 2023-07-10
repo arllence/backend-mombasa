@@ -361,3 +361,10 @@ class FetchEvaluationSerializer(serializers.ModelSerializer):
     class Meta:
         model = api_models.Evaluation
         fields = '__all__'
+
+class ReportsFetchEvaluationSerializer(serializers.ModelSerializer):
+    evaluator = UsersSerializer()
+    rri_goal = FetchRRIGoalsSerializer()
+    class Meta:
+        model = api_models.Evaluation
+        fields = '__all__'

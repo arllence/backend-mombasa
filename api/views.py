@@ -1395,6 +1395,35 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
+
+
+class ReportsViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    queryset = models.Evaluation.objects.all().order_by('id')
+    serializer_class = serializers.FetchEvaluationSerializer()
+    search_fields = ['id', ]
+
+    def get_queryset(self):
+        return []
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="evaluation",
+            url_name="evaluation")
+    def evaluation(self, request):
+                    
+        try:
+            goals = models.Evaluation.objects.all().order_by('date_created')
+            goals = serializers.ReportsFetchEvaluationSerializer(goals,many=True).data
+            goals = sorted(goals, key=lambda d: d['data']['total'], reverse=True) 
+            return Response(goals, status=status.HTTP_200_OK)
+        except (ValidationError, ObjectDoesNotExist):
+            return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            print(e)
+            return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class DepartmentViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     queryset = models.Department.objects.all().order_by('id')
