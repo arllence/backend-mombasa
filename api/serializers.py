@@ -128,6 +128,8 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     result_chain = serializers.SerializerMethodField()
     team_members = serializers.SerializerMethodField()
     evaluation = serializers.SerializerMethodField()
+    assigned = serializers.SerializerMethodField()
+    evaluation_analytics = serializers.SerializerMethodField()
 
     class Meta:
         model = api_models.RRIGoals
@@ -183,8 +185,8 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
         
     def get_evaluation(self, obj):
         try:
-            evaluation = api_models.Evaluation.objects.get(Q(rri_goal=obj.id))
-            serializer = FetchEvaluationSerializer(evaluation, many=False)
+            evaluations = api_models.Evaluation.objects.filter(Q(rri_goal=obj.id))
+            serializer = FetchEvaluationSerializer(evaluations, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return []
@@ -193,10 +195,55 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return []
         
+    def get_evaluation_analytics(self, obj):
+        try:
+            evaluations = api_models.Evaluation.objects.filter(Q(rri_goal=obj.id))
+            total_assignings = api_models.AssignedEvaluations.objects.filter(Q(rri_goal=obj.id)).count()
+            total_score = 0
+            average = 0
+
+            if evaluations:
+                for evaluation in evaluations:
+                    total_score += evaluation.data['total']
+                average = total_score / total_assignings
+
+            resp = {"average_score": average}
+                
+            return resp
+        except (ValidationError, ObjectDoesNotExist):
+            return 0
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return 0
+        
     def get_team_members(self, obj):
         try:
             finds = api_models.TeamMembers.objects.filter(Q(goal=obj.id))
             members = [ member.name for member in finds ]
+            return members
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
+        
+    def get_assigned(self, obj):
+        try:
+            # try:
+            #     user_id = str(self.context["user_id"])
+            #     finds = api_models.AssignedEvaluations.objects.filter(Q(rri_goal=obj.id) & Q(evaluator=user_id))
+            # except Exception as e:
+            #     print(e)
+            #     user_id = None
+
+            finds = api_models.AssignedEvaluations.objects.filter(Q(rri_goal=obj.id))
+
+            members = [
+                {"id":user.evaluator.id, "name":f"{user.evaluator.first_name} {user.evaluator.last_name}", "email":user.evaluator.email, "is_evaluated": user.is_evaluated}
+                for user in finds
+             ]
             return members
         except (ValidationError, ObjectDoesNotExist):
             return []
@@ -367,4 +414,16 @@ class ReportsFetchEvaluationSerializer(serializers.ModelSerializer):
     rri_goal = FetchRRIGoalsSerializer()
     class Meta:
         model = api_models.Evaluation
+        fields = '__all__'
+
+
+class AssignedEvaluationsSerializer(serializers.Serializer):
+    evaluator = serializers.ListField(max_length=255)
+
+
+class FetchAssignedEvaluationsSerializer(serializers.ModelSerializer):
+    evaluator = UsersSerializer()
+    rri_goal = FetchRRIGoalsSerializer()
+    class Meta:
+        model = api_models.AssignedEvaluations()
         fields = '__all__'

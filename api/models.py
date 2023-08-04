@@ -275,3 +275,22 @@ class Evaluation(models.Model):
 
     def __str__(self):
         return str(self.rri_goal.goal)
+    
+
+class AssignedEvaluations(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    evaluator = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, related_name="assigned_evaluator"
+    )
+    rri_goal = models.ForeignKey(
+       RRIGoals, on_delete=models.DO_NOTHING, related_name="assigned_rri_goal"
+    )
+    is_evaluated = models.BooleanField(default=False)
+    
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "assigned_evaluations"
+
+    def __str__(self):
+        return f"{str(self.evaluator.first_name)} {str(self.evaluator.last_name)}" 
