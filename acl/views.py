@@ -665,8 +665,8 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 subject = "Platform Access Details [Nairobi RRi]"
                 message = f"\
                                 Dear user, \n\
-                                Your email is {email}.\n\
-                                Your password is: {password}.\n\
+                                Your email is {email}\n\
+                                Your password is: {password}\n\
                                 If you encounter any challenge while navigating the platform, please let us know.\
                             "
                 mailgun_general.send_mail(first_name,email,subject,message)
