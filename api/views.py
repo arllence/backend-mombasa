@@ -1542,7 +1542,7 @@ class ReportsViewSet(viewsets.ViewSet):
         try:
             goals = models.Evaluation.objects.all().order_by('date_created')
             ids = list(set([goal.rri_goal.id for goal in goals]))
-            print(ids)
+            # print(ids)
             goals = models.RRIGoals.objects.filter(Q(pk__in=ids))
             goals = serializers.FetchRRIGoalsSerializer(goals,many=True).data
             goals = sorted(goals, key=lambda d: d['evaluation_analytics']['average_score'], reverse=True) 

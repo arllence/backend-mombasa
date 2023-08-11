@@ -211,11 +211,13 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
                 
             return resp
         except (ValidationError, ObjectDoesNotExist):
-            return 0
+            resp = {"average_score": average}
+            return resp
         except Exception as e:
             print(e)
             # logger.error(e)
-            return 0
+            resp = {"average_score": average}
+            return resp
         
     def get_team_members(self, obj):
         try:
