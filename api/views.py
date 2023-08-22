@@ -965,7 +965,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 
         
-    @action(methods=["GET","POST", "PUT"], detail=False, url_path="workplan",url_name="workplan")
+    @action(methods=["GET","POST", "PUT", "PATCH"], detail=False, url_path="workplan",url_name="workplan")
     def workplan(self, request):
         authenticated_user = request.user
         payload = request.data
@@ -1090,6 +1090,33 @@ class FoundationViewSet(viewsets.ModelViewSet):
 
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Workplan updated", f"Workplan updation Executed: {request_id}")
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "PATCH":
+            serializer = serializers.PatchWorkPlanSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                percentage = payload['percentage']
+
+                if int(percentage) > 100 or int(percentage) < 0:
+                    return Response({"details": "Percentage is between 0 - 100"}, status=status.HTTP_400_BAD_REQUEST)
+               
+                
+                with transaction.atomic():
+                    raw = {
+                        "percentage" : percentage
+                    }
+
+                    models.WorkPlan.objects.filter(Q(id=request_id)).update(**raw)
+                                                
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Workplan Percentage updated", f"Workplan Percentage updation Executed: {request_id}")
                 return Response('success', status=status.HTTP_200_OK)
             
             else:

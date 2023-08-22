@@ -207,16 +207,30 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
                     total_score += evaluation.data['total']
                 average = total_score / total_assignings
 
-            resp = {"average_score": average}
+            try:
+                milestones = api_models.WorkPlan.objects.filter(Q(rri_goal=obj.id))
+                total_milestones = len(milestones)
+                average_percentage = 0
+                percentages = 0
+                for milestone in milestones:
+                    percentages += milestone.percentage
+                if percentages > 0:
+                    average_percentage = percentages / total_milestones
+            except Exception as e:
+                print(e)
+
+
+
+            resp = {"average_score": average, "average_percentage":average_percentage}
                 
             return resp
         except (ValidationError, ObjectDoesNotExist):
-            resp = {"average_score": average}
+            resp = {"average_score": 0, "average_percentage":0}
             return resp
         except Exception as e:
             print(e)
             # logger.error(e)
-            resp = {"average_score": average}
+            resp = {"average_score": 0, "average_percentage":0}
             return resp
         
     def get_team_members(self, obj):
@@ -357,6 +371,10 @@ class UpdateWWorkPlanSerializer(serializers.Serializer):
     budget = serializers.IntegerField()
     status = serializers.CharField(max_length=255)
     remarks = serializers.CharField(max_length=800)
+
+class PatchWorkPlanSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    percentage = serializers.CharField(max_length=255)
 
 
 

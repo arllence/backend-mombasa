@@ -2,6 +2,7 @@ from tracemalloc import start
 import uuid
 from acl.models import User
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 
 class Wave(models.Model):
@@ -222,6 +223,8 @@ class WorkPlan(models.Model):
     budget = models.IntegerField()
     status = models.CharField(max_length=50)
     remarks = models.TextField()
+    percentage = models.IntegerField(validators=[MinValueValidator(0),
+                                            MaxValueValidator(100)], default=0)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
