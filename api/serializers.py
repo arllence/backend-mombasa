@@ -217,6 +217,7 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
                 if percentages > 0:
                     average_percentage = percentages / total_milestones
             except Exception as e:
+                print(average_percentage,percentages,total_milestones)
                 print(e)
 
 
