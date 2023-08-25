@@ -205,7 +205,11 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
             if evaluations:
                 for evaluation in evaluations:
                     total_score += evaluation.data['total']
-                average = total_score / total_assignings
+                if total_assignings > 0:
+                    average = total_score / total_assignings
+                else:
+                    average = total_score
+
 
             try:
                 milestones = api_models.WorkPlan.objects.filter(Q(rri_goal=obj.id))
@@ -217,7 +221,6 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
                 if percentages > 0:
                     average_percentage = percentages / total_milestones
             except Exception as e:
-                print(average_percentage,percentages,total_milestones)
                 print(e)
 
 
