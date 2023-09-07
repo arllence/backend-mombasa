@@ -1,3 +1,4 @@
+import math
 from urllib import request
 from django.db.models import  Q
 from acl.serializers import UsersSerializer
@@ -207,6 +208,7 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
                     total_score += evaluation.data['total']
                 if total_assignings > 0:
                     average = total_score / total_assignings
+                    average = round(average, 2)
                 else:
                     average = total_score
 
@@ -219,7 +221,7 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
                 for milestone in milestones:
                     percentages += milestone.percentage
                 if percentages > 0:
-                    average_percentage = percentages / total_milestones
+                    average_percentage = math.ceil(percentages / total_milestones) 
             except Exception as e:
                 print(e)
 
