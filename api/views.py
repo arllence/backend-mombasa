@@ -983,6 +983,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 budget = payload['budget']
                 plan_status = payload['status']
                 remarks = payload['remarks']
+                risks = payload['risks']
+                collaborators = payload['collaborators']
 
 
                 if not steps:
@@ -1021,6 +1023,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "creator": authenticated_user,
                         "budget": budget,
                         "remarks": remarks,
+                        "risks": risks,
+                        "collaborators": collaborators,
                         "status": plan_status,
                     }
 

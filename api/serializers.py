@@ -365,6 +365,7 @@ class WWorkPlanSerializer(serializers.Serializer):
     budget = serializers.IntegerField()
     status = serializers.CharField(max_length=255)
     remarks = serializers.CharField(max_length=800)
+    risks = serializers.CharField(max_length=800)
 
 
 

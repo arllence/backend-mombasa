@@ -218,11 +218,13 @@ class WorkPlan(models.Model):
     )
     milestone = models.CharField(max_length=50)
     steps = models.JSONField()
+    collaborators = models.JSONField(null=True, blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
     budget = models.IntegerField()
     status = models.CharField(max_length=50)
     remarks = models.TextField()
+    risks = models.TextField(null=True, blank=True)
     percentage = models.IntegerField(validators=[MinValueValidator(0),
                                             MaxValueValidator(100)], default=0)
     is_deleted = models.BooleanField(default=False)
