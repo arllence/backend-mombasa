@@ -1052,6 +1052,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 budget = payload['budget']
                 plan_status = payload['status']
                 remarks = payload['remarks']
+                risks = payload['risks']
+                collaborators = payload['collaborators']
 
 
                 # find difference in dates / validate dates
@@ -1087,6 +1089,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "budget": budget,
                         "remarks": remarks,
                         "status": plan_status,
+                        "risks": risks,
+                        "collaborators": collaborators,
+                        
                     }
 
                     models.WorkPlan.objects.filter(Q(id=request_id)).update(**raw)
