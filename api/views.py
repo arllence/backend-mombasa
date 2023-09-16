@@ -1559,6 +1559,324 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="boroughs",
+            url_name="boroughs")
+    def borough(self, request):
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                with transaction.atomic():
+                    raw = {
+                        "name": name
+                    }
+                    models.Borough.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateDepartmentSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                request_id = payload['request_id']
+
+                try:
+                    sub_county = models.Borough.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown sub county!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    sub_county.name = name
+                    sub_county.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    sub_county = models.Borough.objects.get(Q(id=request_id))
+                    sub_county = serializers.FetchBoroughSerializer(sub_county,many=False).data
+                    return Response(sub_county, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Sector!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    sub_counties = models.Borough.objects.all().order_by('name')
+                    sub_counties = serializers.FetchBoroughSerializer(sub_counties,many=True).data
+                    return Response(sub_counties, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="sub-counties",
+            url_name="sub-counties")
+    def sub_county(self, request):
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.CreateSubCountySerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                borough = payload['borough']
+
+                try:
+                    borough = models.Borough.objects.get(Q(id=borough))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown borough !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "name": name,
+                        "borough": borough
+                    }
+                    models.SubCounty.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateSubCountySerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                borough = payload['borough']
+                request_id = payload['request_id']
+
+                try:
+                    sub_county = models.SubCounty.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown sub county!"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    borough = models.Borough.objects.get(Q(id=borough))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown borough !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "name": name,
+                        "borough": borough
+                    }
+                    models.SubCounty.objects.filter(Q(id=request_id)).update(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    sub_county = models.SubCounty.objects.get(Q(id=request_id))
+                    sub_county = serializers.FetchSubCountySerializer(sub_county,many=False).data
+                    return Response(sub_county, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Sector!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    sub_counties = models.SubCounty.objects.all().order_by('name')
+                    sub_counties = serializers.FetchSubCountySerializer(sub_counties,many=True).data
+                    return Response(sub_counties, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="wards",
+            url_name="wards")
+    def wards(self, request):
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.CreateWardSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                sub_county = payload['sub_county']
+
+                try:
+                    sub_county = models.Ward.objects.get(Q(id=sub_county))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown sub county !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "name": name,
+                        "sub_county": sub_county
+                    }
+                    models.Ward.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateWardSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                sub_county = payload['sub_county']
+                request_id = payload['request_id']
+
+                try:
+                    ward = models.SubCounty.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Ward!"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    sub_county = models.SubCounty.objects.get(Q(id=sub_county))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown sub county !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "name": name,
+                        "sub_county": sub_county
+                    }
+                    models.Ward.objects.filter(Q(id=request_id)).update(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    ward = models.Ward.objects.get(Q(id=request_id))
+                    ward = serializers.FetchWardSerializer(ward,many=False).data
+                    return Response(ward, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Ward!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    wards = models.Ward.objects.all().order_by('name')
+                    wards = serializers.FetchWardSerializer(wards,many=True).data
+                    return Response(wards, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="estates",
+            url_name="estates")
+    def estates(self, request):
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.CreateWardSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                ward = payload['ward']
+
+                try:
+                    ward = models.Ward.objects.get(Q(id=ward))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown sub county !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "name": name,
+                        "ward": ward
+                    }
+                    models.Estate.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateWardSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                ward = payload['ward']
+                request_id = payload['request_id']
+
+                try:
+                    estate = models.Estate.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Estate!"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    ward = models.Ward.objects.get(Q(id=ward))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown ward !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "name": name,
+                        "ward": ward
+                    }
+                    models.Estate.objects.filter(Q(id=request_id)).update(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    estate = models.Estate.objects.get(Q(id=request_id))
+                    estate = serializers.FetchWardSerializer(estate,many=False).data
+                    return Response(estate, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Estate!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    estates = models.Estate.objects.all().order_by('name')
+                    estates = serializers.FetchWardSerializer(estates,many=True).data
+                    return Response(estates, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+
+
 
 class ReportsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)

@@ -454,3 +454,59 @@ class FetchAssignedEvaluationsSerializer(serializers.ModelSerializer):
     class Meta:
         model = api_models.AssignedEvaluations()
         fields = '__all__'
+
+
+class FetchBoroughSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = api_models.Borough
+        fields = '__all__'
+
+# sub counties 
+class CreateSubCountySerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    borough = serializers.CharField(max_length=255)
+
+class UpdateSubCountySerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
+    borough = serializers.CharField(max_length=255)
+    
+class FetchSubCountySerializer(serializers.ModelSerializer):
+    borough = FetchBoroughSerializer()
+    class Meta:
+        model = api_models.SubCounty
+        fields = '__all__'
+
+
+# wards
+class CreateWardSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    sub_county = serializers.CharField(max_length=255)
+
+class UpdateWardSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
+    sub_county = serializers.CharField(max_length=255)
+    
+class FetchWardSerializer(serializers.ModelSerializer):
+    sub_county = FetchSubCountySerializer()
+    class Meta:
+        model = api_models.Ward
+        fields = '__all__'
+
+
+# estates
+class CreateEstateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    ward = serializers.CharField(max_length=255)
+
+class UpdateEstateSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
+    ward = serializers.CharField(max_length=255)
+    
+class FetchEstateSerializer(serializers.ModelSerializer):
+    ward = FetchSubCountySerializer()
+    class Meta:
+        model = api_models.Estate
+        fields = '__all__'
