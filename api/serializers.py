@@ -506,7 +506,7 @@ class UpdateEstateSerializer(serializers.Serializer):
     ward = serializers.CharField(max_length=255)
     
 class FetchEstateSerializer(serializers.ModelSerializer):
-    ward = FetchSubCountySerializer()
+    ward = FetchWardSerializer()
     class Meta:
         model = api_models.Estate
         fields = '__all__'

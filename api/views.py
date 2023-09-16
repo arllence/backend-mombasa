@@ -1723,7 +1723,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 sub_county = payload['sub_county']
 
                 try:
-                    sub_county = models.Ward.objects.get(Q(id=sub_county))
+                    sub_county = models.SubCounty.objects.get(Q(id=sub_county))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown sub county !"}, status=status.HTTP_400_BAD_REQUEST)
                 
@@ -1748,7 +1748,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 request_id = payload['request_id']
 
                 try:
-                    ward = models.SubCounty.objects.get(Q(id=request_id))
+                    ward = models.Ward.objects.get(Q(id=request_id))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Ward!"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1799,7 +1799,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
     def estates(self, request):
         if request.method == "POST":
             payload = request.data
-            serializer = serializers.CreateWardSerializer(
+            serializer = serializers.CreateEstateSerializer(
                 data=payload, many=False)
             if serializer.is_valid():
                 name = payload['name']
@@ -1823,7 +1823,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             
         elif request.method == "PUT":
             payload = request.data
-            serializer = serializers.UpdateWardSerializer(
+            serializer = serializers.UpdateEstateSerializer(
                 data=payload, many=False)
             if serializer.is_valid():
                 name = payload['name']
@@ -1856,7 +1856,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             if request_id:
                 try:
                     estate = models.Estate.objects.get(Q(id=request_id))
-                    estate = serializers.FetchWardSerializer(estate,many=False).data
+                    estate = serializers.FetchEstateSerializer(estate,many=False).data
                     return Response(estate, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Estate!"}, status=status.HTTP_400_BAD_REQUEST)
@@ -1866,7 +1866,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             else:
                 try:
                     estates = models.Estate.objects.all().order_by('name')
-                    estates = serializers.FetchWardSerializer(estates,many=True).data
+                    estates = serializers.FetchEstateSerializer(estates,many=True).data
                     return Response(estates, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
