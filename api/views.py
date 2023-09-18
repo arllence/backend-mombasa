@@ -823,43 +823,24 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 data=payload, many=False)
             
             if serializer.is_valid():
-                milestone = payload['milestone']
-                rri_goal = payload['rri_goal']
-                steps = payload['steps']
-                start_date = payload['start_date']
-                end_date = payload['end_date']
+                workplan = payload['workplan']
+                activities = payload['activities']
 
 
-                if not steps:
-                    return Response({"details": f"Action steps required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                if not activities:
+                    return Response({"details": f"All fields required!"}, status=status.HTTP_400_BAD_REQUEST) 
                 
 
-                # find difference in dates / validate dates
-                days = shared_fxns.find_date_difference(start_date,end_date,'days')
-                            
                 try:
-                    days = int(days)
-                except Exception as e:
-                    return Response({"details": f"Invalid dates !"}, status=status.HTTP_400_BAD_REQUEST) 
-                
-                if days < 7:
-                    return Response({"details": f"Period is less than a week !"}, status=status.HTTP_400_BAD_REQUEST) 
-                elif days > 7:
-                    return Response({"details": f"Period is beyond a week !"}, status=status.HTTP_400_BAD_REQUEST) 
-
-                try:
-                    rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
+                    workplan = models.WorkPlan.objects.get(Q(id=workplan))
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown RRI Goal !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown workplan !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 
                 with transaction.atomic():
                     raw = {
-                        "start_date" : start_date,
-                        "end_date" : end_date,
-                        "milestone" : milestone,
-                        "rri_goal" : rri_goal,
-                        "steps" : steps,
+                        "workplan" : workplan,
+                        "activities" : activities,
                         "creator": authenticated_user
                     }
 
@@ -879,29 +860,17 @@ class FoundationViewSet(viewsets.ModelViewSet):
             
             if serializer.is_valid():
                 request_id = payload['request_id']
-                milestone = payload['milestone']
-                rri_goal = payload['rri_goal']
-                steps = payload['steps']
-                start_date = payload['start_date']
-                end_date = payload['end_date']
+                workplan = payload['workplan']
+                activities = payload['activities']
 
                 # find difference in dates / validate dates
-                days = shared_fxns.find_date_difference(start_date,end_date,'days')
+                # days = shared_fxns.find_date_difference(start_date,end_date,'days')
                             
-                try:
-                    days = int(days)
-                except Exception as e:
-                    return Response({"details": f"Invalid dates !"}, status=status.HTTP_400_BAD_REQUEST) 
-                
-                if days < 7:
-                    return Response({"details": f"Period is less than a week !"}, status=status.HTTP_400_BAD_REQUEST) 
-                elif days > 7:
-                    return Response({"details": f"Period is beyond a week !"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 try:
-                    rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
+                    workplan = models.WorkPlan.objects.get(Q(id=workplan))
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Thematic Area!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown workplan !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
                     models.WeeklyReports.objects.get(Q(id=request_id))
@@ -911,11 +880,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 
                 with transaction.atomic():
                     raw = {
-                        "start_date" : start_date,
-                        "end_date" : end_date,
-                        "milestone" : milestone,
-                        "rri_goal" : rri_goal,
-                        "steps" : steps,
+                        "workplan" : workplan,
+                        "activities" : activities,
                         "creator": authenticated_user
                     }
 

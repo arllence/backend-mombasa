@@ -124,7 +124,7 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     strategic_leader = FetchOverseerSerializer()
     thematic_area = FetchThematicAreaSerializer()
     achievements = serializers.SerializerMethodField()
-    weekly_reports = serializers.SerializerMethodField()
+    # weekly_reports = serializers.SerializerMethodField()
     workplan = serializers.SerializerMethodField()
     result_chain = serializers.SerializerMethodField()
     team_members = serializers.SerializerMethodField()
@@ -148,17 +148,17 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return []
         
-    def get_weekly_reports(self, obj):
-        try:
-            weekly_reports = api_models.WeeklyReports.objects.filter(Q(rri_goal=obj.id))
-            serializer = FetchWeeklyReportSerializer(weekly_reports, many=True)
-            return serializer.data
-        except (ValidationError, ObjectDoesNotExist):
-            return []
-        except Exception as e:
-            print(e)
-            # logger.error(e)
-            return []
+    # def get_weekly_reports(self, obj):
+    #     try:
+    #         weekly_reports = api_models.WeeklyReports.objects.filter(Q(rri_goal=obj.id))
+    #         serializer = FetchWeeklyReportSerializer(weekly_reports, many=True)
+    #         return serializer.data
+    #     except (ValidationError, ObjectDoesNotExist):
+    #         return []
+    #     except Exception as e:
+    #         print(e)
+    #         # logger.error(e)
+    #         return []
         
     def get_workplan(self, obj):
         try:
@@ -333,30 +333,6 @@ class DepartmentSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
 
 
-class WeeklyReportSerializer(serializers.Serializer):
-    start_date = serializers.CharField(max_length=255)
-    end_date = serializers.CharField(max_length=255)
-    milestone = serializers.CharField(max_length=255)
-    rri_goal = serializers.CharField(max_length=255)
-    steps = serializers.JSONField()
-
-
-class UpdateWeeklyReportSerializer(serializers.Serializer):
-    request_id = serializers.CharField(max_length=255)
-    start_date = serializers.CharField(max_length=255)
-    end_date = serializers.CharField(max_length=255)
-    milestone = serializers.CharField(max_length=255)
-    rri_goal = serializers.CharField(max_length=255)
-    steps = serializers.JSONField()
-
-
-class FetchWeeklyReportSerializer(serializers.ModelSerializer):
-    # thematic_area = FetchThematicAreaSerializer()
-    class Meta:
-        model = api_models.WeeklyReports
-        fields = '__all__'
-
-
 class WWorkPlanSerializer(serializers.Serializer):
     start_date = serializers.CharField(max_length=255)
     end_date = serializers.CharField(max_length=255)
@@ -384,12 +360,44 @@ class PatchWorkPlanSerializer(serializers.Serializer):
     percentage = serializers.CharField(max_length=255)
 
 
+class WeeklyReportSerializer(serializers.Serializer):
+    workplan = serializers.CharField(max_length=255)
+    activities = serializers.JSONField()
+
+
+class UpdateWeeklyReportSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    workplan = serializers.CharField(max_length=255)
+    activities = serializers.JSONField()
+
+
+class FetchWeeklyReportSerializer(serializers.ModelSerializer):
+    # workplan = FetchWorkPlanSerializer()
+    class Meta:
+        model = api_models.WeeklyReports
+        fields = '__all__'
+
 
 class FetchWorkPlanSerializer(serializers.ModelSerializer):
-    # person_incharge = UsersSerializer()
+    weekly_reports = serializers.SerializerMethodField()
+
     class Meta:
         model = api_models.WorkPlan
         fields = '__all__'
+
+    
+    def get_weekly_reports(self, obj):
+        try:
+            reports = api_models.WeeklyReports.objects.get(Q(workplan=obj))
+            serializer = FetchWeeklyReportSerializer(reports, many=False)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
+
 
 
 class ResultChainSerializer(serializers.Serializer):

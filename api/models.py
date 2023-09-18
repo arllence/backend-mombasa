@@ -181,29 +181,6 @@ class AchievementDocuments(models.Model):
         return str(self.achievement)
     
 
-class WeeklyReports(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    creator = models.ForeignKey(
-       User, on_delete=models.DO_NOTHING, related_name="weekly_report_creator"
-    )
-    rri_goal = models.ForeignKey(
-       RRIGoals, on_delete=models.DO_NOTHING, related_name="weekly_report_rri_goal", 
-       null=True, blank=True
-    )
-    milestone = models.CharField(max_length=50)
-    steps = models.JSONField()
-    start_date = models.DateField()
-    end_date = models.DateField()
-    is_deleted = models.BooleanField(default=False)
-    date_created = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = "weekly_reports"
-
-    def __str__(self):
-        return str(self.milestone)
-    
-
 class WorkPlan(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     creator = models.ForeignKey(
@@ -216,7 +193,7 @@ class WorkPlan(models.Model):
        User, on_delete=models.DO_NOTHING, related_name="work_plan_person_incharge",
        null=True, blank=True
     )
-    milestone = models.CharField(max_length=50)
+    milestone = models.CharField(max_length=500)
     steps = models.JSONField()
     collaborators = models.JSONField(null=True, blank=True)
     start_date = models.DateField()
@@ -235,6 +212,26 @@ class WorkPlan(models.Model):
 
     def __str__(self):
         return str(self.milestone)
+    
+
+class WeeklyReports(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    creator = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, related_name="weekly_report_creator"
+    )
+    workplan = models.ForeignKey(
+       WorkPlan, on_delete=models.DO_NOTHING, related_name="weekly_report_workplan", 
+       null=True, blank=True
+    )
+    activities = models.JSONField()
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "weekly_reports"
+
+    def __str__(self):
+        return str(self.workplan.milestone)
     
 
 class ResultChain(models.Model):
