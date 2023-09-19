@@ -36,6 +36,7 @@ class CreateWaveSerializer(serializers.Serializer):
     lead_coach = serializers.CharField(max_length=255)
     start_date = serializers.CharField(max_length=255)
     end_date = serializers.CharField(max_length=255)
+    budget = serializers.CharField(max_length=255)
 
 
 class UpdateWaveSerializer(serializers.Serializer):
@@ -44,6 +45,7 @@ class UpdateWaveSerializer(serializers.Serializer):
     start_date = serializers.CharField(max_length=255)
     end_date = serializers.CharField(max_length=255)
     lead_coach = serializers.CharField(max_length=255)
+    budget = serializers.CharField(max_length=255)
     
 class FetchWaveSerializer(serializers.ModelSerializer):
     lead_coach = UsersSerializer()

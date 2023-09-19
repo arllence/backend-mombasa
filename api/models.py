@@ -10,6 +10,7 @@ class Wave(models.Model):
     name = models.CharField(max_length=255)
     start_date = models.DateField()
     end_date = models.DateField()
+    budget = models.IntegerField(default=0)
     lead_coach = models.ForeignKey(
         User, related_name="wave_lead_coach", on_delete=models.DO_NOTHING, null=True, blank=True
     )

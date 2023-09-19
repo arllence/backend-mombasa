@@ -716,6 +716,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 start_date = payload['start_date']
                 end_date = payload['end_date']
                 lead_coach = payload['lead_coach']
+                budget = payload['budget']
 
                 # check existance of same wave name
                 if models.Wave.objects.filter(name__icontains=name).exists():
@@ -737,10 +738,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     return Response({"details": f"Invalid dates!"}, status=status.HTTP_400_BAD_REQUEST) 
                 
-                if days < 100 or days < 0:
-                    return Response({"details": f"Period is less than 100 days!"}, status=status.HTTP_400_BAD_REQUEST) 
-
-                
+                # if days < 100 or days < 0:
+                #     return Response({"details": f"Period is less than 100 days!"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 with transaction.atomic():
                     raw = {
@@ -748,6 +747,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "start_date": start_date,
                         "end_date": end_date,
                         "lead_coach": lead_coach,
+                        "budget": budget,
                     }
                     models.Wave.objects.create(**raw)
 
@@ -765,6 +765,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 end_date = payload['end_date']
                 lead_coach = payload['lead_coach']
                 request_id = payload['request_id']
+                budget = payload['budget']
 
                 try:
                     wave = models.Wave.objects.get(Q(id=request_id))
@@ -783,6 +784,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     wave.start_date = start_date
                     wave.end_date = end_date
                     wave.lead_coach = lead_coach
+                    wave.budget = budget
                     wave.save()
 
                     return Response("Success", status=status.HTTP_200_OK)
