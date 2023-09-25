@@ -352,8 +352,9 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         """
         authenticated_user = request.user
         username = request.query_params.get('username')
-        if username is None:
-            return Response({'details': 'Invalid Filter Criteria'}, status=status.HTTP_400_BAD_REQUEST)
+        print('username: ',username)
+        # if username is None:
+        #     return Response({'details': 'Invalid Filter Criteria'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
             if username == "all":
@@ -363,8 +364,11 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
                 seers = FetchOverseerSerializer(overseers, many=True).data
                 resp = user_info + seers
                 return Response(resp, status=status.HTTP_200_OK)
-            else:
+            elif username and username != "all":
                 user_details = get_user_model().objects.filter(Q(email__icontains=username) | Q(first_name__icontains=username) | Q(last_name__icontains=username))
+            elif username is None or not username:
+                user_details = get_user_model().objects.all()
+                print(len(user_details))
         except (ValidationError, ObjectDoesNotExist):
             return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
         
