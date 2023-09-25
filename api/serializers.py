@@ -204,6 +204,8 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
             total_assignings = api_models.AssignedEvaluations.objects.filter(Q(rri_goal=obj.id)).count()
             total_score = 0
             average = 0
+            average_percentage = 0
+            percentages = 0
 
             if evaluations:
                 for evaluation in evaluations:
@@ -218,8 +220,7 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
             try:
                 milestones = api_models.WorkPlan.objects.filter(Q(rri_goal=obj.id))
                 total_milestones = len(milestones)
-                average_percentage = 0
-                percentages = 0
+                
                 for milestone in milestones:
                     percentages += milestone.percentage
                 if percentages > 0:

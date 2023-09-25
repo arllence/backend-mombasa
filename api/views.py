@@ -953,10 +953,20 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 remarks = payload['remarks']
                 risks = payload['risks']
                 collaborators = payload['collaborators']
+                location = payload['location']
+
+                try:
+                    ward = location['ward']
+                    ward = models.Ward.objects.get(id=ward)
+                    ward = serializers.FetchWardSerializer(ward,many=False).data
+                    location['ward'] = ward
+                except Exception as e:
+                    print(e)
+                    return Response({"details": f"Ward required!"}, status=status.HTTP_400_BAD_REQUEST) 
 
 
                 if not steps:
-                    return Response({"details": f"Action steps required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                    return Response({"details": f"Milestone Activities required!"}, status=status.HTTP_400_BAD_REQUEST) 
                 
 
                 # find difference in dates / validate dates
@@ -994,6 +1004,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "risks": risks,
                         "collaborators": collaborators,
                         "status": plan_status,
+                        "location": location,
                     }
 
                     plan = models.WorkPlan.objects.create(**raw)
@@ -1022,6 +1033,16 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 remarks = payload['remarks']
                 risks = payload['risks']
                 collaborators = payload['collaborators']
+                location = payload['location']
+
+                try:
+                    ward = location['ward']
+                    ward = models.Ward.objects.get(id=ward)
+                    ward = serializers.FetchWardSerializer(ward,many=False).data
+                    location['ward'] = ward
+                except Exception as e:
+                    print(e)
+                    return Response({"details": f"Ward required!"}, status=status.HTTP_400_BAD_REQUEST) 
 
 
                 # find difference in dates / validate dates
@@ -1059,6 +1080,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "status": plan_status,
                         "risks": risks,
                         "collaborators": collaborators,
+                        "location": location,
                         
                     }
 

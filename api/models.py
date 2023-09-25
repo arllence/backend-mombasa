@@ -4,6 +4,54 @@ from acl.models import User
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
 
+class Borough(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "boroughs"
+
+
+class SubCounty(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    borough = models.ForeignKey(Borough, on_delete=models.CASCADE, related_name='subcounties')
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "sub_counties"
+
+
+class Ward(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    sub_county = models.ForeignKey(SubCounty, on_delete=models.DO_NOTHING, related_name='wards')
+
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        db_table = "wards"
+
+
+class Estate(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    ward = models.ForeignKey(Ward, on_delete=models.DO_NOTHING, related_name='estates')
+
+    def __str__(self):
+        return self.name
+    
+    class Meta:
+        db_table = "estates"
+
 
 class Wave(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -194,6 +242,7 @@ class WorkPlan(models.Model):
        User, on_delete=models.DO_NOTHING, related_name="work_plan_person_incharge",
        null=True, blank=True
     )
+    location = models.JSONField(null=True, blank=True)
     milestone = models.CharField(max_length=500)
     steps = models.JSONField()
     collaborators = models.JSONField(null=True, blank=True)
@@ -299,50 +348,3 @@ class AssignedEvaluations(models.Model):
         return f"{str(self.evaluator.first_name)} {str(self.evaluator.last_name)}" 
     
 
-class Borough(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    date_created = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = "boroughs"
-
-
-class SubCounty(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    borough = models.ForeignKey(Borough, on_delete=models.CASCADE, related_name='subcounties')
-    date_created = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = "sub_counties"
-
-
-class Ward(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    sub_county = models.ForeignKey(SubCounty, on_delete=models.DO_NOTHING, related_name='wards')
-
-    def __str__(self):
-        return self.name
-    
-    class Meta:
-        db_table = "wards"
-
-
-class Estate(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    ward = models.ForeignKey(Ward, on_delete=models.DO_NOTHING, related_name='estates')
-
-    def __str__(self):
-        return self.name
-    
-    class Meta:
-        db_table = "estates"
