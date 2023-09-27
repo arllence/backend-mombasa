@@ -97,7 +97,169 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 
-    
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="sub-sector",
+            url_name="sub-sector")
+    def sub_sector(self, request):
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.CreateSubSectorSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                names = list(set(payload['name']))
+                sector = payload['sector']
+
+                try:
+                    sector = models.Sector.objects.get(Q(id=sector))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Sector!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    for name in names:
+                        raw = {
+                            "name":name,
+                            "sector":sector
+                        }
+                        models.SubSector.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateSubSectorSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                sector = payload['sector']
+                request_id = payload['request_id']
+
+                try:
+                    sub_sector = models.SubSector.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Sub Sector!"}, status=status.HTTP_400_BAD_REQUEST)
+            
+                try:
+                    sector = models.Sector.objects.get(Q(id=sector))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Sector!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    sub_sector.name = name
+                    sub_sector.sector = sector
+                    sub_sector.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    sub_sector = models.SubSector.objects.get(Q(id=request_id))
+                    sub_sector = serializers.FetchSubSectorSerializer(sub_sector,many=False).data
+                    return Response(sub_sector, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Sub Sector!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    sub_sectors = models.SubSector.objects.all().order_by('name')
+                    sub_sectors = serializers.FetchSubSectorSerializer(sub_sectors,many=True).data
+                    return Response(sub_sectors, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="directorate",
+            url_name="directorate")
+    def directorates(self, request):
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.CreateDirectorateSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                sub_sector = payload['sub_sector']
+
+                try:
+                    sub_sector = models.Directorate.objects.get(Q(id=sub_sector))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Sub Sector!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "name": name,
+                        "sub_sector": sub_sector
+                    }
+                    models.Directorate.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateSubSectorSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                sub_sector = payload['sub_sector']
+                request_id = payload['request_id']
+
+                try:
+                    directorate = models.SubSector.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Directorate!"}, status=status.HTTP_400_BAD_REQUEST)
+            
+                try:
+                    sub_sector = models.SubSector.objects.get(Q(id=sub_sector))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Sub Sector!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    directorate.name = name
+                    directorate.sub_sector = sub_sector
+                    directorate.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    directorate = models.Directorate.objects.get(Q(id=request_id))
+                    directorate = serializers.FetchDirectorateSerializer(directorate,many=False).data
+                    return Response(sub_sector, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Sub Sector!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    directorates = models.Directorate.objects.all().order_by('name')
+                    directorates = serializers.FetchDirectorateSerializer(directorates,many=True).data
+                    return Response(directorates, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+
+
     @action(methods=["POST", "GET",  "PUT"],
             detail=False,
             url_path="title",

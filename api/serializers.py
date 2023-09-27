@@ -12,11 +12,39 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 class GeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
 
-
 class FetchSectorSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = api_models.Sector
+        fields = '__all__'
+
+class CreateSubSectorSerializer(serializers.Serializer):
+    name = serializers.ListField()
+    sector = serializers.CharField(max_length=255)
+
+class UpdateSubSectorSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
+    sector = serializers.CharField(max_length=255)    
+
+class FetchSubSectorSerializer(serializers.ModelSerializer):
+    sector = FetchSectorSerializer()
+    class Meta:
+        model = api_models.SubSector
+        fields = '__all__'
+
+class CreateDirectorateSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+    sub_sector = serializers.CharField(max_length=255)
+
+class UpdateDirectorateSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
+    sub_sector = serializers.CharField(max_length=255)    
+
+class FetchDirectorateSerializer(serializers.ModelSerializer):
+    sub_sector = FetchSubSectorSerializer()
+    class Meta:
+        model = api_models.Directorate
         fields = '__all__'
 
 
@@ -158,11 +186,11 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
             }
             return data
         except (ValidationError, ObjectDoesNotExist):
-            return []
+            return {}
         except Exception as e:
             print(e)
             # logger.error(e)
-            return []
+            return {}
         
     # def get_weekly_reports(self, obj):
     #     try:

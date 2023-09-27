@@ -93,6 +93,34 @@ class Sector(models.Model):
 
     class Meta:
         db_table = "sectors"
+
+class SubSector(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50)
+    date_created = models.DateTimeField(auto_now_add=True)
+    sector = models.ForeignKey(
+        Sector, related_name="sector", on_delete=models.DO_NOTHING
+    )
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "sub_sectors"
+
+class Directorate(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50)
+    date_created = models.DateTimeField(auto_now_add=True)
+    sub_sector = models.ForeignKey(
+        SubSector, related_name="sub_sector", on_delete=models.DO_NOTHING
+    )
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "directorates"
         
 
 class Title(models.Model):
