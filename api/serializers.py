@@ -140,9 +140,23 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
 
     def get_achievements(self, obj):
         try:
-            documents = api_models.Achievement.objects.filter(Q(thematic_area=obj.thematic_area))
-            serializer = FetchAchievementSerializer(documents, many=True)
-            return serializer.data
+            before_documents, during_documents, after_documents = [[],[],[]]
+            before_documents = api_models.Achievement.objects.filter(Q(thematic_area=obj.thematic_area) & Q(category='BEFORE'))
+            if before_documents:
+                before_documents = FetchAchievementSerializer(before_documents, many=True).data
+            during_documents = api_models.Achievement.objects.filter(Q(thematic_area=obj.thematic_area) & Q(category='DURING'))
+            if during_documents:
+                during_documents = FetchAchievementSerializer(during_documents, many=True).data
+            after_documents = api_models.Achievement.objects.filter(Q(thematic_area=obj.thematic_area) & Q(category='AFTER'))
+            if after_documents:
+                after_documents = FetchAchievementSerializer(after_documents, many=True).data
+
+            data = {
+                'before': before_documents,
+                'during': during_documents,
+                'after': after_documents,
+            }
+            return data
         except (ValidationError, ObjectDoesNotExist):
             return []
         except Exception as e:
