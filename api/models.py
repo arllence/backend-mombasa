@@ -53,24 +53,6 @@ class Estate(models.Model):
         db_table = "estates"
 
 
-class Wave(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    start_date = models.DateField()
-    end_date = models.DateField()
-    budget = models.IntegerField(default=0)
-    lead_coach = models.ForeignKey(
-        User, related_name="wave_lead_coach", on_delete=models.DO_NOTHING, null=True, blank=True
-    )
-    date_created = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = "waves"
-
-
 class Department(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50)
@@ -150,6 +132,26 @@ class Overseer(models.Model):
     class Meta:
         db_table = "overseers"
 
+class Wave(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    budget = models.IntegerField(default=0)
+    location = models.JSONField(null=True, blank=True)
+    lead_coach = models.ForeignKey(
+        User, related_name="wave_lead_coach", on_delete=models.DO_NOTHING, null=True, blank=True
+    )
+    directorate = models.ForeignKey(
+        Directorate, related_name="wave_directorate", on_delete=models.DO_NOTHING, null=True, blank=True
+    )
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "waves"
 
 class ThematicArea(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

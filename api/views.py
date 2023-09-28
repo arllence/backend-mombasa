@@ -880,6 +880,23 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 end_date = payload['end_date']
                 lead_coach = payload['lead_coach']
                 budget = payload['budget']
+                directorate = payload['directorate']
+                location = payload['location']
+
+                try:
+                    ward = location['ward']
+                    ward = models.Ward.objects.get(id=ward)
+                    ward = serializers.FetchWardSerializer(ward,many=False).data
+                    location['ward'] = ward
+                except Exception as e:
+                    print(e)
+                    return Response({"details": f"Ward is required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+                try:
+                    directorate = models.Directorate.objects.get(id=directorate)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": f"Unknown directorate !"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 # check existance of same wave name
                 if models.Wave.objects.filter(name__icontains=name).exists():
@@ -911,6 +928,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "end_date": end_date,
                         "lead_coach": lead_coach,
                         "budget": budget,
+                        "directorate": directorate,
+                        "location": location,
                     }
                     models.Wave.objects.create(**raw)
 
@@ -929,6 +948,23 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 lead_coach = payload['lead_coach']
                 request_id = payload['request_id']
                 budget = payload['budget']
+                directorate = payload['directorate']
+                location = payload['location']
+
+                try:
+                    ward = location['ward']
+                    ward = models.Ward.objects.get(id=ward)
+                    ward = serializers.FetchWardSerializer(ward,many=False).data
+                    location['ward'] = ward
+                except Exception as e:
+                    print(e)
+                    return Response({"details": f"Ward is required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+                try:
+                    directorate = models.Directorate.objects.get(id=directorate)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": f"Unknown directorate !"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 try:
                     wave = models.Wave.objects.get(Q(id=request_id))
@@ -948,6 +984,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     wave.end_date = end_date
                     wave.lead_coach = lead_coach
                     wave.budget = budget
+                    wave.location = location
+                    wave.directorate = directorate
                     wave.save()
 
                     return Response("Success", status=status.HTTP_200_OK)

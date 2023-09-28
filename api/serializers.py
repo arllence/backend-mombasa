@@ -65,6 +65,7 @@ class CreateWaveSerializer(serializers.Serializer):
     start_date = serializers.CharField(max_length=255)
     end_date = serializers.CharField(max_length=255)
     budget = serializers.CharField(max_length=255)
+    directorate = serializers.CharField(max_length=255)
 
 
 class UpdateWaveSerializer(serializers.Serializer):
@@ -74,9 +75,11 @@ class UpdateWaveSerializer(serializers.Serializer):
     end_date = serializers.CharField(max_length=255)
     lead_coach = serializers.CharField(max_length=255)
     budget = serializers.CharField(max_length=255)
+    directorate = serializers.CharField(max_length=255)
     
 class FetchWaveSerializer(serializers.ModelSerializer):
     lead_coach = UsersSerializer()
+    directorate = FetchDirectorateSerializer()
     class Meta:
         model = api_models.Wave
         fields = '__all__'
