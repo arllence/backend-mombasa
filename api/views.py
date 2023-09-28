@@ -189,20 +189,21 @@ class FoundationViewSet(viewsets.ModelViewSet):
             serializer = serializers.CreateDirectorateSerializer(
                 data=payload, many=False)
             if serializer.is_valid():
-                name = payload['name']
+                names = list(set(payload['name']))
                 sub_sector = payload['sub_sector']
 
                 try:
-                    sub_sector = models.Directorate.objects.get(Q(id=sub_sector))
+                    sub_sector = models.SubSector.objects.get(Q(id=sub_sector))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Sub Sector!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
-                    raw = {
-                        "name": name,
-                        "sub_sector": sub_sector
-                    }
-                    models.Directorate.objects.create(**raw)
+                    for name in names:
+                        raw = {
+                            "name": name,
+                            "sub_sector": sub_sector
+                        }
+                        models.Directorate.objects.create(**raw)
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -210,7 +211,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             
         elif request.method == "PUT":
             payload = request.data
-            serializer = serializers.UpdateSubSectorSerializer(
+            serializer = serializers.UpdateDirectorateSerializer(
                 data=payload, many=False)
             if serializer.is_valid():
                 name = payload['name']
@@ -218,7 +219,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 request_id = payload['request_id']
 
                 try:
-                    directorate = models.SubSector.objects.get(Q(id=request_id))
+                    directorate = models.Directorate.objects.get(Q(id=request_id))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Directorate!"}, status=status.HTTP_400_BAD_REQUEST)
             

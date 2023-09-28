@@ -33,7 +33,7 @@ class FetchSubSectorSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CreateDirectorateSerializer(serializers.Serializer):
-    name = serializers.CharField(max_length=255)
+    name = serializers.ListField()
     sub_sector = serializers.CharField(max_length=255)
 
 class UpdateDirectorateSerializer(serializers.Serializer):
