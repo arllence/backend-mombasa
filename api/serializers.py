@@ -157,7 +157,6 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     strategic_leader = FetchOverseerSerializer()
     thematic_area = FetchThematicAreaSerializer()
     achievements = serializers.SerializerMethodField()
-    # weekly_reports = serializers.SerializerMethodField()
     workplan = serializers.SerializerMethodField()
     result_chain = serializers.SerializerMethodField()
     team_members = serializers.SerializerMethodField()
@@ -409,8 +408,8 @@ class PatchWorkPlanSerializer(serializers.Serializer):
 
 
 class WeeklyReportSerializer(serializers.Serializer):
-    workplan = serializers.CharField(max_length=255)
-    activities = serializers.JSONField()
+    # workplan = serializers.CharField(max_length=255)
+    report = serializers.JSONField()
 
 
 class UpdateWeeklyReportSerializer(serializers.Serializer):

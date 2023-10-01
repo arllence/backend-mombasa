@@ -1022,40 +1022,44 @@ class FoundationViewSet(viewsets.ModelViewSet):
         payload = request.data
         
         if request.method == "POST":
-            serializer = serializers.WeeklyReportSerializer(
-                data=payload, many=False)
+            # serializer = serializers.WeeklyReportSerializer(
+            #     data=payload, many=False)
             
-            if serializer.is_valid():
-                workplan = payload['workplan']
-                activities = payload['activities']
+            # if serializer.is_valid():
 
-
-                if not activities:
-                    return Response({"details": f"All fields required!"}, status=status.HTTP_400_BAD_REQUEST) 
-                
-
+            for report in payload:
                 try:
-                    workplan = models.WorkPlan.objects.get(Q(id=workplan))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown workplan !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                
-                with transaction.atomic():
+                    workplan = report['workplan']
+                    activities = report['activities']
+                    if not activities:
+                        return Response({"details": f"Milestone Activity Progress Required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                    try:
+                        workplan = models.WorkPlan.objects.get(Q(id=workplan))
+                    except (ValidationError, ObjectDoesNotExist):
+                        return Response({"details": "Unknown workplan !"}, status=status.HTTP_400_BAD_REQUEST)
+                    report['workplan'] = workplan
+                except Exception as e:
+                    print(e)
+                    return Response({"details": f"All fields required!"}, status=status.HTTP_400_BAD_REQUEST) 
+
+            
+            with transaction.atomic():
+                for report in payload:
                     raw = {
-                        "workplan" : workplan,
-                        "activities" : activities,
+                        "workplan" : report['workplan'],
+                        "activities" : report['activities'],
                         "creator": authenticated_user
                     }
 
-                    report = models.WeeklyReports.objects.create(**raw)
-                                                
+                    savedInstance = models.WeeklyReports.objects.create(**raw)
+                                            
 
-                user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Weekly Report created", f"Weekly Report Creation Executed: {report.id}")
-                return Response('success', status=status.HTTP_200_OK)
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Weekly Report created", f"Weekly Report Creation Executed: {savedInstance.id}")
+            return Response('success', status=status.HTTP_200_OK)
             
-            else:
-                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            # else:
+            #         return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
         elif request.method == "PUT":
             serializer = serializers.UpdateWeeklyReportSerializer(
