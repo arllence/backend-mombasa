@@ -272,18 +272,34 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
             except Exception as e:
                 print(e)
 
+            try:
+                counter = 0
+                summary = 0
+                goal_percentage = 0
+                reports = api_models.WeeklyReports.objects.filter(Q(workplan__rri_goal=obj.id))
+                for report in reports:
+                    activities = report.activities
+                    for activity in activities:
+                        completion = activity.get('percentage_completion')
+                        if not completion:
+                            completion = 0
+                        counter += 1
+                        summary += completion
+                if counter:
+                    goal_percentage = math.ceil(summary / counter)
+            except Exception as e:
+                print(e)
 
-
-            resp = {"average_score": average, "average_percentage":average_percentage}
+            resp = {"average_score": average, "average_percentage":average_percentage, "goal_percentage":goal_percentage}
                 
             return resp
         except (ValidationError, ObjectDoesNotExist):
-            resp = {"average_score": 0, "average_percentage":0}
+            resp = {"average_score": 0, "average_percentage":0, "goal_percentage":0}
             return resp
         except Exception as e:
             print(e)
             # logger.error(e)
-            resp = {"average_score": 0, "average_percentage":0}
+            resp = {"average_score": 0, "average_percentage":0, "goal_percentage":0}
             return resp
         
     def get_team_members(self, obj):
@@ -427,6 +443,7 @@ class FetchWeeklyReportSerializer(serializers.ModelSerializer):
 
 class FetchWorkPlanSerializer(serializers.ModelSerializer):
     weekly_reports = serializers.SerializerMethodField()
+    workplan_analytics = serializers.SerializerMethodField()
 
     class Meta:
         model = api_models.WorkPlan
@@ -444,6 +461,26 @@ class FetchWorkPlanSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return []
+
+    def get_workplan_analytics(self, obj):
+        try:
+            counter = 0
+            summary = 0
+            report = api_models.WeeklyReports.objects.get(Q(workplan=obj))
+            activities = report.activities
+            for activity in activities:
+                completion = activity.get('percentage_completion')
+                if not completion:
+                    completion = 0
+                counter += 1
+                summary += completion
+            goal_percentage = math.ceil(summary / counter)
+            analytics = { "completion": goal_percentage }
+            return analytics
+        except (ValidationError, ObjectDoesNotExist):
+            return { "completion": 0 }
+        except Exception as e:
+            print(e)
 
 
 

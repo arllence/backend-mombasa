@@ -1045,13 +1045,22 @@ class FoundationViewSet(viewsets.ModelViewSet):
             
             with transaction.atomic():
                 for report in payload:
-                    raw = {
-                        "workplan" : report['workplan'],
-                        "activities" : report['activities'],
-                        "creator": authenticated_user
-                    }
+                    workplan_exists = models.WeeklyReports.objects.filter(Q(workplan=report['workplan'])).first()
 
-                    savedInstance = models.WeeklyReports.objects.create(**raw)
+                    if workplan_exists:
+                        activities = workplan_exists.activities
+                        activities += report['activities']
+                        workplan_exists.activities = activities
+                        workplan_exists.save()
+                        savedInstance = workplan_exists
+                    else:
+                        raw = {
+                            "workplan" : report['workplan'],
+                            "activities" : report['activities'],
+                            "creator": authenticated_user
+                        }
+
+                        savedInstance = models.WeeklyReports.objects.create(**raw)
                                             
 
             user_util.log_account_activity(
