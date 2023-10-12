@@ -430,9 +430,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
 
 
                 try:
-                    department = models.Department.objects.get(Q(id=department))
+                    department = models.Directorate.objects.get(Q(id=department))
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown directorate!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
                     sector = models.Sector.objects.get(Q(id=sector))
@@ -443,7 +443,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 with transaction.atomic():
                     raw = {
                         "area": area,
-                        "department": department,
+                        "directorate": department,
                         "sector": sector,
                     }
                     models.ThematicArea.objects.create(**raw)
@@ -469,9 +469,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Unknown thematic area!"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
-                    department = models.Department.objects.get(Q(id=department))
+                    department = models.Directorate.objects.get(Q(id=department))
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown directorate !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
                     sector = models.Sector.objects.get(Q(id=sector))
@@ -482,7 +482,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 with transaction.atomic():
                     raw = {
                         "area": area,
-                        "department": department,
+                        "directorate": department,
                         "sector": sector,
                     }
                     models.ThematicArea.objects.filter(Q(id=request_id)).update(**raw)
@@ -882,6 +882,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 budget = payload['budget']
                 directorate = payload['directorate']
                 location = payload['location']
+                sub_category = payload['sub_category']
 
                 try:
                     ward = location['ward']
@@ -897,6 +898,12 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": f"Unknown directorate !"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+                try:
+                    sub_category = models.ProjectSubCategory.objects.get(id=sub_category)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": f"Unknown sub category !"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 # check existance of same wave name
                 if models.Wave.objects.filter(name__icontains=name).exists():
@@ -929,6 +936,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "lead_coach": lead_coach,
                         "budget": budget,
                         "directorate": directorate,
+                        "sub_category": sub_category,
                         "location": location,
                     }
                     models.Wave.objects.create(**raw)
@@ -949,6 +957,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 request_id = payload['request_id']
                 budget = payload['budget']
                 directorate = payload['directorate']
+                sub_category = payload['sub_category']
                 location = payload['location']
 
                 try:
@@ -965,6 +974,12 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": f"Unknown directorate !"}, status=status.HTTP_400_BAD_REQUEST) 
+
+                try:
+                    sub_category = models.ProjectSubCategory.objects.get(id=sub_category)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": f"Unknown sub category !"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 try:
                     wave = models.Wave.objects.get(Q(id=request_id))
@@ -986,6 +1001,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     wave.budget = budget
                     wave.location = location
                     wave.directorate = directorate
+                    wave.sub_category = sub_category
+                    
                     wave.save()
 
                     return Response("Success", status=status.HTTP_200_OK)
@@ -2078,7 +2095,71 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 
+                
+    @action(methods=["POST", "GET", "PUT"],
+        detail=False,
+        url_path="project-sub-category",
+        url_name="project-sub-category")
+    def project_sub_category(self, request):
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                with transaction.atomic():
+                    raw = {
+                        "name":name
+                    }
+                    models.ProjectSubCategory.objects.create(**raw)
 
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateDepartmentSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                request_id = payload['request_id']
+
+                try:
+                    subcategory = models.ProjectSubCategory.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Project Sub Categories!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    subcategory.name = name
+                    subcategory.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    subcategory = models.ProjectSubCategory.objects.get(Q(id=request_id))
+                    subcategory = serializers.FetchProjectSubCategorySerializer(subcategory,many=False).data
+                    return Response(subcategory, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Project Sub Categories!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    sectors = models.ProjectSubCategory.objects.all().order_by('name')
+                    sectors = serializers.FetchProjectSubCategorySerializer(sectors,many=True).data
+                    return Response(sectors, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 

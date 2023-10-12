@@ -64,6 +64,16 @@ class Department(models.Model):
     class Meta:
         db_table = "departments"
 
+class ProjectSubCategory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "project_sub_categories"
 
 class Sector(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -145,6 +155,9 @@ class Wave(models.Model):
     directorate = models.ForeignKey(
         Directorate, related_name="wave_directorate", on_delete=models.DO_NOTHING, null=True, blank=True
     )
+    sub_category = models.ForeignKey(
+        ProjectSubCategory, related_name="wave_sub_category", on_delete=models.DO_NOTHING, null=True, blank=True
+    )
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -159,8 +172,11 @@ class ThematicArea(models.Model):
     sector = models.ForeignKey(
         Sector, related_name="thematic_area_sector", on_delete=models.DO_NOTHING
     )
-    department = models.ForeignKey(
-        Department, related_name="thematic_area_department", on_delete=models.DO_NOTHING
+    # department = models.ForeignKey(
+    #     Department, related_name="thematic_area_department", on_delete=models.DO_NOTHING
+    # )
+    directorate = models.ForeignKey(
+        Directorate, related_name="thematic_area_directorate", on_delete=models.DO_NOTHING, null=True, blank=True
     )
     is_deleted = models.BooleanField(default=False)
 

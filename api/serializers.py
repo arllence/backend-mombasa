@@ -57,7 +57,12 @@ class FetchDepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = api_models.Department
         fields = '__all__'
+        
 
+class FetchProjectSubCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = api_models.ProjectSubCategory
+        fields = '__all__'
 
 class CreateWaveSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
@@ -66,6 +71,7 @@ class CreateWaveSerializer(serializers.Serializer):
     end_date = serializers.CharField(max_length=255)
     budget = serializers.CharField(max_length=255)
     directorate = serializers.CharField(max_length=255)
+    sub_category = serializers.CharField(max_length=255)
 
 
 class UpdateWaveSerializer(serializers.Serializer):
@@ -75,11 +81,13 @@ class UpdateWaveSerializer(serializers.Serializer):
     end_date = serializers.CharField(max_length=255)
     lead_coach = serializers.CharField(max_length=255)
     budget = serializers.CharField(max_length=255)
+    sub_category = serializers.CharField(max_length=255)
     directorate = serializers.CharField(max_length=255)
     
 class FetchWaveSerializer(serializers.ModelSerializer):
     lead_coach = UsersSerializer()
     directorate = FetchDirectorateSerializer()
+    sub_category = FetchProjectSubCategorySerializer()
     class Meta:
         model = api_models.Wave
         fields = '__all__'
@@ -121,7 +129,8 @@ class UpdateThematicAreaSerializer(serializers.Serializer):
 
 class FetchThematicAreaSerializer(serializers.ModelSerializer):
     sector = FetchSectorSerializer()
-    department = FetchDepartmentSerializer()
+    directorate = FetchDirectorateSerializer()
+    # department = FetchDepartmentSerializer()
 
     class Meta:
         model = api_models.ThematicArea
