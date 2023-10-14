@@ -93,6 +93,11 @@ class FetchWaveSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class SlimFetchWaveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = api_models.Wave
+        fields = '__all__'
+
 class FetchTitleSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -157,6 +162,10 @@ class UpdateRRIGoalsSerializer(serializers.Serializer):
     team_leader = serializers.CharField(max_length=255)
     strategic_leader = serializers.CharField(max_length=255)
 
+class SlimFetchRRIGoalsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = api_models.RRIGoals
+        fields = '__all__'
 
 class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     wave = FetchWaveSerializer()

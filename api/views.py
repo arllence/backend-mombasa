@@ -698,6 +698,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
             request_id = request.query_params.get('request_id')
             thematic_area = request.query_params.get('thematic_area')
             page = request.query_params.get('page')
+            selector = request.query_params.get('selector')
+            serializer = request.query_params.get('serializer')
+
             roles = user_util.fetchusergroups(request.user.id)  
 
             if request_id:
@@ -713,6 +716,47 @@ class FoundationViewSet(viewsets.ModelViewSet):
             elif thematic_area:
                 try:
                     area = models.RRIGoals.objects.filter(Q(thematic_area=thematic_area)).order_by('date_created')
+                    area = serializers.FetchRRIGoalsSerializer(area,many=True).data
+                    return Response(area, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            elif serializer == 'slim':
+                try:
+                    area = models.RRIGoals.objects.all().order_by('goal')
+                    area = serializers.SlimFetchRRIGoalsSerializer(area,many=True).data
+                    return Response(area, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            elif selector:
+                selector_value = request.query_params.get('selector_value')
+                location_value = request.query_params.get('location_value')
+                location = request.query_params.get('location')
+
+                if not selector_value or not location:
+                    return Response({"details": "Select search criteria !"}, status=status.HTTP_400_BAD_REQUEST)
+                if location != 'all' and not location_value:
+                    return Response({"details": "Select location search criteria !"}, status=status.HTTP_400_BAD_REQUEST)
+
+                if selector == "project":
+                    q_filters = Q(wave__id=selector_value)
+                elif selector == "objective":
+                    q_filters = Q(id=selector_value)
+
+                if location == "borough":
+                    q_filters &= Q(wave__location__ward__sub_county__borough__id=location_value)
+                elif location == "sub-county":
+                    q_filters &= Q(wave__location__ward__sub_county__id=location_value)
+                elif location == "ward":
+                    q_filters &= Q(wave__location__ward__id=location_value)
+
+                try:
+                    area = models.RRIGoals.objects.filter(q_filters).order_by('date_created')
                     area = serializers.FetchRRIGoalsSerializer(area,many=True).data
                     return Response(area, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -1011,6 +1055,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
+            serializer = request.query_params.get('serializer')
             if request_id:
                 try:
                     wave = models.Wave.objects.get(Q(id=request_id))
@@ -1018,6 +1063,16 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response(wave, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown wave!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            elif serializer == 'slim':
+                try:
+                    waves = models.Wave.objects.all().order_by('name')
+                    waves = serializers.SlimFetchWaveSerializer(waves,many=True).data
+                    return Response(waves, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
