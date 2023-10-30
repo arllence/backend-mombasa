@@ -352,7 +352,6 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         """
         authenticated_user = request.user
         username = request.query_params.get('username')
-        print('username: ',username)
         # if username is None:
         #     return Response({'details': 'Invalid Filter Criteria'}, status=status.HTTP_400_BAD_REQUEST)
         
