@@ -927,15 +927,33 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 directorate = payload['directorate']
                 location = payload['location']
                 sub_category = payload['sub_category']
+                type = payload['type']
+                main_project = payload['main_project']
+                
+                mother_id = None
 
-                try:
-                    ward = location['ward']
-                    ward = models.Ward.objects.get(id=ward)
-                    ward = serializers.FetchWardSerializer(ward,many=False).data
-                    location['ward'] = ward
-                except Exception as e:
-                    print(e)
-                    return Response({"details": f"Ward is required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                if type == "SUB":
+                    
+                    try:
+                        ward = location['ward']
+                        ward = models.Ward.objects.get(id=ward)
+                        ward = serializers.FetchWardSerializer(ward,many=False).data
+                        location['ward'] = ward
+                    except Exception as e:
+                        print(e)
+                        return Response({"details": f"Ward is required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                    
+                    
+                    if not main_project:
+                        return Response({"details": f"Main Project is required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                    
+                    try:
+                        wave = models.Wave.objects.get(Q(id=main_project))
+                    except (ValidationError, ObjectDoesNotExist):
+                        return Response({"details": "Unknown main project!"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    mother_id = main_project
+
                 
                 try:
                     directorate = models.Directorate.objects.get(id=directorate)
@@ -949,7 +967,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     print(e)
                     return Response({"details": f"Unknown sub category !"}, status=status.HTTP_400_BAD_REQUEST) 
 
-                # check existance of same wave name
+                # check existence of same wave name
                 if models.Wave.objects.filter(name__icontains=name).exists():
                     return Response({"details": f"{name} already exists!"}, status=status.HTTP_400_BAD_REQUEST) 
 
@@ -982,6 +1000,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "directorate": directorate,
                         "sub_category": sub_category,
                         "location": location,
+                        "type": type,
+                        "mother_id": mother_id,
                     }
                     models.Wave.objects.create(**raw)
 
@@ -1003,15 +1023,33 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 directorate = payload['directorate']
                 sub_category = payload['sub_category']
                 location = payload['location']
+                type = payload['type']
+                main_project = payload['main_project']
+                
+                mother_id = None
 
-                try:
-                    ward = location['ward']
-                    ward = models.Ward.objects.get(id=ward)
-                    ward = serializers.FetchWardSerializer(ward,many=False).data
-                    location['ward'] = ward
-                except Exception as e:
-                    print(e)
-                    return Response({"details": f"Ward is required!"}, status=status.HTTP_400_BAD_REQUEST) 
+
+                if type == "SUB":
+                    
+                    try:
+                        ward = location['ward']
+                        ward = models.Ward.objects.get(id=ward)
+                        ward = serializers.FetchWardSerializer(ward,many=False).data
+                        location['ward'] = ward
+                    except Exception as e:
+                        print(e)
+                        return Response({"details": f"Ward is required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                    
+                    if not main_project:
+                        return Response({"details": f"Main Project is required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                    
+                    try:
+                        wave = models.Wave.objects.get(Q(id=main_project))
+                    except (ValidationError, ObjectDoesNotExist):
+                        return Response({"details": "Unknown main project!"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    mother_id = main_project
+                        
                 
                 try:
                     directorate = models.Directorate.objects.get(id=directorate)
@@ -1028,7 +1066,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 try:
                     wave = models.Wave.objects.get(Q(id=request_id))
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown wave!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown project!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 # validate lead coach
                 try:
@@ -1038,16 +1076,32 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Unknown Lead Coach"}, status=status.HTTP_400_BAD_REQUEST) 
                 
                 with transaction.atomic():
-                    wave.name = name
-                    wave.start_date = start_date
-                    wave.end_date = end_date
-                    wave.lead_coach = lead_coach
-                    wave.budget = budget
-                    wave.location = location
-                    wave.directorate = directorate
-                    wave.sub_category = sub_category
+                    # wave.name = name
+                    # wave.start_date = start_date
+                    # wave.end_date = end_date
+                    # wave.lead_coach = lead_coach
+                    # wave.budget = budget
+                    # wave.location = location
+                    # wave.directorate = directorate
+                    # wave.sub_category = sub_category
+                    # wave.type = type
+                    # wave.mother_id = mother_id
                     
-                    wave.save()
+                    # wave.save()
+                    raw = {
+                        "name": name,
+                        "start_date": start_date,
+                        "end_date": end_date,
+                        "lead_coach": lead_coach,
+                        "budget": budget,
+                        "directorate": directorate,
+                        "sub_category": sub_category,
+                        "location": location,
+                        "type": type,
+                        "mother_id": mother_id,
+                        "mother_id": mother_id,
+                    }
+                    models.Wave.objects.filter(Q(id=request_id)).update(**raw)
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -1056,6 +1110,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             serializer = request.query_params.get('serializer')
+            project_type = request.query_params.get('project_type')
+            
+            
             if request_id:
                 try:
                     wave = models.Wave.objects.get(Q(id=request_id))
@@ -1069,6 +1126,16 @@ class FoundationViewSet(viewsets.ModelViewSet):
             elif serializer == 'slim':
                 try:
                     waves = models.Wave.objects.all().order_by('name')
+                    waves = serializers.SlimFetchWaveSerializer(waves,many=True).data
+                    return Response(waves, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            elif project_type:
+                try:
+                    waves = models.Wave.objects.filter(Q(type=project_type)).order_by('name')
                     waves = serializers.SlimFetchWaveSerializer(waves,many=True).data
                     return Response(waves, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):

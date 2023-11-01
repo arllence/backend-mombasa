@@ -70,6 +70,7 @@ class CreateWaveSerializer(serializers.Serializer):
     start_date = serializers.CharField(max_length=255)
     end_date = serializers.CharField(max_length=255)
     budget = serializers.CharField(max_length=255)
+    type = serializers.CharField(max_length=255)
     directorate = serializers.CharField(max_length=255)
     sub_category = serializers.CharField(max_length=255)
 
@@ -81,6 +82,7 @@ class UpdateWaveSerializer(serializers.Serializer):
     end_date = serializers.CharField(max_length=255)
     lead_coach = serializers.CharField(max_length=255)
     budget = serializers.CharField(max_length=255)
+    type = serializers.CharField(max_length=255)
     sub_category = serializers.CharField(max_length=255)
     directorate = serializers.CharField(max_length=255)
     

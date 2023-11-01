@@ -148,7 +148,10 @@ class Wave(models.Model):
     start_date = models.DateField()
     end_date = models.DateField()
     budget = models.IntegerField(default=0)
+    type = models.CharField(max_length=255, default="MAIN")
+    mother_id = models.CharField(max_length=255, null=True, blank=True)
     location = models.JSONField(null=True, blank=True)
+    members = models.JSONField(null=True, blank=True)
     lead_coach = models.ForeignKey(
         User, related_name="wave_lead_coach", on_delete=models.DO_NOTHING, null=True, blank=True
     )
