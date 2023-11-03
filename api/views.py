@@ -32,7 +32,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         return []
     
-    @action(methods=["POST", "GET", "PUT"],
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
             url_path="sector",
             url_name="sector")
@@ -96,8 +96,19 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-                
-    @action(methods=["POST", "GET", "PUT"],
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    models.Sector.objects.get(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
             url_path="sub-sector",
             url_name="sub-sector")
@@ -178,8 +189,18 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    models.SubSector.objects.get(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=["POST", "GET", "PUT"],
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
             url_path="directorate",
             url_name="directorate")
@@ -260,8 +281,18 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    models.Directorate.objects.get(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=["POST", "GET",  "PUT"],
+    @action(methods=["POST", "GET",  "PUT", "DELETE"],
             detail=False,
             url_path="title",
             url_name="title")
@@ -325,9 +356,19 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-                
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    models.Title.objects.get(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)        
 
-    @action(methods=["POST", "GET"],
+    @action(methods=["POST", "GET", "DELETE"],
             detail=False,
             url_path="overseer",
             url_name="overseer")
@@ -413,6 +454,16 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    models.Overseer.objects.get(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
@@ -536,7 +587,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             
 
 
-    @action(methods=["POST", "GET", "PUT"],
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
             url_path="rri-goals",
             url_name="rri-goals")
@@ -782,9 +833,19 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    models.RRIGoals.objects.get(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-    @action(methods=["POST", "GET"],
+    @action(methods=["POST", "GET", "DELETE"],
             detail=False,
             url_path="team-members",
             url_name="team-members")
@@ -851,7 +912,18 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-                
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    models.TeamMembers.objects.get(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)     
+                   
                 
     @action(methods=["POST"], detail=False, url_path="achievements",url_name="achievements")
     def achievements(self, request):
@@ -907,7 +979,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
         
 
     
-    @action(methods=["POST", "GET",  "PUT"],
+    @action(methods=["POST", "GET",  "PUT", "DELETE"],
             detail=False,
             url_path="waves",
             url_name="waves")
@@ -1153,7 +1225,18 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-                
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    models.Wave.objects.get(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                       
             
     @action(methods=["GET","POST", "PUT"], detail=False, url_path="weekly-reports",url_name="weekly-reports")
     def weekly_reports(self, request):
@@ -1902,7 +1985,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-    @action(methods=["POST", "GET", "PUT"],
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
             url_path="boroughs",
             url_name="boroughs")
@@ -1966,7 +2049,17 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-                
+         
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    models.Borough.objects.get(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)       
 
     
     @action(methods=["POST", "GET", "PUT"],
@@ -2050,7 +2143,17 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-                
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    models.SubCounty.objects.get(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)        
 
     @action(methods=["POST", "GET", "PUT"],
             detail=False,
@@ -2133,7 +2236,17 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-                
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    models.Ward.objects.get(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)        
 
     @action(methods=["POST", "GET", "PUT"],
             detail=False,
@@ -2218,7 +2331,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 
-    @action(methods=["POST", "GET", "PUT"],
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
         detail=False,
         url_path="project-sub-category",
         url_name="project-sub-category")
@@ -2283,6 +2396,16 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    models.ProjectSubCategory.objects.get(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ReportsViewSet(viewsets.ViewSet):
