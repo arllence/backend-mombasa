@@ -88,7 +88,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    sectors = models.Sector.objects.all().order_by('name')
+                    sectors = models.Sector.objects.filter(Q(is_deleted=False)).order_by('name')
                     sectors = serializers.FetchSectorSerializer(sectors,many=True).data
                     return Response(sectors, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -103,7 +103,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
                 try:
-                    models.Sector.objects.get(Q(id=request_id)).delete()
+                    raw = {"is_deleted" : True}
+                    models.Sector.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
@@ -180,7 +181,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    sub_sectors = models.SubSector.objects.all().order_by('name')
+                    sub_sectors = models.SubSector.objects.filter(Q(is_deleted=False)).order_by('name')
                     sub_sectors = serializers.FetchSubSectorSerializer(sub_sectors,many=True).data
                     return Response(sub_sectors, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -195,7 +196,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
                 try:
-                    models.SubSector.objects.get(Q(id=request_id)).delete()
+                    raw = {"is_deleted" : True}
+                    models.SubSector.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
@@ -272,7 +274,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    directorates = models.Directorate.objects.all().order_by('name')
+                    directorates = models.Directorate.objects.filter(Q(is_deleted=False)).order_by('name')
                     directorates = serializers.FetchDirectorateSerializer(directorates,many=True).data
                     return Response(directorates, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -287,7 +289,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
                 try:
-                    models.Directorate.objects.get(Q(id=request_id)).delete()
+                    raw = {"is_deleted" : True}
+                    models.Directorate.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
@@ -348,7 +351,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    titles = models.Title.objects.all().order_by('name')
+                    titles = models.Title.objects.filter(Q(is_deleted=False)).order_by('name')
                     titles = serializers.FetchTitleSerializer(titles,many=True).data
                     return Response(titles, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -363,7 +366,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
                 try:
-                    models.Title.objects.get(Q(id=request_id)).delete()
+                    raw = {"is_deleted" : True}
+                    models.Title.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)        
@@ -445,7 +449,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    overseer = models.Overseer.objects.all().order_by('name')
+                    overseer = models.Overseer.objects.filter(Q(is_deleted=False)).order_by('name')
                     overseer = serializers.FetchOverseerSerializer(overseer,many=True).data
                     return Response(overseer, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -460,7 +464,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
                 try:
-                    models.Overseer.objects.get(Q(id=request_id)).delete()
+                    raw = {"is_deleted" : True}
+                    models.Overseer.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
@@ -776,7 +781,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             elif serializer == 'slim':
                 try:
-                    area = models.RRIGoals.objects.all().order_by('goal')
+                    area = models.RRIGoals.objects.filter(Q(is_deleted=False)).order_by('goal')
                     area = serializers.SlimFetchRRIGoalsSerializer(area,many=True).data
                     return Response(area, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -798,6 +803,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     q_filters = Q(wave__id=selector_value)
                 elif selector == "objective":
                     q_filters = Q(id=selector_value)
+                
+                q_filters &= Q(is_deleted=False)
 
                 if location == "borough":
                     q_filters &= Q(wave__location__ward__sub_county__borough__id=location_value)
@@ -823,7 +830,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         area = models.RRIGoals.objects.filter(pk__in=ids).order_by('date_created')
                         area = serializers.FetchRRIGoalsSerializer(area, many=True, context={"user_id":request.user.id}).data
                     else:
-                        area = models.RRIGoals.objects.all().order_by('date_created')
+                        area = models.RRIGoals.objects.filter(Q(is_deleted=False)).order_by('date_created')
                         area = serializers.FetchRRIGoalsSerializer(area, many=True).data
 
                     return Response(area, status=status.HTTP_200_OK)
@@ -839,7 +846,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
                 try:
-                    models.RRIGoals.objects.get(Q(id=request_id)).delete()
+                    raw = {"is_deleted" : True}
+                    models.RRIGoals.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
@@ -894,7 +902,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             elif thematic_area:
                 try:
-                    members = models.TeamMembers.objects.filter(Q(thematic_area=thematic_area)).order_by('name')
+                    members = models.TeamMembers.objects.filter(Q(thematic_area=thematic_area) & Q(is_deleted=False)).order_by('name')
                     members = serializers.FetchTeamMembersSerializer(members,many=True).data
                     return Response(members, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -904,7 +912,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    members = models.TeamMembers.objects.all().order_by('name')
+                    members = models.TeamMembers.objects.filter(Q(is_deleted=False)).order_by('name')
                     members = serializers.FetchTeamMembersSerializer(members,many=True).data
                     return Response(members, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -919,7 +927,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
                 try:
-                    models.TeamMembers.objects.get(Q(id=request_id)).delete()
+                    raw = {"is_deleted" : True}
+                    models.TeamMembers.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)     
@@ -1197,7 +1206,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             elif serializer == 'slim':
                 try:
-                    waves = models.Wave.objects.all().order_by('name')
+                    waves = models.Wave.objects.filter(Q(id=request_id)).order_by('name')
                     waves = serializers.SlimFetchWaveSerializer(waves,many=True).data
                     return Response(waves, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -1207,7 +1216,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             elif project_type:
                 try:
-                    waves = models.Wave.objects.filter(Q(type=project_type)).order_by('name')
+                    waves = models.Wave.objects.filter(Q(type=project_type) & Q(is_deleted=False)).order_by('name')
                     waves = serializers.SlimFetchWaveSerializer(waves,many=True).data
                     return Response(waves, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -1217,7 +1226,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    waves = models.Wave.objects.all().order_by('name')
+                    waves = models.Wave.objects.filter(Q(is_deleted=False)).order_by('name')
                     waves = serializers.FetchWaveSerializer(waves,many=True).data
                     return Response(waves, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -1232,7 +1241,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
                 try:
-                    models.Wave.objects.get(Q(id=request_id)).delete()
+                    raw = {"is_deleted" : True}
+                    models.Wave.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
@@ -2041,7 +2051,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    sub_counties = models.Borough.objects.all().order_by('name')
+                    sub_counties = models.Borough.objects.filter(Q(is_deleted=False)).order_by('name')
                     sub_counties = serializers.FetchBoroughSerializer(sub_counties,many=True).data
                     return Response(sub_counties, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -2056,13 +2066,14 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
                 try:
-                    models.Borough.objects.get(Q(id=request_id)).delete()
+                    raw = {"is_deleted" : True}
+                    models.Borough.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)       
 
     
-    @action(methods=["POST", "GET", "PUT"],
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
             url_path="sub-counties",
             url_name="sub-counties")
@@ -2135,7 +2146,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    sub_counties = models.SubCounty.objects.all().order_by('name')
+                    sub_counties = models.SubCounty.objects.filter(Q(is_deleted=False)).order_by('name')
                     sub_counties = serializers.FetchSubCountySerializer(sub_counties,many=True).data
                     return Response(sub_counties, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -2150,12 +2161,13 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
                 try:
-                    models.SubCounty.objects.get(Q(id=request_id)).delete()
+                    raw = {"is_deleted" : True}
+                    models.SubCounty.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)        
 
-    @action(methods=["POST", "GET", "PUT"],
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
             url_path="wards",
             url_name="wards")
@@ -2228,7 +2240,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    wards = models.Ward.objects.all().order_by('name')
+                    wards = models.Ward.objects.filter(Q(is_deleted=False)).order_by('name')
                     wards = serializers.FetchWardSerializer(wards,many=True).data
                     return Response(wards, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -2243,7 +2255,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
                 try:
-                    models.Ward.objects.get(Q(id=request_id)).delete()
+                    raw = {"is_deleted" : True}
+                    models.Ward.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)        
@@ -2387,7 +2400,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    sectors = models.ProjectSubCategory.objects.all().order_by('name')
+                    sectors = models.ProjectSubCategory.objects.filter(Q(is_deleted=False)).order_by('name')
                     sectors = serializers.FetchProjectSubCategorySerializer(sectors,many=True).data
                     return Response(sectors, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -2402,7 +2415,8 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             with transaction.atomic():
                 try:
-                    models.ProjectSubCategory.objects.get(Q(id=request_id)).delete()
+                    raw = {"is_deleted" : True}
+                    models.ProjectSubCategory.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)

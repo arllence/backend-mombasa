@@ -7,6 +7,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 class Borough(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
+    is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -20,6 +21,7 @@ class SubCounty(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     borough = models.ForeignKey(Borough, on_delete=models.CASCADE, related_name='subcounties')
+    is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -33,6 +35,7 @@ class Ward(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     sub_county = models.ForeignKey(SubCounty, on_delete=models.DO_NOTHING, related_name='wards')
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -67,6 +70,7 @@ class Department(models.Model):
 class ProjectSubCategory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50)
+    is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -79,6 +83,7 @@ class Sector(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50)
     date_created = models.DateTimeField(auto_now_add=True)
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -93,6 +98,7 @@ class SubSector(models.Model):
     sector = models.ForeignKey(
         Sector, related_name="sector", on_delete=models.DO_NOTHING
     )
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -107,6 +113,7 @@ class Directorate(models.Model):
     sub_sector = models.ForeignKey(
         SubSector, related_name="sub_sector", on_delete=models.DO_NOTHING
     )
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         return self.name
@@ -118,6 +125,7 @@ class Directorate(models.Model):
 class Title(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=50)
+    is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -134,6 +142,7 @@ class Overseer(models.Model):
     title = models.ForeignKey(
         Title, related_name="overseer_title", on_delete=models.DO_NOTHING
     )
+    is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -161,6 +170,7 @@ class Wave(models.Model):
     sub_category = models.ForeignKey(
         ProjectSubCategory, related_name="wave_sub_category", on_delete=models.DO_NOTHING, null=True, blank=True
     )
+    is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -218,6 +228,7 @@ class RRIGoals(models.Model):
         Overseer, related_name="strategic_leader", on_delete=models.DO_NOTHING,
         null=True, blank=True
     )
+    is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
