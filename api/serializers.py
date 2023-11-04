@@ -73,6 +73,7 @@ class CreateWaveSerializer(serializers.Serializer):
     type = serializers.CharField(max_length=255)
     directorate = serializers.CharField(max_length=255)
     sub_category = serializers.CharField(max_length=255)
+    risks = serializers.CharField(max_length=3000)
 
 
 class UpdateWaveSerializer(serializers.Serializer):
@@ -86,13 +87,39 @@ class UpdateWaveSerializer(serializers.Serializer):
     sub_category = serializers.CharField(max_length=255)
     directorate = serializers.CharField(max_length=255)
     
+class SlimFetchWaveSerializer(serializers.ModelSerializer):
+    lead_coach = UsersSerializer()
+    directorate = FetchDirectorateSerializer()
+    sub_category = FetchProjectSubCategorySerializer()
+    
+    class Meta:
+        model = api_models.Wave
+        fields = '__all__'
+        
+
+    
 class FetchWaveSerializer(serializers.ModelSerializer):
     lead_coach = UsersSerializer()
     directorate = FetchDirectorateSerializer()
     sub_category = FetchProjectSubCategorySerializer()
+    sub_projects = serializers.SerializerMethodField()
+    
     class Meta:
         model = api_models.Wave
         fields = '__all__'
+        
+    def get_sub_projects(self, obj):
+        try:
+            plans = api_models.Wave.objects.filter(Q(mother_id=obj.id))
+            serializer = SlimFetchWaveSerializer(plans, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
+    
 
 
 class SlimFetchWaveSerializer(serializers.ModelSerializer):
@@ -228,7 +255,7 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
         
     def get_workplan(self, obj):
         try:
-            plans = api_models.WorkPlan.objects.filter(Q(rri_goal=obj.id))
+            plans = api_models.WorkPlan.objects.filter(Q(rri_goal=obj.id) & Q(is_deleted=False))
             serializer = FetchWorkPlanSerializer(plans, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
