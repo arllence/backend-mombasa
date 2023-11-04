@@ -1014,9 +1014,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 
                 mother_id = None
                 
-                ward = location['ward']
+                ward = location.get('ward')
                 
-                if ward != "N/A":
+                if ward and ward != "N/A":
                     
                     try:
                         ward = location['ward']
@@ -1115,9 +1115,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 
                 mother_id = None
                 
-                ward = location['ward']
+                ward = location.get('ward')
                 
-                if ward != "N/A":
+                if ward & ward != "N/A":
                     
                     try:
                         ward = location['ward']
