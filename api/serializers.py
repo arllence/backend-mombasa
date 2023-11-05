@@ -150,14 +150,16 @@ class FetchOverseerSerializer(serializers.ModelSerializer):
 class CreateThematicAreaSerializer(serializers.Serializer):
     department = serializers.CharField(max_length=255)
     sector = serializers.CharField(max_length=255)
-    area = serializers.CharField(max_length=500)
+    area = serializers.CharField(max_length=5000)
+    project = serializers.CharField(max_length=500)
 
 
 class UpdateThematicAreaSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
     department = serializers.CharField(max_length=255)
     sector = serializers.CharField(max_length=255)
-    area = serializers.CharField(max_length=500)
+    area = serializers.CharField(max_length=5000)
+    project = serializers.CharField(max_length=500)
     
 
 
@@ -267,7 +269,7 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     
     def get_result_chain(self, obj):
         try:
-            plans = api_models.ResultChain.objects.filter(Q(rri_goal=obj.id))
+            plans = api_models.ResultChain.objects.filter(Q(workplan__rri_goal=obj.id))
             serializer = FetchResultChainSerializer(plans, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
@@ -532,23 +534,23 @@ class FetchWorkPlanSerializer(serializers.ModelSerializer):
 
 
 class ResultChainSerializer(serializers.Serializer):
-    rri_goal = serializers.CharField(max_length=255)
+    workplan = serializers.CharField(max_length=255)
     impact = serializers.JSONField()
     outcome = serializers.JSONField()
     output = serializers.JSONField()
     input = serializers.JSONField()
-    activities = serializers.JSONField()
+    # activities = serializers.JSONField()
 
 
 
 class UpdateResultChainSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
-    rri_goal = serializers.CharField(max_length=255)
+    workplan = serializers.CharField(max_length=255)
     impact = serializers.CharField(max_length=800)
     outcome = serializers.CharField(max_length=800)
     output = serializers.CharField(max_length=800)
     input = serializers.CharField(max_length=800)
-    activities = serializers.JSONField()
+    # activities = serializers.JSONField()
 
 
 

@@ -186,9 +186,9 @@ class ThematicArea(models.Model):
     sector = models.ForeignKey(
         Sector, related_name="thematic_area_sector", on_delete=models.DO_NOTHING
     )
-    # department = models.ForeignKey(
-    #     Department, related_name="thematic_area_department", on_delete=models.DO_NOTHING
-    # )
+    project = models.ForeignKey(
+        Wave, related_name="goal_project", on_delete=models.DO_NOTHING, null=True, blank=True
+    )
     directorate = models.ForeignKey(
         Directorate, related_name="thematic_area_directorate", on_delete=models.DO_NOTHING, null=True, blank=True
     )
@@ -350,11 +350,13 @@ class ResultChain(models.Model):
     creator = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, related_name="result_chain_creator"
     )
-    rri_goal = models.ForeignKey(
-       RRIGoals, on_delete=models.DO_NOTHING, related_name="result_chain_rri_goal"
+
+    workplan = models.ForeignKey(
+       WorkPlan, on_delete=models.DO_NOTHING, related_name="result_chain_workplan",
+       null=True, blank=True
     )
     
-    activities = models.JSONField()
+    activities = models.JSONField(null=True, blank=True)
     input = models.JSONField()
     output = models.JSONField()
     outcome = models.JSONField()

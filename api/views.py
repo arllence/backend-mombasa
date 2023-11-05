@@ -482,6 +482,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             if serializer.is_valid():
                 area = payload['area']
                 sector = payload['sector']
+                project = payload['project']
                 department = payload['department']       
 
 
@@ -489,6 +490,11 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     department = models.Directorate.objects.get(Q(id=department))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown directorate!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    project = models.Wave.objects.get(Q(id=project))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown project!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
                     sector = models.Sector.objects.get(Q(id=sector))
@@ -501,6 +507,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "area": area,
                         "directorate": department,
                         "sector": sector,
+                        "project": project,
                     }
                     models.ThematicArea.objects.create(**raw)
 
@@ -516,6 +523,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 request_id = payload['request_id']
                 area = payload['area']
                 sector = payload['sector']
+                project = payload['project']
                 department = payload['department']
                 
 
@@ -523,6 +531,11 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     models.ThematicArea.objects.get(Q(id=request_id))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown thematic area!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    project = models.Wave.objects.get(Q(id=project))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown project!"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     department = models.Directorate.objects.get(Q(id=department))
@@ -540,6 +553,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "area": area,
                         "directorate": department,
                         "sector": sector,
+                        "project": project,
                     }
                     models.ThematicArea.objects.filter(Q(id=request_id)).update(**raw)
 
@@ -550,10 +564,21 @@ class FoundationViewSet(viewsets.ModelViewSet):
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             overseer_id = request.query_params.get('overseer_id')
+            project_id = request.query_params.get('project_id')
             if request_id:
                 try:
                     area = models.ThematicArea.objects.get(Q(id=request_id))
                     area = serializers.FetchThematicAreaSerializer(area,many=False).data
+                    return Response(area, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            if project_id:
+                try:
+                    area = models.ThematicArea.objects.filter(Q(project=project_id))
+                    area = serializers.FetchThematicAreaSerializer(area,many=True).data
                     return Response(area, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
@@ -1027,7 +1052,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         print(e)
                         return Response({"details": f"Ward is required!"}, status=status.HTTP_400_BAD_REQUEST) 
 
-                if ward != "SUB":
+                if ward == "SUB":
 
                     if not main_project:
                         return Response({"details": f"Main Project is required!"}, status=status.HTTP_400_BAD_REQUEST) 
@@ -1117,7 +1142,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 
                 ward = location.get('ward')
                 
-                if ward & ward != "N/A":
+                if ward and ward != "N/A":
                     
                     try:
                         ward = location['ward']
@@ -1633,16 +1658,16 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 data=payload, many=False)
             
             if serializer.is_valid():
-                rri_goal = payload['rri_goal']
-                activities = payload['activities']
+                workplan = payload['workplan']
+                # activities = payload['activities']
                 input = payload['input']
                 output = payload['output']
                 outcome = payload['outcome']
                 impact = payload['impact']
 
 
-                if not activities:
-                    return Response({"details": f"Activities required !"}, status=status.HTTP_400_BAD_REQUEST) 
+                # if not activities:
+                #     return Response({"details": f"Activities required !"}, status=status.HTTP_400_BAD_REQUEST) 
                 if not input:
                     return Response({"details": f"Inputs required !"}, status=status.HTTP_400_BAD_REQUEST) 
                 if not output:
@@ -1653,15 +1678,15 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": f"Impacts required !"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 try:
-                    rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
+                    workplan = models.WorkPlan.objects.get(Q(id=workplan))
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown RRI Goal !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Goal !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 
                 with transaction.atomic():
                     raw = {
-                        "rri_goal" : rri_goal,
-                        "activities" : activities,
+                        "workplan" : workplan,
+                        # "activities" : activities,
                         "creator": authenticated_user,
                         "input": input,
                         "output": output,
@@ -1685,26 +1710,26 @@ class FoundationViewSet(viewsets.ModelViewSet):
             
             if serializer.is_valid():
                 request_id = payload['request_id']
-                rri_goal = payload['rri_goal']
-                activities = payload['activities']
+                workplan = payload['workplan']
+                # activities = payload['activities']
                 input = payload['input']
                 output = payload['output']
                 outcome = payload['outcome']
                 impact = payload['impact']
 
-                if not activities:
-                    return Response({"details": f"Activities required !"}, status=status.HTTP_400_BAD_REQUEST) 
+                # if not activities:
+                #     return Response({"details": f"Activities required !"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 try:
-                    rri_goal = models.RRIGoals.objects.get(Q(id=rri_goal))
+                    workplan = models.WorkPlan.objects.get(Q(id=workplan))
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown RRI Goal!"}, status=status.HTTP_400_BAD_REQUEST)          
+                    return Response({"details": "Unknown Goal!"}, status=status.HTTP_400_BAD_REQUEST)          
                 
                 
                 with transaction.atomic():
                     raw = {
-                        "rri_goal" : rri_goal,
-                        "activities" : activities,
+                        "workplan" : workplan,
+                        # "activities" : activities,
                         "creator": authenticated_user,
                         "input": input,
                         "output": output,
@@ -1724,7 +1749,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
-            rri_goal = request.query_params.get('rri_goal')
+            workplan = request.query_params.get('workplan')
             if request_id:
                 try:
                     chain = models.ResultChain.objects.get(Q(id=request_id))
@@ -1735,9 +1760,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-            elif rri_goal:
+            elif workplan:
                 try:
-                    chains = models.ResultChain.objects.filter(Q(rri_goal=rri_goal)).order_by('-date_created')
+                    chains = models.ResultChain.objects.filter(Q(workplan=workplan)).order_by('-date_created')
                     chains = serializers.FetchResultChainSerializer(chains,many=True).data
                     return Response(chains, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
