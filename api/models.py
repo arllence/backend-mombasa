@@ -209,26 +209,33 @@ class RRIGoals(models.Model):
     thematic_area = models.ForeignKey(
         ThematicArea, related_name="thematic_area", on_delete=models.DO_NOTHING
     )
-    coach = models.ForeignKey(
-        Overseer, related_name="coach", on_delete=models.DO_NOTHING,
-        null=True, blank=True
-    )
+    # coach = models.ForeignKey(
+    #     Overseer, related_name="coach", on_delete=models.DO_NOTHING,
+    #     null=True, blank=True
+    # )
     wave = models.ForeignKey(
         Wave, related_name="wave", on_delete=models.DO_NOTHING,
         null=True, blank=True
     )
-    results_leader = models.ForeignKey(
-        Overseer, related_name="results_leader", on_delete=models.DO_NOTHING,
-        null=True, blank=True
+    creator = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, related_name="goal_creator",
+       null=True, blank=True
     )
-    team_leader = models.ForeignKey(
-        Overseer, related_name="team_leader", on_delete=models.DO_NOTHING,
-        null=True, blank=True
-    )
-    strategic_leader = models.ForeignKey(
-        Overseer, related_name="strategic_leader", on_delete=models.DO_NOTHING,
-        null=True, blank=True
-    )
+    results_leaders = models.JSONField(null=True, blank=True)
+    technical_leaders = models.JSONField(null=True, blank=True)
+    strategic_leaders = models.JSONField(null=True, blank=True)
+    # results_leader = models.ForeignKey(
+    #     Overseer, related_name="results_leader", on_delete=models.DO_NOTHING,
+    #     null=True, blank=True
+    # )
+    # team_leader = models.ForeignKey(
+    #     Overseer, related_name="team_leader", on_delete=models.DO_NOTHING,
+    #     null=True, blank=True
+    # )
+    # strategic_leader = models.ForeignKey(
+    #     Overseer, related_name="strategic_leader", on_delete=models.DO_NOTHING,
+    #     null=True, blank=True
+    # )
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 

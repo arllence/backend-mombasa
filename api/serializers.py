@@ -176,22 +176,15 @@ class FetchThematicAreaSerializer(serializers.ModelSerializer):
 class CreateRRIGoalsSerializer(serializers.Serializer):
     wave = serializers.CharField(max_length=255)
     goal = serializers.CharField(max_length=500)
-    coach = serializers.CharField(max_length=255)
     thematic_area = serializers.CharField(max_length=255)
-    results_leader = serializers.CharField(max_length=255)
-    team_leader = serializers.CharField(max_length=255)
-    strategic_leader = serializers.CharField(max_length=255)
 
 
 class UpdateRRIGoalsSerializer(serializers.Serializer):
     wave = serializers.CharField(max_length=500)
     goal = serializers.CharField(max_length=500)
-    coach = serializers.CharField(max_length=255)
     thematic_area = serializers.CharField(max_length=255)
     request_id = serializers.CharField(max_length=255)
-    results_leader = serializers.CharField(max_length=255)
-    team_leader = serializers.CharField(max_length=255)
-    strategic_leader = serializers.CharField(max_length=255)
+
 
 class SlimFetchRRIGoalsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -200,10 +193,6 @@ class SlimFetchRRIGoalsSerializer(serializers.ModelSerializer):
 
 class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     wave = FetchWaveSerializer()
-    coach = FetchOverseerSerializer()
-    results_leader = FetchOverseerSerializer()
-    team_leader = FetchOverseerSerializer()
-    strategic_leader = FetchOverseerSerializer()
     thematic_area = FetchThematicAreaSerializer()
     achievements = serializers.SerializerMethodField()
     workplan = serializers.SerializerMethodField()
