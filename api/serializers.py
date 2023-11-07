@@ -136,7 +136,7 @@ class FetchTitleSerializer(serializers.ModelSerializer):
 
 class CreateOverseerSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
-    contact = serializers.CharField(max_length=255)
+    # contact = serializers.CharField(max_length=255)
     title = serializers.CharField(max_length=255)
 
 
