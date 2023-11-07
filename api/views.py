@@ -386,17 +386,22 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 contact = str(payload['contact'])
                 title = payload['title']
 
-                if len(contact) > 10 or len(contact) < 9:
-                    return Response({"details": "Incorect contact format, use: 0700000000"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                elif len(contact) == 10:
-                    if contact[0] == '0':
-                        contact = contact[1:]
-                        contact = "+254" + contact
-                    else:
+                try:
+                    check_contact = int(contact)
+
+                    if len(contact) > 10 or len(contact) < 9:
                         return Response({"details": "Incorect contact format, use: 0700000000"}, status=status.HTTP_400_BAD_REQUEST)
-                else:
-                    contact = "+254" + contact
+                    
+                    elif len(contact) == 10:
+                        if contact[0] == '0':
+                            contact = contact[1:]
+                            contact = "+254" + contact
+                        else:
+                            return Response({"details": "Incorect contact format, use: 0700000000"}, status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        contact = "+254" + contact
+                except Exception as e:
+                    pass
 
                 user_exists = models.Overseer.objects.filter(Q(contact=contact)).exists()
                 if user_exists:
