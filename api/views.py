@@ -386,6 +386,9 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 contact = str(payload['contact'])
                 title = payload['title']
 
+                if not contact:
+                    contact = "N/A"
+
                 try:
                     check_contact = int(contact)
 
@@ -401,11 +404,12 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     else:
                         contact = "+254" + contact
                 except Exception as e:
+                    contact = "N/A"
                     pass
 
-                user_exists = models.Overseer.objects.filter(Q(contact=contact)).exists()
-                if user_exists:
-                    return Response({"details": "User Already Added!"}, status=status.HTTP_400_BAD_REQUEST)
+                # user_exists = models.Overseer.objects.filter(Q(contact=contact)).exists()
+                # if user_exists:
+                #     return Response({"details": "User Already Added!"}, status=status.HTTP_400_BAD_REQUEST)
 
                 name = name.split()
                 name = [x.capitalize() for x in name]
