@@ -66,7 +66,6 @@ class FetchProjectSubCategorySerializer(serializers.ModelSerializer):
 
 class CreateWaveSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
-    lead_coach = serializers.CharField(max_length=255)
     start_date = serializers.CharField(max_length=255)
     end_date = serializers.CharField(max_length=255)
     budget = serializers.CharField(max_length=255)
@@ -81,7 +80,6 @@ class UpdateWaveSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
     start_date = serializers.CharField(max_length=255)
     end_date = serializers.CharField(max_length=255)
-    lead_coach = serializers.CharField(max_length=255)
     budget = serializers.CharField(max_length=255)
     type = serializers.CharField(max_length=255)
     sub_category = serializers.CharField(max_length=255)
@@ -99,7 +97,7 @@ class SlimFetchWaveSerializer(serializers.ModelSerializer):
 
     
 class FetchWaveSerializer(serializers.ModelSerializer):
-    lead_coach = UsersSerializer()
+    # lead_coach = UsersSerializer()
     directorate = FetchDirectorateSerializer()
     sub_category = FetchProjectSubCategorySerializer()
     sub_projects = serializers.SerializerMethodField()
@@ -110,7 +108,7 @@ class FetchWaveSerializer(serializers.ModelSerializer):
         
     def get_sub_projects(self, obj):
         try:
-            plans = api_models.Wave.objects.filter(Q(mother_id=obj.id))
+            plans = api_models.Wave.objects.filter(Q(mother_id=obj.id) & Q(is_deleted=False))
             serializer = SlimFetchWaveSerializer(plans, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):

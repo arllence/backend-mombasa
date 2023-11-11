@@ -1013,7 +1013,6 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 name = payload['name']
                 start_date = payload['start_date']
                 end_date = payload['end_date']
-                lead_coach = payload['lead_coach']
                 budget = payload['budget']
                 directorate = payload['directorate']
                 location = payload['location']
@@ -1021,6 +1020,10 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 type = payload['type']
                 main_project = payload['main_project']
                 risks = payload['risks']
+                results_leaders = payload['results_leaders']
+                technical_leaders = payload['technical_leaders']
+                strategic_leaders = payload['strategic_leaders']
+                standalone = payload.get('standalone')
                 
                 mother_id = None
                 
@@ -1048,6 +1051,10 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         return Response({"details": "Unknown main project!"}, status=status.HTTP_400_BAD_REQUEST)
                     
                     mother_id = main_project
+                
+                if type == "MAIN":
+                    if not standalone:
+                        return Response({"details": "Standalone status is required"}, status=status.HTTP_400_BAD_REQUEST)
 
                 
                 try:
@@ -1067,11 +1074,11 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": f"{name} already exists!"}, status=status.HTTP_400_BAD_REQUEST) 
 
                 # validate lead coach
-                try:
-                    lead_coach = get_user_model().objects.get(Q(id=lead_coach))
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Unknown Lead Coach"}, status=status.HTTP_400_BAD_REQUEST) 
+                # try:
+                #     lead_coach = get_user_model().objects.get(Q(id=lead_coach))
+                # except Exception as e:
+                #     print(e)
+                #     return Response({"details": "Unknown Lead Coach"}, status=status.HTTP_400_BAD_REQUEST) 
                     
 
                 # find difference in dates / validate dates
@@ -1090,7 +1097,6 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "name": name,
                         "start_date": start_date,
                         "end_date": end_date,
-                        "lead_coach": lead_coach,
                         "budget": budget,
                         "directorate": directorate,
                         "sub_category": sub_category,
@@ -1098,6 +1104,10 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "type": type,
                         "mother_id": mother_id,
                         "risks": risks,
+                        "results_leaders": results_leaders,
+                        "technical_leaders": technical_leaders,
+                        "strategic_leaders": strategic_leaders,
+                        "standalone": standalone,
                     }
                     models.Wave.objects.create(**raw)
 
@@ -1113,7 +1123,6 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 name = payload['name']
                 start_date = payload['start_date']
                 end_date = payload['end_date']
-                lead_coach = payload['lead_coach']
                 request_id = payload['request_id']
                 budget = payload['budget']
                 directorate = payload['directorate']
@@ -1122,6 +1131,10 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 risks = payload['risks']
                 type = payload['type']
                 main_project = payload['main_project']
+                results_leaders = payload['results_leaders']
+                technical_leaders = payload['technical_leaders']
+                strategic_leaders = payload['strategic_leaders']
+                standalone = payload.get('standalone')
                 
                 mother_id = None
                 
@@ -1150,8 +1163,12 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         return Response({"details": "Unknown main project!"}, status=status.HTTP_400_BAD_REQUEST)
                     
                     mother_id = main_project
+
+                if type == "MAIN":
+                    if not standalone:
+                        return Response({"details": "Standalone status is required"}, status=status.HTTP_400_BAD_REQUEST)
+
                         
-                
                 try:
                     directorate = models.Directorate.objects.get(id=directorate)
                 except Exception as e:
@@ -1170,11 +1187,11 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Unknown project!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 # validate lead coach
-                try:
-                    lead_coach = get_user_model().objects.get(Q(id=lead_coach))
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Unknown Lead Coach"}, status=status.HTTP_400_BAD_REQUEST) 
+                # try:
+                #     lead_coach = get_user_model().objects.get(Q(id=lead_coach))
+                # except Exception as e:
+                #     print(e)
+                #     return Response({"details": "Unknown Lead Coach"}, status=status.HTTP_400_BAD_REQUEST) 
                 
                 with transaction.atomic():
                     # wave.name = name
@@ -1193,7 +1210,6 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "name": name,
                         "start_date": start_date,
                         "end_date": end_date,
-                        "lead_coach": lead_coach,
                         "budget": budget,
                         "directorate": directorate,
                         "sub_category": sub_category,
@@ -1201,6 +1217,10 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         "type": type,
                         "mother_id": mother_id,
                         "risks": risks,
+                        "results_leaders": results_leaders,
+                        "technical_leaders": technical_leaders,
+                        "strategic_leaders": strategic_leaders,
+                        "standalone": standalone,
                     }
                     models.Wave.objects.filter(Q(id=request_id)).update(**raw)
 
@@ -1272,6 +1292,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
     def weekly_reports(self, request):
         authenticated_user = request.user
         payload = request.data
+        # return
         
         if request.method == "POST":
             # serializer = serializers.WeeklyReportSerializer(
