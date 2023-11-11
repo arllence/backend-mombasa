@@ -86,7 +86,7 @@ class UpdateWaveSerializer(serializers.Serializer):
     directorate = serializers.CharField(max_length=255)
     
 class SlimFetchWaveSerializer(serializers.ModelSerializer):
-    lead_coach = UsersSerializer()
+    # lead_coach = UsersSerializer()
     directorate = FetchDirectorateSerializer()
     sub_category = FetchProjectSubCategorySerializer()
     
@@ -109,7 +109,7 @@ class FetchWaveSerializer(serializers.ModelSerializer):
     def get_sub_projects(self, obj):
         try:
             plans = api_models.Wave.objects.filter(Q(mother_id=obj.id) & Q(is_deleted=False))
-            serializer = SlimFetchWaveSerializer(plans, many=True)
+            serializer = SubProjectFetchWaveSerializer(plans, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return []
@@ -118,7 +118,24 @@ class FetchWaveSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return []
     
+class SubProjectFetchWaveSerializer(serializers.ModelSerializer):
+    sub_category = FetchProjectSubCategorySerializer()
+    objectives = serializers.SerializerMethodField()
+    class Meta:
+        model = api_models.Wave
+        fields = '__all__'
 
+    def get_objectives(self, obj):
+        try:
+            objectives = api_models.RRIGoals.objects.filter(Q(wave=obj.id) & Q(is_deleted=False))
+            serializer = SlimFetchRRIGoalsSerializer(objectives, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
 
 class SlimFetchWaveSerializer(serializers.ModelSerializer):
     class Meta:

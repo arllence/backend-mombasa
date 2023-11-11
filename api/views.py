@@ -1232,6 +1232,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
             request_id = request.query_params.get('request_id')
             serializer = request.query_params.get('serializer')
             project_type = request.query_params.get('project_type')
+            standalone = request.query_params.get('standalone')
             
             
             if request_id:
@@ -1246,7 +1247,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             elif serializer == 'slim':
                 try:
-                    waves = models.Wave.objects.filter(Q(id=request_id)).order_by('name')
+                    waves = models.Wave.objects.filter().order_by('name')
                     waves = serializers.SlimFetchWaveSerializer(waves,many=True).data
                     return Response(waves, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -1256,7 +1257,10 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             elif project_type:
                 try:
-                    waves = models.Wave.objects.filter(Q(type=project_type) & Q(is_deleted=False)).order_by('name')
+                    if standalone:
+                        waves = models.Wave.objects.filter(Q(type=project_type) & Q(standalone=standalone) & Q(is_deleted=False)).order_by('name')
+                    else:
+                        waves = models.Wave.objects.filter(Q(type=project_type) & Q(is_deleted=False)).order_by('name')
                     waves = serializers.SlimFetchWaveSerializer(waves,many=True).data
                     return Response(waves, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):

@@ -21,6 +21,9 @@ class SystemUsersSerializer(serializers.Serializer):
     lastname = serializers.CharField()
     phone_number = serializers.CharField()
 
+class SuspendUserSerializer(serializers.Serializer):
+    user_id = serializers.CharField()
+    remarks = serializers.CharField()
 
 class GroupSerializer(serializers.Serializer):
     id = serializers.CharField()
