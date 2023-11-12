@@ -93,14 +93,20 @@ class SlimFetchWaveSerializer(serializers.ModelSerializer):
     class Meta:
         model = api_models.Wave
         fields = '__all__'
-        
 
+
+class TinyFetchWaveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = api_models.Wave
+        fields = '__all__'
+        
     
 class FetchWaveSerializer(serializers.ModelSerializer):
     # lead_coach = UsersSerializer()
     directorate = FetchDirectorateSerializer()
     sub_category = FetchProjectSubCategorySerializer()
     sub_projects = serializers.SerializerMethodField()
+    mother_project = serializers.SerializerMethodField()
     
     class Meta:
         model = api_models.Wave
@@ -110,6 +116,18 @@ class FetchWaveSerializer(serializers.ModelSerializer):
         try:
             plans = api_models.Wave.objects.filter(Q(mother_id=obj.id) & Q(is_deleted=False))
             serializer = SubProjectFetchWaveSerializer(plans, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
+        
+    def get_mother_project(self, obj):
+        try:
+            plans = api_models.Wave.objects.get(Q(id=obj.mother_id) & Q(is_deleted=False))
+            serializer = TinyFetchWaveSerializer(plans, many=False)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return []
@@ -137,11 +155,6 @@ class SubProjectFetchWaveSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return []
 
-class SlimFetchWaveSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = api_models.Wave
-        fields = '__all__'
-
 class FetchTitleSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -159,6 +172,18 @@ class FetchOverseerSerializer(serializers.ModelSerializer):
     title = FetchTitleSerializer()
     class Meta:
         model = api_models.Overseer
+        fields = '__all__'
+
+
+class CreateObjectiveCommentSerializer(serializers.Serializer):
+    type = serializers.CharField(max_length=255)
+    comment = serializers.CharField(max_length=3000)
+    goal = serializers.CharField(max_length=255)
+
+
+class FetchObjectiveCommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = api_models.ObjectiveComment
         fields = '__all__'
 
 
@@ -216,6 +241,7 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     evaluation = serializers.SerializerMethodField()
     assigned = serializers.SerializerMethodField()
     evaluation_analytics = serializers.SerializerMethodField()
+    objective_comments = serializers.SerializerMethodField()
 
     class Meta:
         model = api_models.RRIGoals
@@ -247,17 +273,17 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return {}
         
-    # def get_weekly_reports(self, obj):
-    #     try:
-    #         weekly_reports = api_models.WeeklyReports.objects.filter(Q(rri_goal=obj.id))
-    #         serializer = FetchWeeklyReportSerializer(weekly_reports, many=True)
-    #         return serializer.data
-    #     except (ValidationError, ObjectDoesNotExist):
-    #         return []
-    #     except Exception as e:
-    #         print(e)
-    #         # logger.error(e)
-    #         return []
+    def get_objective_comments(self, obj):
+        try:
+            comments = api_models.ObjectiveComment.objects.filter(Q(goal=obj.id))
+            serializer = FetchObjectiveCommentSerializer(comments, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
         
     def get_workplan(self, obj):
         try:

@@ -372,6 +372,95 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)        
 
+
+    @action(methods=["POST", "GET",  "PUT", "DELETE"],
+            detail=False,
+            url_path="objective-comments",
+            url_name="objective-comments")
+    def objective_comments(self, request):
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.CreateObjectiveCommentSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                type = payload['type'].upper()
+                comment = payload['comment']
+                goal_id = payload['goal']
+
+                try:
+                    goal = models.RRIGoals.objects.get(Q(id=goal_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown objective !"}, status=status.HTTP_400_BAD_REQUEST)
+
+                is_existing = models.ObjectiveComment.objects.filter(Q(goal=goal) & Q(type=type)).first()
+                with transaction.atomic():
+                    raw = {
+                        "type": type,
+                        "goal": goal,
+                        "comment": comment,
+                    }
+
+                    if is_existing:
+                        is_existing.comment = comment
+                        is_existing.save()
+                    else:
+                        models.ObjectiveComment.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            pass
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            goal_id = request.query_params.get('goal_id')
+            if request_id:
+                try:
+                    objective = models.ObjectiveComment.objects.get(Q(id=request_id))
+                    objective = serializers.FetchObjectiveCommentSerializer(objective,many=False).data
+                    return Response(objective, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown objective!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            elif goal_id:
+                try:
+                    objective = models.ObjectiveComment.objects.filter(Q(goal=request_id))
+                    objective = serializers.FetchObjectiveCommentSerializer(objective,many=True).data
+                    return Response(objective, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown objective!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    objectives = models.ObjectiveComment.objects.filter(Q(is_deleted=False)).order_by('type')
+                    objectives = serializers.FetchObjectiveCommentSerializer(objectives,many=True).data
+                    return Response(objectives, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.ObjectiveComment.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)    
+                
+
+
     @action(methods=["POST", "GET", "DELETE"],
             detail=False,
             url_path="overseer",

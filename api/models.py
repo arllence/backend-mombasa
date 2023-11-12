@@ -262,6 +262,21 @@ class TeamMembers(models.Model):
     class Meta:
         db_table = "team_members"
 
+class ObjectiveComment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    type = models.CharField(max_length=150)
+    comment = models.TextField()
+    goal = models.ForeignKey(
+        RRIGoals, related_name="comment_goal", on_delete=models.DO_NOTHING
+    )
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.type
+
+    class Meta:
+        db_table = "objective_comments"
 
 class Achievement(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
