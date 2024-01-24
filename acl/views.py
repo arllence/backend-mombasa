@@ -27,7 +27,26 @@ from api.serializers import FetchOverseerSerializer
 
 logger = logging.getLogger(__name__)
 
+def password_generator():
+        # generate password
+        lower = "abcdefghijklmnopqrstuvwxyz"
+        upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        numbers = "0123456789"
+        symbols = "[}{$@]!?"
 
+        sample_lower = random.sample(lower,2)
+        sample_upper = random.sample(upper,2)
+        sample_numbers = random.sample(numbers,2)
+        sample_symbols = random.sample(symbols,2)
+
+        all = sample_lower + sample_upper + sample_numbers + sample_symbols
+
+        random.shuffle(all)
+
+        password = "".join(all)
+        # print(password)
+        # end generate password
+        return password
 
 class AuthenticationViewSet(viewsets.ModelViewSet):
     permission_classes = (AllowAny,)
@@ -181,7 +200,7 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
             except (ValidationError, ObjectDoesNotExist):
                 return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
-            new_password = self.password_generator()
+            new_password = password_generator()
             hashed_password = make_password(new_password)
             user_details.password = hashed_password
             user_details.save()
