@@ -159,7 +159,48 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
 
         else:
             return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-   
+    
+    @action(methods=["POST"],
+            detail=False,
+            url_path="reset-user-password",
+            url_name="reset-user-password")
+    def reset_user_password(self, request):
+        """
+        Resets specific user password to default ie username. payload['user_id']
+        """
+        payload = request.data
+        email = request.data.get('email')
+
+        if email is None:
+            return Response({"details": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        with transaction.atomic():
+            email = payload['email']
+            try:
+                user_details = get_user_model().objects.get(email=email)
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+
+            new_password = self.password_generator()
+            hashed_password = make_password(new_password)
+            user_details.password = hashed_password
+            user_details.save()
+
+            subject = "Access Details [Nairobi GDU]"
+            message = f"\
+                            Dear user, \n\
+                            Your email is {user_details.email}\n\
+                            Your password is: {new_password}\n\
+                            If you encounter any challenge while navigating the platform, please let us know.\
+                        "
+            mailgun_general.send_mail(user_details.first_name,user_details.email,subject,message)
+
+            if not settings.DEBUG:
+                new_password = '<REDACTED>'
+            
+            user_util.log_account_activity(
+                user_details, user_details, "Password Reset", "Password Reset Executed")
+            return Response(f"Password Reset Successful. Pass: {new_password}", status=status.HTTP_200_OK)
 
 class AccountManagementViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
@@ -421,7 +462,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 user_details.password = hashed_password
                 user_details.save()
 
-                subject = "Access Details [Nairobi RRi]"
+                subject = "Access Details [Nairobi GDU]"
                 message = f"\
                                 Dear user, \n\
                                 Your email is {user_details.email}\n\
@@ -665,7 +706,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 group_details.user_set.add(create_user)
 
 
-                subject = "Platform Access Details [Nairobi RRi]"
+                subject = "Platform Access Details [Nairobi GDU]"
                 message = f"\
                                 Dear user, \n\
                                 Your email is {email}\n\
