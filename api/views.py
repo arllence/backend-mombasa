@@ -1381,7 +1381,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
                        
             
-    @action(methods=["GET","POST", "PUT"], detail=False, url_path="weekly-reports",url_name="weekly-reports")
+    @action(methods=["GET","POST", "PUT", "DELETE"], detail=False, url_path="weekly-reports",url_name="weekly-reports")
     def weekly_reports(self, request):
         authenticated_user = request.user
         payload = request.data
@@ -1397,13 +1397,17 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 try:
                     workplan = report['workplan']
                     activities = report['activities']
+
                     if not activities:
                         return Response({"details": f"Milestone Activity Progress Required!"}, status=status.HTTP_400_BAD_REQUEST) 
+                    
                     try:
                         workplan = models.WorkPlan.objects.get(Q(id=workplan))
                     except (ValidationError, ObjectDoesNotExist):
                         return Response({"details": "Unknown workplan !"}, status=status.HTTP_400_BAD_REQUEST)
+                    
                     report['workplan'] = workplan
+                    
                 except Exception as e:
                     print(e)
                     return Response({"details": f"All fields required!"}, status=status.HTTP_400_BAD_REQUEST) 
@@ -1493,7 +1497,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             elif rri_goal:
                 try:
-                    reports = models.WeeklyReports.objects.filter(Q(rri_goal=rri_goal)).order_by('-date_created')
+                    reports = models.WeeklyReports.objects.filter(Q(rri_goal=rri_goal) & Q(is_deleted=False)).order_by('-date_created')
                     reports = serializers.FetchWeeklyReportSerializer(reports,many=True).data
                     return Response(reports, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -1503,7 +1507,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    reports = models.WeeklyReports.objects.all().order_by('-date_created')
+                    reports = models.WeeklyReports.objects.filter(Q(is_deleted=False)).order_by('-date_created')
                     reports = serializers.FetchWeeklyReportSerializer(reports,many=True).data
                     return Response(reports, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -1512,7 +1516,19 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 
-        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.WeeklyReports.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
     @action(methods=["GET","POST", "PUT", "PATCH", "DELETE"], detail=False, url_path="workplan",url_name="workplan")
     def workplan(self, request):
         authenticated_user = request.user
