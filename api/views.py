@@ -1472,24 +1472,29 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Unknown workplan !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    models.WeeklyReports.objects.get(Q(id=request_id))
+                    WeeklyReports = models.WeeklyReports.objects.get(Q(id=request_id))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Report!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 
                 with transaction.atomic():
-                    raw = {
-                        "workplan" : workplan,
-                        "activities" : activities,
-                        "creator": authenticated_user
-                    }
+                    # raw = {
+                    #     "workplan" : workplan,
+                    #     "activities" : activities,
+                    #     "creator": authenticated_user
+                    # }
 
-                    # report = models.WeeklyReports.objects.update(**raw)
-                    models.WeeklyReports.objects.filter(Q(id=request_id)).update(**raw)
+                    WeeklyReports.workplan = workplan
+                    WeeklyReports.activities = activities
+                    WeeklyReports.creator = authenticated_user
+                    WeeklyReports.save()
+
+
+                    # models.WeeklyReports.objects.filter(Q(id=request_id)).update(**raw)
                                                 
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Weekly Report updated", f"Weekly Report updation Executed: {report.id}")
+                    authenticated_user, authenticated_user, "Weekly Report updated", f"Weekly Report updation Executed. Record id: {request_id}")
                 return Response('success', status=status.HTTP_200_OK)
             
             else:
