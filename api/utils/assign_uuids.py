@@ -9,7 +9,7 @@ def run():
         for activity in report.activities:
             new_id = uuid.uuid4()
             activity.update({"id": str(new_id)})
-            print(activity)
-        # report.save()
+            print(new_id)
+        report.save()
 
 run()
