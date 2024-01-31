@@ -2,6 +2,7 @@ import datetime
 import json
 from multiprocessing.util import is_exiting
 from os import name
+import uuid
 from requests import delete
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
@@ -1401,6 +1402,14 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     if not activities:
                         return Response({"details": f"Milestone Activity Progress Required!"}, status=status.HTTP_400_BAD_REQUEST) 
                     
+                    for activity in activities:
+                        try:
+                            activity_id = activity['id']
+                        except KeyError:
+                            new_id = uuid.uuid4()
+                            activity.update({"id": str(new_id)})
+                            print(new_id)
+                    
                     try:
                         workplan = models.WorkPlan.objects.get(Q(id=workplan))
                     except (ValidationError, ObjectDoesNotExist):
@@ -1449,9 +1458,13 @@ class FoundationViewSet(viewsets.ModelViewSet):
                 workplan = payload['workplan']
                 activities = payload['activities']
 
-                # find difference in dates / validate dates
-                # days = shared_fxns.find_date_difference(start_date,end_date,'days')
-                            
+                for activity in activities:
+                    try:
+                        activity_id = activity['id']
+                    except KeyError:
+                        new_id = uuid.uuid4()
+                        activity.update({"id": str(new_id)})
+                        # print(new_id)    
 
                 try:
                     workplan = models.WorkPlan.objects.get(Q(id=workplan))
@@ -1517,15 +1530,28 @@ class FoundationViewSet(viewsets.ModelViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 
         elif request.method == "DELETE":
-            request_id = request.query_params.get('request_id')
-            if not request_id:
-                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            progress_id = request.query_params.get('progress_id')
+            milestone_id = request.query_params.get('milestone_id')
+
+            if not progress_id:
+                return Response({"details": "Progress id  required !"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not milestone_id:
+                return Response({"details": "Milestone id  required !"}, status=status.HTTP_400_BAD_REQUEST)
+            
             with transaction.atomic():
                 try:
-                    raw = {"is_deleted" : True}
-                    models.WeeklyReports.objects.filter(Q(id=request_id)).update(**raw)
+                    WeeklyReports = models.WeeklyReports.objects.get(Q(id=progress_id))
+
+                    for activity in WeeklyReports.activities:
+                        if activity['id'] == milestone_id:
+                            WeeklyReports.activities.remove(activity)
+
+                    WeeklyReports.save()
+
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
+                    print(e)
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
                 
 
