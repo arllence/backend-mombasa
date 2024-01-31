@@ -8,8 +8,8 @@ def run():
     for report in weekly_reports:
         for activity in report.activities:
             new_id = uuid.uuid4()
-            activity.update({"id": str(new_id)})
-            print(new_id)
-        report.save()
+            # activity.update({"id": str(new_id)})
+            print(activity)
+        # report.save()
 
 run()
