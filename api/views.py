@@ -1408,7 +1408,7 @@ class FoundationViewSet(viewsets.ModelViewSet):
                         except KeyError:
                             new_id = uuid.uuid4()
                             activity.update({"id": str(new_id)})
-                            print(new_id)
+                            # print(new_id)
                     
                     try:
                         workplan = models.WorkPlan.objects.get(Q(id=workplan))
