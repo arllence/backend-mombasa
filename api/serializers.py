@@ -242,6 +242,7 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
     assigned = serializers.SerializerMethodField()
     evaluation_analytics = serializers.SerializerMethodField()
     objective_comments = serializers.SerializerMethodField()
+    completion_analytics = serializers.SerializerMethodField()
 
     class Meta:
         model = api_models.RRIGoals
@@ -415,6 +416,57 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return []
+    
+    def get_completion_analytics(self, obj):
+        try:
+            goals = api_models.WorkPlan.objects.filter(rri_goal=obj)
+            goals_ids = [str(goal.id) for goal in goals]
+            
+            # print("rri_goals: ", goals)
+
+            reports = api_models.WeeklyReports.objects.filter(Q(workplan__pk__in=goals_ids))
+            # print("reports: ", reports)
+
+            total_goals = goals.count()
+            # print("total_goals: ", total_goals)
+            total_ptage = 0
+            total_avr_ptage = 0
+            for report in reports:
+                ptage = 0
+                avr_ptage = 0
+                sort_activities = []
+                for report_activity in report.activities:
+                    if report_activity['activity'] not in sort_activities:
+                        sort_activities.append(report_activity['activity'])
+                # print(sort_activities)
+                # sorted_activities = []
+                for item in sort_activities:
+                    activities = []
+                    for activity in report.activities:
+                        if activity['activity'] == item:
+                            activities.append(activity)
+                    # sorted_activities.append(activities[-1:])
+                    try:
+                        ptage += int(activities[-1:][0]['percentage_completion'])
+                    except Exception as e:
+                        print(e)
+                            
+
+                if ptage > 0 :
+                    avr_ptage = ptage / len(sort_activities)
+
+                total_avr_ptage += avr_ptage
+
+            if total_avr_ptage > 0:
+                total_avr_ptage /= total_goals
+
+            analytics = { "completion": total_avr_ptage }
+            # print(analytics)
+            return analytics
+        except (ValidationError, ObjectDoesNotExist):
+            return { "completion": 0 }
+        except Exception as e:
+            print(e)
 
 
 class CreateEvidenceSerializer(serializers.Serializer):
@@ -532,6 +584,31 @@ class FetchWorkPlanSerializer(serializers.ModelSerializer):
     def get_weekly_reports(self, obj):
         try:
             reports = api_models.WeeklyReports.objects.get(Q(workplan=obj))
+            ptage = 0
+            avr_ptage = 0
+            sort_activities = []
+            for report in reports.activities:
+                if report['activity'] not in sort_activities:
+                    sort_activities.append(report['activity'])
+            # print(sort_activities)
+            sorted_activities = []
+            for item in sort_activities:
+                activities = []
+                for activity in reports.activities:
+                    if activity['activity'] == item:
+                        activities.append(activity)
+                # sorted_activities.append(activities[-1:])
+                try:
+                    ptage += int(activities[-1:][0]['percentage_completion'])
+                except Exception as e:
+                    print(e)
+                        
+
+            if ptage > 0 :
+                avr_ptage = ptage/len(sort_activities)
+
+            obj.percentage = avr_ptage
+
             serializer = FetchWeeklyReportSerializer(reports, many=False)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
@@ -543,6 +620,55 @@ class FetchWorkPlanSerializer(serializers.ModelSerializer):
 
     def get_workplan_analytics(self, obj):
         try:
+            # rri_goal = obj.rri_goal
+            # goals = api_models.WorkPlan.objects.filter(rri_goal=rri_goal)
+            # goals_ids = [str(goal.id) for goal in goals]
+            
+            # print("rri_goals: ", goals)
+
+            # reports = api_models.WeeklyReports.objects.filter(Q(workplan__pk__in=goals_ids))
+            # print("reports: ", reports)
+
+            # total_goals = goals.count()
+            # print("total_goals: ", total_goals)
+            # total_ptage = 0
+            # total_avr_ptage = 0
+            # for report in reports:
+            #     ptage = 0
+            #     avr_ptage = 0
+            #     sort_activities = []
+            #     for report_activity in report.activities:
+            #         if report_activity['activity'] not in sort_activities:
+            #             sort_activities.append(report_activity['activity'])
+            #     # print(sort_activities)
+            #     # sorted_activities = []
+            #     for item in sort_activities:
+            #         activities = []
+            #         for activity in report.activities:
+            #             if activity['activity'] == item:
+            #                 activities.append(activity)
+            #         # sorted_activities.append(activities[-1:])
+            #         try:
+            #             ptage += int(activities[-1:][0]['percentage_completion'])
+            #         except Exception as e:
+            #             print(e)
+                            
+            #     print(ptage)
+            #     if ptage > 0 :
+            #         avr_ptage = ptage/len(sort_activities)
+            #     print("avr_ptage", avr_ptage) 
+            #     # obj.percentage = avr_ptage
+            #     total_avr_ptage += avr_ptage
+            #     # obj.save
+
+
+
+
+
+
+
+
+
             counter = 0
             summary = 0
             report = api_models.WeeklyReports.objects.get(Q(workplan=obj))
