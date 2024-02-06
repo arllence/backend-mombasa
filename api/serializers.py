@@ -460,6 +460,8 @@ class FetchRRIGoalsSerializer(serializers.ModelSerializer):
             if total_avr_ptage > 0:
                 total_avr_ptage /= total_goals
 
+            total_avr_ptage = math.ceil(total_avr_ptage)
+
             analytics = { "completion": total_avr_ptage }
             # print(analytics)
             return analytics
