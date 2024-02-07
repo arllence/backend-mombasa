@@ -2660,6 +2660,7 @@ class AnalyticsViewSet(viewsets.ViewSet):
         main_projects = models.Wave.objects.filter(Q(type="MAIN") & Q(is_deleted=False)).count()
         sub_projects = models.Wave.objects.filter(Q(type="SUB") & Q(is_deleted=False)).count()
         objectives = models.RRIGoals.objects.filter(Q(is_deleted=False)).count()
+        goals = models.ThematicArea.objects.filter(Q(is_deleted=False)).count()
         boroughs = models.Borough.objects.filter(Q(is_deleted=False)).count()
         subcounties = models.SubCounty.objects.filter(Q(is_deleted=False)).count()
         wards = models.Ward.objects.filter(Q(is_deleted=False)).count()
@@ -2672,6 +2673,7 @@ class AnalyticsViewSet(viewsets.ViewSet):
             "main_projects": main_projects,
             "sub_projects": sub_projects,
             "objectives": objectives,
+            "goals": goals,
             "boroughs": boroughs,
             "subcounties": subcounties,
             "wards": wards,
