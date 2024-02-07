@@ -2643,6 +2643,45 @@ class ReportsViewSet(viewsets.ViewSet):
             print(e)
             return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
+class AnalyticsViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    # queryset = models.Evaluation.objects.all().order_by('id')
+    # serializer_class = serializers.FetchEvaluationSerializer()
+    # search_fields = ['id', ]
+
+    def get_queryset(self):
+        return []
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="general",
+            url_name="general")
+    def general(self, request):
+        main_projects = models.Wave.objects.filter(Q(type="MAIN") & Q(is_deleted=False)).count()
+        sub_projects = models.Wave.objects.filter(Q(type="SUB") & Q(is_deleted=False)).count()
+        objectives = models.RRIGoals.objects.filter(Q(is_deleted=False)).count()
+        boroughs = models.Borough.objects.filter(Q(is_deleted=False)).count()
+        subcounties = models.SubCounty.objects.filter(Q(is_deleted=False)).count()
+        wards = models.Ward.objects.filter(Q(is_deleted=False)).count()
+        project_categories = models.ProjectSubCategory.objects.filter(Q(is_deleted=False)).count()
+        sectors = models.Sector.objects.filter(Q(is_deleted=False)).count()
+        subsectors = models.SubSector.objects.filter(Q(is_deleted=False)).count()
+        directorates = models.Directorate.objects.filter(Q(is_deleted=False)).count()
+
+        resp = {
+            "main_projects": main_projects,
+            "sub_projects": sub_projects,
+            "objectives": objectives,
+            "boroughs": boroughs,
+            "subcounties": subcounties,
+            "wards": wards,
+            "project_categories": project_categories,
+            "sectors": sectors,
+            "subsectors": subsectors,
+            "directorates": directorates,
+        }
+
+        return Response(resp, status=status.HTTP_200_OK)
 
 class DepartmentViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
