@@ -107,6 +107,7 @@ class FetchWaveSerializer(serializers.ModelSerializer):
     sub_category = FetchProjectSubCategorySerializer()
     sub_projects = serializers.SerializerMethodField()
     mother_project = serializers.SerializerMethodField()
+    leaders = serializers.SerializerMethodField()
     
     class Meta:
         model = api_models.Wave
@@ -135,6 +136,25 @@ class FetchWaveSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return []
+        
+    def get_leaders(self, obj):
+        try:
+            results_leaders = api_models.Overseer.objects.filter(Q(pk__in=obj.results_leaders)) 
+            technical_leaders = api_models.Overseer.objects.filter(Q(pk__in=obj.technical_leaders))
+            strategic_leaders = api_models.Overseer.objects.filter(Q(pk__in=obj.strategic_leaders)) 
+
+            results = [x.name for x in results_leaders]
+            technical = [x.name for x in technical_leaders]
+            strategic = [x.name for x in strategic_leaders]
+
+            leaders = {
+                "results": results,
+                "technical": technical,
+                "strategic": strategic,
+            }
+            return leaders
+        except Exception as e:
+            print(e)
     
 class SubProjectFetchWaveSerializer(serializers.ModelSerializer):
     sub_category = FetchProjectSubCategorySerializer()
