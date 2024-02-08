@@ -20,6 +20,7 @@ from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
 from api.utils.file_type import identify_file_type 
 from api.utils import shared_fxns
+from django.db.models import Sum
 
 
 
@@ -2668,6 +2669,38 @@ class AnalyticsViewSet(viewsets.ViewSet):
         sectors = models.Sector.objects.filter(Q(is_deleted=False)).count()
         subsectors = models.SubSector.objects.filter(Q(is_deleted=False)).count()
         directorates = models.Directorate.objects.filter(Q(is_deleted=False)).count()
+
+        resp = {
+            "main_projects": main_projects,
+            "sub_projects": sub_projects,
+            "objectives": objectives,
+            "goals": goals,
+            "boroughs": boroughs,
+            "subcounties": subcounties,
+            "wards": wards,
+            "project_categories": project_categories,
+            "sectors": sectors,
+            "subsectors": subsectors,
+            "directorates": directorates,
+        }
+
+        return Response(resp, status=status.HTTP_200_OK)
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="budget",
+            url_name="budget")
+    def budget(self, request):
+
+        # projects = models.Wave.objects.filter(Q(is_deleted=False))
+        # sum_projects = 0
+        # for project in projects:
+        #     sum_projects += decimal(project.budget)
+        sum_projects = models.Wave.objects.filter(is_deleted=False).aggregate(total_budget=Sum('budget'))['total_budget'] or 0
+        categories = models.ProjectSubCategory.objects.filter(is_deleted=False).values_list('id', flat=True)
+
+
+
 
         resp = {
             "main_projects": main_projects,
