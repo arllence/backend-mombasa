@@ -2696,24 +2696,34 @@ class AnalyticsViewSet(viewsets.ViewSet):
         # sum_projects = 0
         # for project in projects:
         #     sum_projects += decimal(project.budget)
-        sum_projects = models.Wave.objects.filter(is_deleted=False).aggregate(total_budget=Sum('budget'))['total_budget'] or 0
+        total_budget = models.Wave.objects.filter(is_deleted=False).aggregate(total_budget=Sum('budget'))['total_budget'] or 0
         categories = models.ProjectSubCategory.objects.filter(is_deleted=False).values_list('id', flat=True)
+        cat_list =[]
+        labels = ["Total",]
+        data = [total_budget,]
+        for category in categories:
+            labels.append(models.ProjectSubCategory.objects.get(id=category).name)
+            data.append(models.Wave.objects.filter(is_deleted=False, sub_category=category).aggregate(total_budget=Sum('budget'))['total_budget'] or 0)
+            # data = {
+            #     "category" : models.ProjectSubCategory.objects.get(id=category).name,
+            #     "budget" : models.Wave.objects.filter(is_deleted=False, sub_category=category).aggregate(total_budget=Sum('budget'))['total_budget'] or 0
+            # }
+
+            # cat_list.append(data)
+
 
 
 
 
         resp = {
-            "main_projects": main_projects,
-            "sub_projects": sub_projects,
-            "objectives": objectives,
-            "goals": goals,
-            "boroughs": boroughs,
-            "subcounties": subcounties,
-            "wards": wards,
-            "project_categories": project_categories,
-            "sectors": sectors,
-            "subsectors": subsectors,
-            "directorates": directorates,
+            "labels": labels,
+            "datasets": [
+                {
+                    "label": 'Budget',
+                    "backgroundColor": '#f87979',
+                    "data": data
+                }
+            ]
         }
 
         return Response(resp, status=status.HTTP_200_OK)
