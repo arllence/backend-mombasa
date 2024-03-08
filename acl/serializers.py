@@ -1,15 +1,27 @@
 from django.db.models import  Q
-from acl import models as acl_models
+from acl import models
 from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 
+class CreateDepartmentSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+
+class UpdateDepartmentSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
+    
+class FetchDepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Department
+        fields = '__all__'
 
 class UserDetailSerializer(serializers.Serializer):
     email = serializers.CharField()
     first_name = serializers.CharField()
     last_name = serializers.CharField()
+    department_id = serializers.CharField()
 
 class UserIdSerializer(serializers.Serializer):
     user_id = serializers.CharField()
@@ -51,11 +63,12 @@ class UsersSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField()
     is_active = serializers.CharField()
     is_suspended = serializers.CharField()
+    department = FetchDepartmentSerializer()
     user_groups = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = get_user_model()
         fields = [
-            'id', 'email', 'first_name', 'last_name', 'is_active', 'is_suspended','user_groups','date_created'
+            'id', 'email', 'first_name', 'last_name', 'is_active', 'is_suspended','department', 'user_groups','date_created'
         ]
 
     def get_user_groups(self, obj):
@@ -76,3 +89,7 @@ class PasswordChangeSerializer(serializers.Serializer):
     new_password = serializers.CharField()
     confirm_password = serializers.CharField()
     current_password = serializers.CharField()
+
+class GeneralNameSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=255)
+

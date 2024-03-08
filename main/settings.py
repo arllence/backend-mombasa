@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'acl',
-    'api'
+    'mms'
 ]
 
 MIDDLEWARE = [
@@ -128,7 +128,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 loggername = str(date.today())
-app_name = 'county47'
+app_name = 'mmds'
 LOGGING = {
     'version': 1,
     # The version number of our log
@@ -208,7 +208,7 @@ REST_FRAMEWORK = {
 
 X_FRAME_OPTIONS = 'ALLOW-FROM https://127.0.0.1/'
 
-TOKEN_SECRET_CODE = 'county47?Refined'
+TOKEN_SECRET_CODE = 'mmds?Refined'
 TOKEN_EXPIRY = int(os.getenv('TOKEN_EXPIRY_TIME'))
 
 CORS_ORIGIN_ALLOW_ALL = True

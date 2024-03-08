@@ -7,6 +7,19 @@ from .managers import UserManager
 from django.contrib.auth.models import Group, PermissionsMixin
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 
+
+class Department(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=50)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "departments"
+
+
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.CharField(max_length=100, unique=True)
@@ -17,6 +30,11 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False)
     is_suspended = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
+    department = models.ForeignKey(
+        Department, related_name="user_department", 
+        null=True, blank=True,
+        on_delete=models.DO_NOTHING
+    )
     objects = UserManager()
 
     USERNAME_FIELD = "email"
@@ -37,10 +55,10 @@ class User(AbstractBaseUser, PermissionsMixin):
 class AccountActivity(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     recipient = models.ForeignKey(
-        User, related_name="user_account_activity", on_delete=models.CASCADE
+        User, related_name="user_account_activity", on_delete=models.DO_NOTHING
     )
     actor = models.ForeignKey(
-        User, related_name="activity_actor", on_delete=models.CASCADE
+        User, related_name="activity_actor", on_delete=models.DO_NOTHING
     )
     activity = models.TextField(null=True, blank=True)
     remarks = models.TextField(null=True, blank=True)

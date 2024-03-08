@@ -22,31 +22,8 @@ from django.db import transaction
 from acl import models
 from acl import serializers
 from acl.utils import mailgun_general
-from api import models as api_models
-from api.serializers import FetchOverseerSerializer
 
 logger = logging.getLogger(__name__)
-
-def password_generator():
-        # generate password
-        lower = "abcdefghijklmnopqrstuvwxyz"
-        upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        numbers = "0123456789"
-        symbols = "[}{$@]!?"
-
-        sample_lower = random.sample(lower,2)
-        sample_upper = random.sample(upper,2)
-        sample_numbers = random.sample(numbers,2)
-        sample_symbols = random.sample(symbols,2)
-
-        all = sample_lower + sample_upper + sample_numbers + sample_symbols
-
-        random.shuffle(all)
-
-        password = "".join(all)
-        # print(password)
-        # end generate password
-        return password
 
 class AuthenticationViewSet(viewsets.ModelViewSet):
     permission_classes = (AllowAny,)
@@ -81,11 +58,20 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Your Account Has Been Suspended,Liase with your supervisor"}, status=status.HTTP_400_BAD_REQUEST)
             else:
 
+                try:
+                    department_name = is_authenticated.department.name
+                    department_id = is_authenticated.department.id
+                except:
+                    department_name = ''
+                    department_id = ''
+
                 payload = {
                     'id': str(is_authenticated.id),
                     'email': is_authenticated.email,
                     'first_name': is_authenticated.first_name,
                     'staff': is_authenticated.is_staff,
+                    'department_name': department_name,
+                    'department_id': str(department_id),
                     'exp': datetime.utcnow() + timedelta(seconds=settings.TOKEN_EXPIRY),
                     'iat': datetime.utcnow()
                 }
@@ -200,12 +186,12 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
             except (ValidationError, ObjectDoesNotExist):
                 return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
-            new_password = password_generator()
+            new_password = user_util.password_generator()
             hashed_password = make_password(new_password)
             user_details.password = hashed_password
             user_details.save()
 
-            subject = "Access Details [Nairobi GDU]"
+            subject = "Access Details [MMS-AKHK]"
             message = f"\
                             Dear user, \n\
                             Your email is {user_details.email}\n\
@@ -416,18 +402,11 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         #     return Response({'details': 'Invalid Filter Criteria'}, status=status.HTTP_400_BAD_REQUEST)
         
         try:
-            if username == "all":
-                user_details = get_user_model().objects.all()
-                user_info = serializers.UsersSerializer(user_details, many=True).data
-                overseers = api_models.Overseer.objects.all()
-                seers = FetchOverseerSerializer(overseers, many=True).data
-                resp = user_info + seers
-                return Response(resp, status=status.HTTP_200_OK)
-            elif username and username != "all":
+            if username :
                 user_details = get_user_model().objects.filter(Q(email__icontains=username) | Q(first_name__icontains=username) | Q(last_name__icontains=username))
             elif username is None or not username:
                 user_details = get_user_model().objects.all()
-                print(len(user_details))
+                # print(len(user_details))
         except (ValidationError, ObjectDoesNotExist):
             return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -476,12 +455,12 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
-                new_password = self.password_generator()
+                new_password = user_util.password_generator()
                 hashed_password = make_password(new_password)
                 user_details.password = hashed_password
                 user_details.save()
 
-                subject = "Access Details [Nairobi GDU]"
+                subject = "Access Details [MMS-AKHK]"
                 message = f"\
                                 Dear user, \n\
                                 Your email is {user_details.email}\n\
@@ -608,9 +587,11 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 group_names.append(group.name)
 
                 record_instance.groups.add(group)
+
             user_util.log_account_activity(
                 authenticated_user, record_instance, "Role Assignment",
-                "USER ASSIGNED ROLES {{i}}".format(group_names))
+                f"USER ASSIGNED ROLES {str(group_names)}")
+            
             return Response("Successfully Updated",
                             status=status.HTTP_200_OK)
 
@@ -632,6 +613,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             role_id = payload['role_id']
             account_id = payload['account_id']
+
             if not role_id:
                 return Response(
                     {'details': 'Select atleast one role'},
@@ -643,14 +625,17 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 return Response(
                     {'details': 'Invalid User'},
                     status=status.HTTP_400_BAD_REQUEST)
+            
             group_names = []
             for assigned_role in role_id:
                 group = Group.objects.get(id=assigned_role)
                 group_names.append(group.name)
                 record_instance.groups.remove(group)
+
             user_util.log_account_activity(
                 authenticated_user, record_instance, "Role Revokation",
-                "USER REVOKED ROLES {{i}}".format(group_names))
+                f"USER REVOKED ROLES {str(group_names)}")
+            
             return Response("Successfully Updated",
                             status=status.HTTP_200_OK)
 
@@ -658,26 +643,6 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             return Response({"details": serializer.errors},
                             status=status.HTTP_400_BAD_REQUEST)
 
-    def password_generator(self):
-        # generate password
-        lower = "abcdefghijklmnopqrstuvwxyz"
-        upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        numbers = "0123456789"
-        symbols = "[}{$@]!?"
-
-        sample_lower = random.sample(lower,2)
-        sample_upper = random.sample(upper,2)
-        sample_numbers = random.sample(numbers,2)
-        sample_symbols = random.sample(symbols,2)
-
-        all = sample_lower + sample_upper + sample_numbers + sample_symbols
-
-        random.shuffle(all)
-
-        password = "".join(all)
-        # print(password)
-        # end generate password
-        return password
 
     @action(methods=["POST"], detail=False, url_path="create-user", url_name="create-user")
     def create_user(self, request):
@@ -693,6 +658,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 last_name = payload['last_name']
                 email = payload['email']
                 role_name = payload['role_name']
+                department = payload['department_id']
                 emailexists = get_user_model().objects.filter(email=email).exists()
 
 
@@ -705,16 +671,21 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     group_details = Group.objects.get(id=role_name)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Role does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    department = models.Department.objects.get(id=department)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Department does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
 
-
-                password = self.password_generator()
+                password = user_util.password_generator()
 
                 hashed_pwd = make_password(password)
                 newuser = {
                     "first_name": first_name,
                     "last_name": last_name,
                     "email": email,
+                    "department": department,
                     "is_active": True,
                     "is_superuser": False,
                     "is_staff": False,
@@ -724,8 +695,14 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 create_user = get_user_model().objects.create(**newuser)
                 group_details.user_set.add(create_user)
 
+                try:
+                    general_group_details = Group.objects.get(name='USER')
+                    general_group_details.user_set.add(create_user)
+                except (ValidationError, ObjectDoesNotExist):
+                    pass
 
-                subject = "Platform Access Details [Nairobi GDU]"
+
+                subject = "Platform Access Details [MMS-AKHK]"
                 message = f"\
                                 Dear user, \n\
                                 Your email is {email}\n\
@@ -739,7 +716,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     "USER CREATED")
                 
                 if not settings.DEBUG:
-                    password = ''
+                    password = '<REDACTED>'
 
 
                 info = {
@@ -750,6 +727,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
 
         else:
             return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
 
     @action(methods=["POST"], detail=False, url_path="suspend-user", url_name="suspend-user")
     def suspend_user(self, request):
@@ -803,4 +781,75 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
         else:
             return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
+class DepartmentViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    queryset = models.Department.objects.all().order_by('id')
+    serializer_class = serializers.CreateDepartmentSerializer
+    search_fields = ['id', ]
+
+    def get_queryset(self):
+        return []
+
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="department",
+            url_name="department")
+    def department(self, request):
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                with transaction.atomic():
+                    raw = {
+                        "name": name
+                    }
+                    models.Department.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateDepartmentSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                dept_id = payload['request_id']
+                name = payload['name']
+                with transaction.atomic():
+                    try:
+                        dept = models.Department.objects.get(id=dept_id)
+                        dept.name = name
+                        dept.save()
+                    except (ValidationError, ObjectDoesNotExist):
+                        return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    department = models.Department.objects.get(Q(id=request_id))
+                    department = serializers.FetchDepartmentSerializer(department,many=False).data
+                    return Response(department, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    departments = models.Department.objects.all().order_by('name')
+                    departments = serializers.FetchDepartmentSerializer(departments,many=True).data
+                    return Response(departments, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 

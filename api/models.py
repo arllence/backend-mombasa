@@ -1,4 +1,4 @@
-from tracemalloc import start
+
 import uuid
 from acl.models import User
 from django.db import models
@@ -56,16 +56,16 @@ class Estate(models.Model):
         db_table = "estates"
 
 
-class Department(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=50)
-    date_created = models.DateTimeField(auto_now_add=True)
+# class Department(models.Model):
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     name = models.CharField(max_length=50)
+#     date_created = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.name
+#     def __str__(self):
+#         return self.name
 
-    class Meta:
-        db_table = "departments"
+#     class Meta:
+#         db_table = "departments"
 
 class ProjectSubCategory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

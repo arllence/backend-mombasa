@@ -55,7 +55,7 @@ class UpdateDepartmentSerializer(serializers.Serializer):
 class FetchDepartmentSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = api_models.Department
+        # model = api_models.Department
         fields = '__all__'
         
 

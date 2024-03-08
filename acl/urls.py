@@ -8,6 +8,8 @@ router.register('account-management',
                 views.AccountManagementViewSet, basename='account-management')
 router.register('ict-support',
                 views.ICTSupportViewSet, basename='ict-support')   
+router.register('department',
+                views.DepartmentViewSet, basename='department')
    
                          
 urlpatterns = router.urls

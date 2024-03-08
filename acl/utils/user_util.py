@@ -1,4 +1,5 @@
 import logging
+import random
 from django.contrib.auth.models import Group
 from acl.models import AccountActivity, User
 from django.conf import settings
@@ -32,7 +33,6 @@ def log_account_activity(actor, recipient, activity, remarks):
 
 
 def award_role(role,account_id):
-    role = "LEAD_" + role
     try:
         record_instance = get_user_model().objects.get(id=account_id)
         group = Group.objects.get(name=role)  
@@ -43,10 +43,6 @@ def award_role(role,account_id):
         return False
 
 def revoke_role(role,account_id):
-    if role == "EXTERNAL_EVALUATOR":
-        role = "CHIEF_EVALUATOR"
-    else:
-        role = "LEAD_" + role
     try:
         record_instance = get_user_model().objects.get(id=account_id)
         group = Group.objects.get(name=role)  
@@ -55,6 +51,24 @@ def revoke_role(role,account_id):
     except Exception as e:
         logger.error(e)
         return False
-        
+
+def password_generator():
+        # generate password
+        lower = "abcdefghijklmnopqrstuvwxyz"
+        upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        numbers = "0123456789"
+        symbols = "$@!?"
+
+        sample_lower = random.sample(lower,2)
+        sample_upper = random.sample(upper,2)
+        sample_numbers = random.sample(numbers,2)
+        sample_symbols = random.sample(symbols,2)
+
+        all = sample_lower + sample_upper + sample_numbers + sample_symbols
+
+        random.shuffle(all)
+
+        password = "".join(all)
+        return password
 
 
