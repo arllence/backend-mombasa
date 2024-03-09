@@ -25,6 +25,16 @@ class QuoteSerializer(serializers.Serializer):
     description = serializers.CharField(max_length=5000)
     department = serializers.CharField(max_length=500)
 
+class PutQuoteSerializer(serializers.Serializer):
+    id = serializers.CharField(max_length=500)
+    subject = serializers.CharField(max_length=500)
+    description = serializers.CharField(max_length=5000)
+    department = serializers.CharField(max_length=500)
+
+class PatchQuoteSerializer(serializers.Serializer):
+    status = serializers.CharField(max_length=500)
+    quote_id = serializers.CharField(max_length=500)
+
 class FetchQuoteSerializer(serializers.ModelSerializer):
     uploader = UsersSerializer()
     department = FetchDepartmentSerializer()
@@ -42,7 +52,7 @@ class AssignQuoteSerializer(serializers.Serializer):
 class FetchAssignQuoteSerializer(serializers.ModelSerializer):
     assigned = UsersSerializer()
     quote = FetchQuoteSerializer()
-    
+
     class Meta:
         model = models.QuoteAssignee
         fields = '__all__'

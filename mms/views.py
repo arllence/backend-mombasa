@@ -31,7 +31,7 @@ class MmsViewSet(viewsets.ViewSet):
     def get_queryset(self):
         return []
     
-    @action(methods=["POST", "GET", "PUT", "DELETE"],
+    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
             url_path="quote",
             url_name="quote")
@@ -92,7 +92,7 @@ class MmsViewSet(viewsets.ViewSet):
                         "content": content,
                     }  
 
-                    models.Quote.objects.create(
+                    quote = models.Quote.objects.create(
                         **raw
                     )
 
@@ -100,13 +100,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                     # Notify the manager
                     subject = "A New Quote Received [MMS-AKHK]"
-                    message = f"\
-                                    Hello, \n\
-                                    A new quote from {department.name} has been submitted by {authenticated_user.first_name} at {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\n\
-                                    Pending your action.\n\n\
-                                    Regards\n\
-                                    MMS-AKHK
-                                "
+                    message = f"Hello, \nA new quote: {quote.subject} from department:  {department.name} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} at {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\nPending your action.\n\nRegards\n MMS-AKHK"
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
@@ -118,6 +112,142 @@ class MmsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+        if request.method == "PUT":
+            formfiles = request.FILES
+            # if not formfiles:
+            #     return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
+
+            payload = json.loads(request.data['payload'])
+            serializer = serializers.PutQuoteSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                quote_id = payload['id']
+                description = payload['description']
+                subject = payload['subject']
+                department = payload['department']
+                content = payload.get('content')
+
+                try:
+                    department = Department.objects.get(Q(id=department))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    quote = models.Quote.objects.get(Q(id=quote_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if formfiles:
+                    exts = ['jpeg','jpg','png','tiff','pdf']
+                    for f in request.FILES.getlist('documents'):
+                        original_file_name = f.name
+                        ext = original_file_name.split('.')[1].strip().lower()
+                        if ext not in exts:
+                            return Response({"details": "Only Images and PDFs allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+
+                    if formfiles:                        
+                        f = request.FILES.getlist('documents')[0]
+                        file_type = shared_fxns.identify_file_type(original_file_name.split('.')[1].strip().lower())
+                        try:
+                            original_file_name = f.name                            
+                            attachment = models.Document.objects.create(
+                                        document=f, 
+                                        original_file_name=original_file_name, 
+                                        uploader=authenticated_user, 
+                                        file_type=file_type)
+
+                        except Exception as e:
+                            # logger.error(e)
+                            print(e)
+                            return Response({"details": "Unable to save File(s)"}, status=status.HTTP_400_BAD_REQUEST)
+
+                        raw = {
+                            "department": department,
+                            "attachment": attachment,
+                            "uploader": authenticated_user,
+                            "subject": subject,
+                            "description": description,
+                            "content": content,
+                        }  
+                    else:
+                        raw = {
+                            "department": department,
+                            "uploader": authenticated_user,
+                            "subject": subject,
+                            "description": description,
+                            "content": content,
+                        } 
+
+
+                    models.Quote.objects.filter(Q(id=quote_id)).update(**raw)
+
+                    if quote.status == "INCOMPLETE":
+                        managers_emails = list(get_user_model().objects.filter(groups__name='MMD_MANAGER').values_list('email', flat=True))
+                        assignee = models.QuoteAssignee.objects.get(Q(quote=quote))
+                        managers_emails.append(assignee.assigned.email)
+
+                        raw = {"status" : "RESUBMITTED"}
+                        models.Quote.objects.filter(Q(id=quote_id)).update(**raw)
+
+                        # Notify the manager
+                        subject = "A Quote Has Been Resubmitted [MMS-AKHK]"
+                        message = f"Hello, \nQuote: {quote.subject} from department:  {department.name} has been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} at {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\nPending your action.\n\nRegards\nMMS-AKHK"
+                        # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
+                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Quote created", "Quote Creation Executed")
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PATCH":
+            payload = request.data
+            serializer = serializers.PatchQuoteSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                quote_id = payload['quote_id']
+                quote_status = payload['status'].upper()
+
+                try:
+                    quote = models.Quote.objects.get(id=quote_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+
+                
+                with transaction.atomic():
+
+                    quote.status = quote_status
+                    quote.save()
+
+                    # Notify the manager
+                    managers_emails = list(get_user_model().objects.filter(groups__name='MMD_MANAGER').values_list('email', flat=True))
+                    emails = [quote.uploader.email] + managers_emails
+
+                    subject = "Quote Progress Update [MMS-AKHK]"
+                    message = f"Hello, \nThe Quote: {quote.subject}, from department: {quote.department.name} has been marked as {quote_status} by {authenticated_user.first_name} {authenticated_user.last_name} at {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\n\nRegards\nMMS-AKHK"
+
+                    # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
+                    send_mail(subject, message, 'notification@akhskenya.org', emails)
+
+                    # update quote assignee status
+                    raw = {"status" : 'REVIEWED'}
+                    models.QuoteAssignee.objects.filter(Q(quote=quote_id) & Q(assigned=request.user)).update(**raw)
+                                                
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Quote Progress Updated", f"Updated Quote: {quote_id}")
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             roles = user_util.fetchusergroups(request.user.id)  
@@ -140,6 +270,9 @@ class MmsViewSet(viewsets.ViewSet):
 
                     elif "MMD_MANAGER" in roles or "USER_MANAGER" in roles:
                         resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')
+
+                    elif "USER" in roles:
+                        resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')
 
                     resp = serializers.FetchQuoteSerializer(resp,many=True).data
                     return Response(resp, status=status.HTTP_200_OK)
@@ -207,25 +340,15 @@ class MmsViewSet(viewsets.ViewSet):
 
                     # Notify the uploader
                     subject = "Quote Received [MMS-AKHK]"
-                    message = f"\
-                                    Dear {quote.uploader.first_name}, \n\
-                                    Your quote has been received succefully and queued for processing.\n\
-                                    We will update you of the progress.\n\n\
-                                    Regards\n\
-                                    MMS-AKHK
-                                "
+                    message = f"Dear {quote.uploader.first_name}, \nYour quote has been received succefully and queued for processing.\nWe will update you on the progress.\n\nRegards\nMMS-AKHK"
+
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', [quote.uploader.email])
 
                     # Notify the staff
                     subject = "Quote Assigned To You [MMS-AKHK]"
-                    message = f"\
-                                    Dear {staff.first_name}, \n\
-                                    A quote has been assigned to you for review and processing.\n\
-                                    Please log in to MMS to review.\n\n\
-                                    Regards\n\
-                                    MMS-AKHK
-                                "
+                    message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to MMS to review.\n\nRegards\nMMS-AKHK"
+
                     # mailgun_general.send_mail(staff.first_name, staff.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
 
