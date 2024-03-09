@@ -210,7 +210,9 @@ class MmsViewSet(viewsets.ViewSet):
                     message = f"\
                                     Dear {quote.uploader.first_name}, \n\
                                     Your quote has been received succefully and queued for processing.\n\
-                                    We will update you of the progress.\n\
+                                    We will update you of the progress.\n\n\
+                                    Regards\n\
+                                    MMS-AKHK
                                 "
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', [quote.uploader.email])
@@ -220,7 +222,9 @@ class MmsViewSet(viewsets.ViewSet):
                     message = f"\
                                     Dear {staff.first_name}, \n\
                                     A quote has been assigned to you for review and processing.\n\
-                                    Please log in to MMS to review.\n\
+                                    Please log in to MMS to review.\n\n\
+                                    Regards\n\
+                                    MMS-AKHK
                                 "
                     # mailgun_general.send_mail(staff.first_name, staff.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
