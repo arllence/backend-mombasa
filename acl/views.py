@@ -22,6 +22,7 @@ from django.db import transaction
 from acl import models
 from acl import serializers
 from acl.utils import mailgun_general
+from django.core.mail import send_mail
 
 logger = logging.getLogger(__name__)
 
@@ -193,12 +194,13 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
 
             subject = "Access Details [MMS-AKHK]"
             message = f"\
-                            Dear user, \n\
+                            Dear {user_details.first_name}, \n\
                             Your email is {user_details.email}\n\
                             Your password is: {new_password}\n\
                             If you encounter any challenge while navigating the platform, please let us know.\
                         "
-            mailgun_general.send_mail(user_details.first_name,user_details.email,subject,message)
+            # mailgun_general.send_mail(user_details.first_name,user_details.email,subject,message)
+            send_mail(subject, message, 'notification@akhskenya.org',[user_details.email] )
 
             if not settings.DEBUG:
                 new_password = '<REDACTED>'
@@ -462,12 +464,13 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
 
                 subject = "Access Details [MMS-AKHK]"
                 message = f"\
-                                Dear user, \n\
+                                Dear {user_details.first_name}, \n\
                                 Your email is {user_details.email}\n\
                                 Your password is: {new_password}\n\
                                 If you encounter any challenge while navigating the platform, please let us know.\
                             "
-                mailgun_general.send_mail(user_details.first_name,user_details.email,subject,message)
+                # mailgun_general.send_mail(user_details.first_name,user_details.email,subject,message)
+                send_mail(subject, message, 'notification@akhskenya.org',[user_details.email] )
 
                 if not settings.DEBUG:
                     new_password = '<REDACTED>'
@@ -704,12 +707,13 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
 
                 subject = "Platform Access Details [MMS-AKHK]"
                 message = f"\
-                                Dear user, \n\
+                                Dear {first_name}, \n\
                                 Your email is {email}\n\
                                 Your password is: {password}\n\
                                 If you encounter any challenge while navigating the platform, please let us know.\
                             "
-                mailgun_general.send_mail(first_name,email,subject,message)
+                # mailgun_general.send_mail(first_name,email,subject,message)
+                send_mail(subject, message, 'notification@akhskenya.org', [email])
 
                 user_util.log_account_activity(
                     authenticated_user, create_user, "Account Creation",

@@ -18,6 +18,12 @@ def fetchusergroups(userid):
         
     else:
         return ""
+    
+# def users_with_role(role_name):
+
+    # selected_users = get_user_model().objects.filter(groups__name=role.name)
+    # user_info = serializers.UsersSerializer(selected_users, many=True)
+    # return Response(user_info.data, status=status.HTTP_200_OK)
 
 
 def log_account_activity(actor, recipient, activity, remarks):

@@ -19,6 +19,7 @@ from acl.models import User, Department
 from main.utils import shared_fxns
 from django.db.models import Sum
 from acl.utils import mailgun_general
+from django.core.mail import send_mail
 
 
 
@@ -94,6 +95,20 @@ class MmsViewSet(viewsets.ViewSet):
                     models.Quote.objects.create(
                         **raw
                     )
+
+                    managers_emails = get_user_model().objects.filter(groups__name='MMD_MANAGER').values_list('email', flat=True)
+
+                    # Notify the manager
+                    subject = "A New Quote Received [MMS-AKHK]"
+                    message = f"\
+                                    Hello, \n\
+                                    A new quote from {department.name} has been submitted by {authenticated_user.first_name} at {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\n\
+                                    Pending your action.\n\n\
+                                    Regards\n\
+                                    MMS-AKHK
+                                "
+                    # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
+                    send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Quote created", "Quote Creation Executed")
@@ -197,7 +212,8 @@ class MmsViewSet(viewsets.ViewSet):
                                     Your quote has been received succefully and queued for processing.\n\
                                     We will update you of the progress.\n\
                                 "
-                    mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
+                    # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
+                    send_mail(subject, message, 'notification@akhskenya.org', [quote.uploader.email])
 
                     # Notify the staff
                     subject = "Quote Assigned To You [MMS-AKHK]"
@@ -206,7 +222,8 @@ class MmsViewSet(viewsets.ViewSet):
                                     A quote has been assigned to you for review and processing.\n\
                                     Please log in to MMS to review.\n\
                                 "
-                    mailgun_general.send_mail(staff.first_name, staff.email,subject,message)
+                    # mailgun_general.send_mail(staff.first_name, staff.email,subject,message)
+                    send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
 
                 user_util.log_account_activity(
                     authenticated_user, staff, "Quote Assigned created", "Quote Assignation Executed")

@@ -227,3 +227,12 @@ CORS_ALLOW_HEADERS = [
 ]
 
 MAINMEDIA = os.getenv('MAINMEDIA')
+
+
+# Email Settings
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'outlook.office365.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'notification@akhskenya.org'
+EMAIL_HOST_PASSWORD = 'password@123'
