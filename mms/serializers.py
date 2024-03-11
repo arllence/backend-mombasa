@@ -35,6 +35,9 @@ class PatchQuoteSerializer(serializers.Serializer):
     status = serializers.CharField(max_length=500)
     quote_id = serializers.CharField(max_length=500)
 
+class CloseQuoteSerializer(serializers.Serializer):
+    quote = serializers.CharField(max_length=500)
+
 class FetchQuoteSerializer(serializers.ModelSerializer):
     uploader = UsersSerializer()
     department = FetchDepartmentSerializer()

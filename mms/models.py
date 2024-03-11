@@ -42,6 +42,7 @@ class Quote(models.Model):
     subject = models.CharField(max_length=500)
     description = models.TextField()
     content = models.JSONField(null=True, blank=True)
+    close_attachments = models.JSONField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
     date_closed = models.DateTimeField(null=True, blank=True)

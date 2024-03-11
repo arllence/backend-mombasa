@@ -406,3 +406,111 @@ class MmsViewSet(viewsets.ViewSet):
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+    
+    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
+            detail=False,
+            url_path="close",
+            url_name="close")
+    def close_quote(self, request):
+        authenticated_user = request.user
+        if request.method == "POST":
+            formfiles = request.FILES
+            if not formfiles:
+                return Response({"details": "Please upload attachments"}, status=status.HTTP_400_BAD_REQUEST)
+
+            payload = json.loads(request.data['payload'])
+            serializer = serializers.CloseQuoteSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                quote = payload['quote']
+
+                try:
+                    quote = models.Quote.objects.get(Q(id=quote))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if formfiles:
+                    exts = ['jpeg','jpg','png','tiff','pdf']
+
+                    for f in request.FILES.getlist('quote'):
+                        original_file_name = f.name
+                        ext = original_file_name.split('.')[1].strip().lower()
+                        if ext not in exts:
+                            return Response({"details": "Only PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                    for f in request.FILES.getlist('comparative_analysis'):
+                        original_file_name = f.name
+                        ext = original_file_name.split('.')[1].strip().lower()
+                        if ext not in exts:
+                            return Response({"details": "Only PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+    
+                    try:
+                        quoteFile = request.FILES.getlist('quote')[0]
+                        file_type1 = shared_fxns.identify_file_type(quoteFile.name.split('.')[1].strip().lower())
+                        title1 = "CLOSE_QUOTE_FILE"
+                    except Exception as e:
+                        return Response({"details": "Upload Quote File !"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    try:
+                        comparativeAnalysisFile = request.FILES.getlist('comparative_analysis')[0]
+                        file_type2 = shared_fxns.identify_file_type(comparativeAnalysisFile.name.split('.')[1].strip().lower())
+                        title2 = "CLOSE_COMPARATIVE_ANALYSIS_FILE"
+                    except Exception as e:
+                        return Response({"details": "Upload Comparative Analysis File !"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    
+                    try:                         
+                        quote_file = models.Document.objects.create(
+                                    document=quoteFile, 
+                                    original_file_name=quoteFile.name, 
+                                    uploader=authenticated_user, 
+                                    file_type=file_type1,
+                                    title=title1,
+                                    )
+                        comparative_analysis_file = models.Document.objects.create(
+                                    document=comparativeAnalysisFile, 
+                                    original_file_name=comparativeAnalysisFile.name, 
+                                    uploader=authenticated_user, 
+                                    file_type=file_type2,
+                                    title=title2,
+                                    )
+                        
+                        attachments = {
+                            "quote_file": quote_file.id,
+                            "comparative_analysis_file": comparative_analysis_file.id,
+                        }
+
+                        # update quote instance
+                        quote.close_attachments = attachments
+                        quote.status = "CLOSED"
+                        quote.date_closed = datetime.now()
+                        quote.save()
+
+                        emails = list(get_user_model().objects.filter(groups__name='MMD_MANAGER').values_list('email', flat=True))
+                        emails.append(quote.uploader.email)
+
+                        # Notify the manager and users
+                        subject = "Quote Closed [MMS-AKHK]"
+                        message = f"Hello. \nQuote: {quote.subject} from department:  {department.name} has been CLOSED by {authenticated_user.first_name} {authenticated_user.last_name} at {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}.\n\nRegards\n MMS-AKHK"
+                        # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+
+                        user_util.log_account_activity(
+                            authenticated_user, authenticated_user, "Quote Closed", "Quote Closure Executed")
+
+                    except Exception as e:
+                        # logger.error(e)
+                        print(e)
+                        return Response({"details": "Unable to save File(s)"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                    
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
