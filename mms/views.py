@@ -410,8 +410,8 @@ class MmsViewSet(viewsets.ViewSet):
     
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
-            url_path="close",
-            url_name="close")
+            url_path="close-quote",
+            url_name="close-quote")
     def close_quote(self, request):
         authenticated_user = request.user
         if request.method == "POST":
@@ -480,14 +480,14 @@ class MmsViewSet(viewsets.ViewSet):
                                     )
                         
                         attachments = {
-                            "quote_file": quote_file.id,
-                            "comparative_analysis_file": comparative_analysis_file.id,
+                            "quote_file": str(quote_file.id),
+                            "comparative_analysis_file": str(comparative_analysis_file.id),
                         }
 
                         # update quote instance
                         quote.close_attachments = attachments
                         quote.status = "CLOSED"
-                        quote.date_closed = datetime.now()
+                        quote.date_closed = datetime.datetime.now()
                         quote.save()
 
                         emails = list(get_user_model().objects.filter(groups__name='MMD_MANAGER').values_list('email', flat=True))
@@ -495,7 +495,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                         # Notify the manager and users
                         subject = "Quote Closed [MMS-AKHK]"
-                        message = f"Hello. \nQuote: {quote.subject} from department:  {department.name} has been CLOSED by {authenticated_user.first_name} {authenticated_user.last_name} at {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}.\n\nRegards\n MMS-AKHK"
+                        message = f"Hello. \nQuote: {quote.subject} from department:  {quote.department.name} has been CLOSED by {authenticated_user.first_name} {authenticated_user.last_name} at {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}.\n\nRegards\n MMS-AKHK"
                         # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
