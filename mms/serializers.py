@@ -42,9 +42,30 @@ class FetchQuoteSerializer(serializers.ModelSerializer):
     uploader = UsersSerializer()
     department = FetchDepartmentSerializer()
     attachment = FetchDocumentSerializer()
+    closure_files = serializers.SerializerMethodField()
     class Meta:
         model = models.Quote
         fields = '__all__'
+
+    def get_closure_files(self, obj):
+        try:
+            # quote_file = obj.close_attachments['quote_file']
+            # comparative_analysis_file = obj.close_attachments['comparative_analysis_file']
+
+            # quote_file = models.Document.objects.get(Q(id=quote_file))
+            # comparative_analysis_file = models.Document.objects.get(Q(id=comparative_analysis_file))
+            # serializer = FetchDocumentSerializer(plans, many=True)
+            files = {
+                "quote_file": FetchDocumentSerializer(models.Document.objects.get(Q(id=obj.close_attachments['quote_file'])), many=False).data,
+                "comparative_analysis_file": FetchDocumentSerializer(models.Document.objects.get(Q(id=obj.close_attachments['comparative_analysis_file'])), many=False).data
+            }
+            return files
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {}
 
 
 class AssignQuoteSerializer(serializers.Serializer):
