@@ -530,69 +530,69 @@ class MMQSReportsViewSet(viewsets.ViewSet):
         department = request.query_params.get('department')
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
-        status = request.query_params.get('status')
+        quote_status = request.query_params.get('status')
         date = False
 
         if date_to and date_from:
             date = True
 
-        def create_date_range():
+        def create_date_range(date_from,date_to):
             # Convert the string dates to datetime objects
-            date_from = datetime.strptime(date_from, '%Y-%m-%d')
-            date_to = datetime.strptime(date_to, '%Y-%m-%d')
+            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
 
             q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
 
             return q_filters
 
-        try:
-            q_filters = Q()
+        # try:
+        q_filters = Q()
 
-            if department:
-                q_filters &= Q(department=department)
+        if department:
+            q_filters &= Q(department=department)
 
-            if date_from or date_to:
-                if not date:
-                    return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
-                q_filters &= create_date_range()
-                
-            if status:
-                q_filters &= Q(status=status)
+        if date_from or date_to:
+            if not date:
+                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
+            q_filters &= create_date_range(date_from,date_to)
+            
+        if quote_status:
+            q_filters &= Q(status=quote_status)
 
-            if not q_filters:
-                roles = user_util.fetchusergroups(request.user.id)  
+        if not q_filters:
+            roles = user_util.fetchusergroups(request.user.id)  
 
-                if "MMD_STAFF" in roles:
-                    quote_ids = models.QuoteAssignee.objects.filter(Q(assigned=request.user) & Q(is_deleted=False)).values_list('quote__id', flat=True)
-                    resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(id__in=quote_ids)).order_by('-date_created')[:50]
+            if "MMD_STAFF" in roles:
+                quote_ids = models.QuoteAssignee.objects.filter(Q(assigned=request.user) & Q(is_deleted=False)).values_list('quote__id', flat=True)
+                resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(id__in=quote_ids)).order_by('-date_created')[:50]
 
-                elif "MMD_MANAGER" in roles or "USER_MANAGER" in roles:
-                    resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+            elif "MMD_MANAGER" in roles or "USER_MANAGER" in roles:
+                resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
 
-                elif "USER" in roles:
-                    resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')[:50]
+            elif "USER" in roles:
+                resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')[:50]
 
-                
-
-
-            # if department and date and status:
-            #     q_filters &= Q(create_date_range())
-            # elif department and date:
-            #     q_filters &= Q(create_date_range())
-            # elif status and menu_type:
-            #     q_filters &= Q(patient__menu=menu_type)
-            # elif meal_type and menu_type:
-            #     q_filters &= Q(patient__menu=menu_type)
-            #     q_filters &= Q(meal_type=meal_type)
             
 
-            resp = models.Quote.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-            resp = serializers.FetchQuoteSerializer(resp,many=True).data
-            return Response(resp, status=status.HTTP_200_OK)
+
+        # if department and date and status:
+        #     q_filters &= Q(create_date_range())
+        # elif department and date:
+        #     q_filters &= Q(create_date_range())
+        # elif status and menu_type:
+        #     q_filters &= Q(patient__menu=menu_type)
+        # elif meal_type and menu_type:
+        #     q_filters &= Q(patient__menu=menu_type)
+        #     q_filters &= Q(meal_type=meal_type)
         
-        except (ValidationError, ObjectDoesNotExist):
-            return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-        except Exception as e:
-            print(e)
-            return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        resp = models.Quote.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+        resp = serializers.FetchQuoteSerializer(resp,many=True).data
+        return Response(resp, status=status.HTTP_200_OK)
+        
+        # except (ValidationError, ObjectDoesNotExist):
+        #     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+        # except Exception as e:
+        #     print(e)
+        #     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
         
