@@ -596,3 +596,29 @@ class MMQSReportsViewSet(viewsets.ViewSet):
         #     print(e)
         #     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
         
+class MMQSAnalyticsViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        return []
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="general",
+            url_name="general")
+    def general(self, request):
+        quotes = models.Quote.objects.filter(Q(is_deleted=False)).count()
+        requested = models.Quote.objects.filter(Q(status="REQUESTED") & Q(is_deleted=False)).count()
+        closed = models.Quote.objects.filter(Q(status="CLOSED") & Q(is_deleted=False)).count()
+        assiged = models.Quote.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False)).count()
+        incomplete = models.Quote.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False)).count()
+
+        resp = {
+            "quotes": quotes,
+            "requested": requested,
+            "closed": closed,
+            "assiged": assiged,
+            "incomplete": incomplete,
+        }
+
+        return Response(resp, status=status.HTTP_200_OK)
