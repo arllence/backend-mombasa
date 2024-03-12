@@ -250,6 +250,7 @@ class MmsViewSet(viewsets.ViewSet):
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
+            assigned = request.query_params.get('assigned')
             roles = user_util.fetchusergroups(request.user.id)  
 
             if request_id:
@@ -264,15 +265,18 @@ class MmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    if "MMD_STAFF" in roles:
+                    if assigned:
                         quote_ids = models.QuoteAssignee.objects.filter(Q(assigned=request.user) & Q(is_deleted=False)).values_list('quote__id', flat=True)
                         resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(id__in=quote_ids)).order_by('-date_created')
+                    else:
+                        if "MMD" in roles:
+                            resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')
 
-                    elif "MMD_MANAGER" in roles or "USER_MANAGER" in roles:
-                        resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')
+                        elif "USER_MANAGER" in roles:
+                            resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')
 
-                    elif "USER" in roles:
-                        resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')
+                        elif "USER" in roles:
+                            resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')
 
                     resp = serializers.FetchQuoteSerializer(resp,many=True).data
                     return Response(resp, status=status.HTTP_200_OK)
