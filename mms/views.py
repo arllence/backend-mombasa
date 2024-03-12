@@ -607,11 +607,20 @@ class MMQSAnalyticsViewSet(viewsets.ViewSet):
             url_path="general",
             url_name="general")
     def general(self, request):
-        quotes = models.Quote.objects.filter(Q(is_deleted=False)).count()
-        requested = models.Quote.objects.filter(Q(status="REQUESTED") & Q(is_deleted=False)).count()
-        closed = models.Quote.objects.filter(Q(status="CLOSED") & Q(is_deleted=False)).count()
-        assiged = models.Quote.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False)).count()
-        incomplete = models.Quote.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False)).count()
+        roles = user_util.fetchusergroups(request.user.id)
+
+        if 'USER' in roles:
+            quotes = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).count()
+            requested = models.Quote.objects.filter(Q(status="REQUESTED") & Q(is_deleted=False) & Q(uploader=request.user)).count()
+            closed = models.Quote.objects.filter(Q(status="CLOSED") & Q(is_deleted=False) & Q(uploader=request.user)).count()
+            assiged = models.Quote.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False) & Q(uploader=request.user)).count()
+            incomplete = models.Quote.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False) & Q(uploader=request.user)).count()
+        else:
+            quotes = models.Quote.objects.filter(Q(is_deleted=False)).count()
+            requested = models.Quote.objects.filter(Q(status="REQUESTED") & Q(is_deleted=False)).count()
+            closed = models.Quote.objects.filter(Q(status="CLOSED") & Q(is_deleted=False)).count()
+            assiged = models.Quote.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False)).count()
+            incomplete = models.Quote.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False)).count()
 
         resp = {
             "quotes": quotes,
