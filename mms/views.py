@@ -364,6 +364,48 @@ class MmsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+        if request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.AssignQuoteSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                quote = payload['quote']
+                staff = payload['staff']
+
+                try:
+                    quote = models.QuoteAssignee.objects.get(Q(quote=quote))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    staff = get_user_model().objects.get(Q(id=staff))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Staff !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+                with transaction.atomic():
+                    
+                    quote.assigned = staff
+                    quote.save()
+
+                    # Notify the staff
+                    subject = "Quote Assigned To You [MMS-AKHK]"
+                    message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to MMQS to review.\n\nRegards\nMMS-AKHK"
+
+                    # mailgun_general.send_mail(staff.first_name, staff.email,subject,message)
+                    send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
+
+                user_util.log_account_activity(
+                    authenticated_user, staff, "Quote Assigned created", "Quote Assignation Executed")
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             roles = user_util.fetchusergroups(request.user.id)  
