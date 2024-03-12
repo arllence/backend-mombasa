@@ -57,7 +57,7 @@ class FetchQuoteSerializer(serializers.ModelSerializer):
             # serializer = FetchDocumentSerializer(plans, many=True)
             files = {
                 "quote_file": FetchDocumentSerializer(models.Document.objects.get(Q(id=obj.close_attachments['quote_file'])), many=False).data,
-                "comparative_analysis_file": FetchDocumentSerializer(models.Document.objects.get(Q(id=obj.close_attachments['comparative_analysis_file'])), many=False).data
+                # "comparative_analysis_file": FetchDocumentSerializer(models.Document.objects.get(Q(id=obj.close_attachments['comparative_analysis_file'])), many=False).data
             }
             return files
         except (ValidationError, ObjectDoesNotExist):

@@ -351,7 +351,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                     # Notify the staff
                     subject = "Quote Assigned To You [MMS-AKHK]"
-                    message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to MMS to review.\n\nRegards\nMMS-AKHK"
+                    message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to MMQS to review.\n\nRegards\nMMS-AKHK"
 
                     # mailgun_general.send_mail(staff.first_name, staff.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
@@ -478,7 +478,7 @@ class MmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 if formfiles:
-                    exts = ['jpeg','jpg','png','tiff','pdf']
+                    exts = ['pdf']
 
                     for f in request.FILES.getlist('quote'):
                         original_file_name = f.name
@@ -486,11 +486,11 @@ class MmsViewSet(viewsets.ViewSet):
                         if ext not in exts:
                             return Response({"details": "Only PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
                         
-                    for f in request.FILES.getlist('comparative_analysis'):
-                        original_file_name = f.name
-                        ext = original_file_name.split('.')[1].strip().lower()
-                        if ext not in exts:
-                            return Response({"details": "Only PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+                    # for f in request.FILES.getlist('comparative_analysis'):
+                    #     original_file_name = f.name
+                    #     ext = original_file_name.split('.')[1].strip().lower()
+                    #     if ext not in exts:
+                    #         return Response({"details": "Only PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
     
@@ -501,12 +501,12 @@ class MmsViewSet(viewsets.ViewSet):
                     except Exception as e:
                         return Response({"details": "Upload Quote File !"}, status=status.HTTP_400_BAD_REQUEST)
                     
-                    try:
-                        comparativeAnalysisFile = request.FILES.getlist('comparative_analysis')[0]
-                        file_type2 = shared_fxns.identify_file_type(comparativeAnalysisFile.name.split('.')[1].strip().lower())
-                        title2 = "CLOSE_COMPARATIVE_ANALYSIS_FILE"
-                    except Exception as e:
-                        return Response({"details": "Upload Comparative Analysis File !"}, status=status.HTTP_400_BAD_REQUEST)
+                    # try:
+                    #     comparativeAnalysisFile = request.FILES.getlist('comparative_analysis')[0]
+                    #     file_type2 = shared_fxns.identify_file_type(comparativeAnalysisFile.name.split('.')[1].strip().lower())
+                    #     title2 = "CLOSE_COMPARATIVE_ANALYSIS_FILE"
+                    # except Exception as e:
+                    #     return Response({"details": "Upload Comparative Analysis File !"}, status=status.HTTP_400_BAD_REQUEST)
                     
                     
                     try:                         
@@ -517,17 +517,17 @@ class MmsViewSet(viewsets.ViewSet):
                                     file_type=file_type1,
                                     title=title1,
                                     )
-                        comparative_analysis_file = models.Document.objects.create(
-                                    document=comparativeAnalysisFile, 
-                                    original_file_name=comparativeAnalysisFile.name, 
-                                    uploader=authenticated_user, 
-                                    file_type=file_type2,
-                                    title=title2,
-                                    )
+                        # comparative_analysis_file = models.Document.objects.create(
+                        #             document=comparativeAnalysisFile, 
+                        #             original_file_name=comparativeAnalysisFile.name, 
+                        #             uploader=authenticated_user, 
+                        #             file_type=file_type2,
+                        #             title=title2,
+                        #             )
                         
                         attachments = {
                             "quote_file": str(quote_file.id),
-                            "comparative_analysis_file": str(comparative_analysis_file.id),
+                            # "comparative_analysis_file": str(comparative_analysis_file.id),
                         }
 
                         # update quote instance
@@ -536,7 +536,7 @@ class MmsViewSet(viewsets.ViewSet):
                         quote.date_closed = datetime.datetime.now()
                         quote.save()
 
-                        emails = list(get_user_model().objects.filter(groups__name='MMD_MANAGER').values_list('email', flat=True))
+                        emails = list(get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True))
                         emails.append(quote.uploader.email)
 
                         # Notify the manager and users
