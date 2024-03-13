@@ -16,6 +16,10 @@ def find_date_difference(start_date,end_date,period):
             difference = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
         elif period == 'years':
             difference = end_date.year - start_date.year
+        elif period == 'hours':
+            difference = (end_date - start_date).total_seconds() // 3600
+        elif period == 'minutes':
+            difference = (end_date - start_date).total_seconds() // 60
 
         # return difference
         return difference

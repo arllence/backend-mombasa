@@ -44,6 +44,8 @@ class FetchQuoteSerializer(serializers.ModelSerializer):
     attachment = FetchDocumentSerializer()
     closure_files = serializers.SerializerMethodField()
     assigned = serializers.SerializerMethodField()
+    assignee = serializers.SerializerMethodField()
+    tat = serializers.SerializerMethodField()
     class Meta:
         model = models.Quote
         fields = '__all__'
@@ -80,6 +82,38 @@ class FetchQuoteSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return False
 
+    def get_assignee(self, obj):
+        try:
+    
+            return UsersSerializer(models.QuoteAssignee.objects.get(Q(quote=obj)).assigned, many=False).data
+            
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {}
+        
+    def get_tat(self, obj):
+        try:
+    
+            diff = (obj.date_closed - obj.date_created).days
+            if diff == 0:
+                diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
+                if diff < 1:
+                    diff = str(int((obj.date_closed - obj.date_created).total_seconds() // 60)) + " Minutes"
+                else:
+                 diff = str(diff) + " Hours"
+            else:
+                diff = str(diff) + " Days"
+
+            return diff
+        
+        except Exception as e:
+            # print(e)
+            # logger.error(e)
+            return ""
 
 class AssignQuoteSerializer(serializers.Serializer):
     quote = serializers.CharField(max_length=500)
