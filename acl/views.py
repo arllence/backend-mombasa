@@ -192,7 +192,7 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
             user_details.password = hashed_password
             user_details.save()
 
-            subject = "Access Details [MMS-AKHK]"
+            subject = "Access Details [MMQS-AKHK]"
             message = f"\
                             Dear {user_details.first_name}, \n\
                             Your email is {user_details.email}\n\
@@ -462,7 +462,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 user_details.password = hashed_password
                 user_details.save()
 
-                subject = "Access Details [MMS-AKHK]"
+                subject = "Access Details [MMQS-AKHK]"
                 message = f"Dear {user_details.first_name}, \nYour email is {user_details.email}\nYour password is: {new_password}\nIf you encounter any challenge while navigating the platform, please let us know."
                 # mailgun_general.send_mail(user_details.first_name,user_details.email,subject,message)
                 send_mail(subject, message, 'notification@akhskenya.org',[user_details.email] )
@@ -700,7 +700,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     pass
 
 
-                subject = "Platform Access Details [MMS-AKHK]"
+                subject = "Platform Access Details [MMQS-AKHK]"
                 message = f"\
                                 Dear {first_name}, \n\
                                 Your email is {email}\n\
