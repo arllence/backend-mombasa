@@ -32,7 +32,8 @@ class Quote(models.Model):
     )
     attachment = models.ForeignKey(
        Document, on_delete=models.DO_NOTHING, 
-       related_name="document_attached"
+       related_name="document_attached",
+       null=True, blank=True
     )
     uploader = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 

@@ -39,8 +39,8 @@ class MmsViewSet(viewsets.ViewSet):
         authenticated_user = request.user
         if request.method == "POST":
             formfiles = request.FILES
-            if not formfiles:
-                return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
+            # if not formfiles:
+            #     return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
 
             payload = json.loads(request.data['payload'])
             serializer = serializers.QuoteSerializer(
@@ -66,7 +66,7 @@ class MmsViewSet(viewsets.ViewSet):
                             return Response({"details": "Only Images and PDFs allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
-
+                    attachment = None
                     if formfiles:                        
                         f = request.FILES.getlist('documents')[0]
                         file_type = shared_fxns.identify_file_type(original_file_name.split('.')[1].strip().lower())
