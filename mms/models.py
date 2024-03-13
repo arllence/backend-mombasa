@@ -41,6 +41,7 @@ class Quote(models.Model):
     )
     status = models.CharField(max_length=500, default='REQUESTED')
     subject = models.CharField(max_length=500)
+    qid = models.CharField(max_length=50, null=True, blank=True, unique=True)
     description = models.TextField()
     content = models.JSONField(null=True, blank=True)
     close_attachments = models.JSONField(null=True, blank=True)

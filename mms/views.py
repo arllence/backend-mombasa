@@ -51,6 +51,7 @@ class MmsViewSet(viewsets.ViewSet):
                 subject = payload['subject']
                 department = payload['department']
                 content = payload.get('content')
+                qid = shared_fxns.generate_unique_identifier()
 
                 try:
                     department = Department.objects.get(Q(id=department))
@@ -90,6 +91,7 @@ class MmsViewSet(viewsets.ViewSet):
                         "subject": subject,
                         "description": description,
                         "content": content,
+                        "qid": qid
                     }  
 
                     quote = models.Quote.objects.create(
