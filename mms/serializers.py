@@ -43,6 +43,7 @@ class FetchQuoteSerializer(serializers.ModelSerializer):
     department = FetchDepartmentSerializer()
     attachment = FetchDocumentSerializer()
     closure_files = serializers.SerializerMethodField()
+    assigned = serializers.SerializerMethodField()
     class Meta:
         model = models.Quote
         fields = '__all__'
@@ -66,6 +67,18 @@ class FetchQuoteSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return {}
+    
+    def get_assigned(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            return models.QuoteAssignee.objects.filter(Q(assigned=user_id) & Q(quote=obj)).exists()
+            
+        except (ValidationError, ObjectDoesNotExist):
+            return False
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False
 
 
 class AssignQuoteSerializer(serializers.Serializer):

@@ -100,7 +100,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                     # Notify the manager
                     subject = "A New Quote Received [MMS-AKHK]"
-                    message = f"Hello, \nA new quote: {quote.subject} from department:  {department.name} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} at {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\nPending your action.\n\nRegards\n MMS-AKHK"
+                    message = f"Hello, \nA new quote: {quote.subject} from department:  {department.name} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\nPending your action.\n\nRegards\n MMS-AKHK"
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
@@ -194,7 +194,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                         # Notify the manager
                         subject = "A Quote Has Been Resubmitted [MMS-AKHK]"
-                        message = f"Hello, \nQuote: {quote.subject} from department:  {department.name} has been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} at {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\nPending your action.\n\nRegards\nMMS-AKHK"
+                        message = f"Hello, \nQuote: {quote.subject} from department:  {department.name} has been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\nPending your action.\n\nRegards\nMMS-AKHK"
                         # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                         send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
@@ -233,7 +233,7 @@ class MmsViewSet(viewsets.ViewSet):
                     emails = [quote.uploader.email] + managers_emails
 
                     subject = "Quote Progress Update [MMS-AKHK]"
-                    message = f"Hello, \nThe Quote: {quote.subject}, from department: {quote.department.name} has been marked as {quote_status} by {authenticated_user.first_name} {authenticated_user.last_name} at {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\n\nRegards\nMMS-AKHK"
+                    message = f"Hello, \nThe Quote: {quote.subject}, from department: {quote.department.name} has been marked as {quote_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\n\nRegards\nMMS-AKHK"
 
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', emails)
@@ -256,7 +256,7 @@ class MmsViewSet(viewsets.ViewSet):
             if request_id:
                 try:
                     resp = models.Quote.objects.get(Q(id=request_id))
-                    resp = serializers.FetchQuoteSerializer(resp,many=False).data
+                    resp = serializers.FetchQuoteSerializer(resp, many=False, context={"user_id":request.user.id}).data
                     return Response(resp, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Quote!"}, status=status.HTTP_400_BAD_REQUEST)
@@ -278,7 +278,7 @@ class MmsViewSet(viewsets.ViewSet):
                         elif "USER" in roles:
                             resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')
 
-                    resp = serializers.FetchQuoteSerializer(resp,many=True).data
+                    resp = serializers.FetchQuoteSerializer(resp, many=True, context={"user_id":request.user.id}).data
                     return Response(resp, status=status.HTTP_200_OK)
                 
                 except (ValidationError, ObjectDoesNotExist):
@@ -408,6 +408,7 @@ class MmsViewSet(viewsets.ViewSet):
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
+            assigned = request.query_params.get('assigned')
             roles = user_util.fetchusergroups(request.user.id)  
 
             if request_id:
@@ -423,10 +424,10 @@ class MmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    if "MMD_STAFF" in roles:
+                    if assigned:
                         resp = models.QuoteAssignee.objects.filter(Q(assigned=request.user) & Q(is_deleted=False))
 
-                    elif "MMD_MANAGER" in roles or "USER_MANAGER" in roles:
+                    elif "MMD" in roles or "USER_MANAGER" in roles:
                         resp = models.QuoteAssignee.objects.filter(Q(is_deleted=False)).order_by('-date_created')
 
                     resp = serializers.FetchAssignQuoteSerializer(resp,many=True).data
@@ -541,7 +542,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                         # Notify the manager and users
                         subject = "Quote Closed [MMS-AKHK]"
-                        message = f"Hello. \nQuote: {quote.subject} from department:  {quote.department.name} has been CLOSED by {authenticated_user.first_name} {authenticated_user.last_name} at {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}.\n\nRegards\n MMS-AKHK"
+                        message = f"Hello. \nQuote: {quote.subject} from department:  {quote.department.name} has been CLOSED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}.\n\nRegards\n MMS-AKHK"
                         # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
@@ -577,6 +578,7 @@ class MMQSReportsViewSet(viewsets.ViewSet):
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
         quote_status = request.query_params.get('status')
+        assigned = request.query_params.get('assigned')
         date = False
 
         if date_to and date_from:
@@ -608,11 +610,12 @@ class MMQSReportsViewSet(viewsets.ViewSet):
         if not q_filters:
             roles = user_util.fetchusergroups(request.user.id)  
 
-            if "MMD_STAFF" in roles:
+            if assigned:
                 quote_ids = models.QuoteAssignee.objects.filter(Q(assigned=request.user) & Q(is_deleted=False)).values_list('quote__id', flat=True)
                 resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(id__in=quote_ids)).order_by('-date_created')[:50]
 
-            elif "MMD_MANAGER" in roles or "USER_MANAGER" in roles:
+
+            if "MMD" in roles or "USER_MANAGER" in roles:
                 resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
 
             elif "USER" in roles:
@@ -633,7 +636,7 @@ class MMQSReportsViewSet(viewsets.ViewSet):
         
 
         resp = models.Quote.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-        resp = serializers.FetchQuoteSerializer(resp,many=True).data
+        resp = serializers.FetchQuoteSerializer(resp, many=True, context={"user_id":request.user.id}).data
         return Response(resp, status=status.HTTP_200_OK)
         
         # except (ValidationError, ObjectDoesNotExist):

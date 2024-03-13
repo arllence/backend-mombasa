@@ -463,12 +463,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 user_details.save()
 
                 subject = "Access Details [MMS-AKHK]"
-                message = f"\
-                                Dear {user_details.first_name}, \n\
-                                Your email is {user_details.email}\n\
-                                Your password is: {new_password}\n\
-                                If you encounter any challenge while navigating the platform, please let us know.\
-                            "
+                message = f"Dear {user_details.first_name}, \nYour email is {user_details.email}\nYour password is: {new_password}\nIf you encounter any challenge while navigating the platform, please let us know."
                 # mailgun_general.send_mail(user_details.first_name,user_details.email,subject,message)
                 send_mail(subject, message, 'notification@akhskenya.org',[user_details.email] )
 
@@ -799,6 +794,7 @@ class DepartmentViewSet(viewsets.ViewSet):
             url_path="department",
             url_name="department")
     def department(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
         if request.method == "POST":
             payload = request.data
             serializer = serializers.GeneralNameSerializer(
@@ -848,11 +844,19 @@ class DepartmentViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    departments = models.Department.objects.all().order_by('name')
-                    departments = serializers.FetchDepartmentSerializer(departments,many=True).data
-                    return Response(departments, status=status.HTTP_200_OK)
+
+                    if 'USER' in roles:
+                        department = request.user.department
+                        department = serializers.FetchDepartmentSerializer(department,many=False).data
+                        return Response([department], status=status.HTTP_200_OK)
+                    else:
+                        departments = models.Department.objects.all().order_by('name')
+                        departments = serializers.FetchDepartmentSerializer(departments,many=True).data
+                        return Response(departments, status=status.HTTP_200_OK)
+                    
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
