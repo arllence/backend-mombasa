@@ -693,11 +693,11 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 create_user = get_user_model().objects.create(**newuser)
                 group_details.user_set.add(create_user)
 
-                try:
-                    general_group_details = Group.objects.get(name='USER')
-                    general_group_details.user_set.add(create_user)
-                except (ValidationError, ObjectDoesNotExist):
-                    pass
+                # try:
+                #     general_group_details = Group.objects.get(name='USER')
+                #     general_group_details.user_set.add(create_user)
+                # except (ValidationError, ObjectDoesNotExist):
+                #     pass
 
 
                 subject = "Platform Access Details [MMQS-AKHK]"

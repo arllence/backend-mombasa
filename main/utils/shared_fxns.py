@@ -1,4 +1,8 @@
 from datetime import datetime
+import random
+import string
+
+from mms.models import Quote
 
 def find_date_difference(start_date,end_date,period):
     try:
@@ -28,7 +32,7 @@ def find_date_difference(start_date,end_date,period):
 def identify_file_type(ext):
     images = ['jpeg', 'jpg', 'png', 'tiff']
     videos = ['mp4','webm', 'mkv']
-    files = ['pdf']
+    files = ['pdf','doc','docx']
 
     if ext.lower() in images:
         return 'IMAGE'
@@ -38,3 +42,14 @@ def identify_file_type(ext):
         return 'FILE'
     else:
         return 'UNKNOWN'
+    
+def generate_unique_identifier():
+    characters = string.ascii_uppercase + string.digits
+    identifier = ''.join(random.choices(characters, k=6))
+    qid =  "QS#" + identifier
+
+    is_existing = Quote.objects.filter(qid=qid).exists()
+    if is_existing:
+        generate_unique_identifier()
+    else:
+        return qid

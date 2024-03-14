@@ -59,12 +59,12 @@ class MmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 if formfiles:
-                    exts = ['jpeg','jpg','png','tiff','pdf']
+                    exts = ['jpeg','jpg','png','tiff','pdf','doc','docx']
                     for f in request.FILES.getlist('documents'):
                         original_file_name = f.name
                         ext = original_file_name.split('.')[1].strip().lower()
                         if ext not in exts:
-                            return Response({"details": "Only Images and PDFs allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"details": "Only Images, Word and PDFs allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
                     attachment = None
@@ -98,7 +98,7 @@ class MmsViewSet(viewsets.ViewSet):
                         **raw
                     )
 
-                    managers_emails = get_user_model().objects.filter(groups__name='MMD_MANAGER').values_list('email', flat=True)
+                    managers_emails = get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True)
 
                     # Notify the manager
                     subject = f"A New Quote {qid} Received [MMQS-AKHK]"
@@ -187,7 +187,7 @@ class MmsViewSet(viewsets.ViewSet):
                     models.Quote.objects.filter(Q(id=quote_id)).update(**raw)
 
                     if quote.status == "INCOMPLETE":
-                        managers_emails = list(get_user_model().objects.filter(groups__name='MMD_MANAGER').values_list('email', flat=True))
+                        managers_emails = list(get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True))
                         assignee = models.QuoteAssignee.objects.get(Q(quote=quote))
                         managers_emails.append(assignee.assigned.email)
 
@@ -231,7 +231,7 @@ class MmsViewSet(viewsets.ViewSet):
                     quote.save()
 
                     # Notify the manager
-                    managers_emails = list(get_user_model().objects.filter(groups__name='MMD_MANAGER').values_list('email', flat=True))
+                    managers_emails = list(get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True))
                     emails = [quote.uploader.email] + managers_emails
 
                     subject = f"Quote: {quote.qid} Progress Update [MMQS-AKHK]"
@@ -481,13 +481,13 @@ class MmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 if formfiles:
-                    exts = ['pdf']
+                    exts = ['jpeg','jpg','png','tiff','pdf','doc','docx']
 
                     for f in request.FILES.getlist('quote'):
                         original_file_name = f.name
                         ext = original_file_name.split('.')[1].strip().lower()
                         if ext not in exts:
-                            return Response({"details": "Only PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"details": "Only Images, Word and PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
                         
                     # for f in request.FILES.getlist('comparative_analysis'):
                     #     original_file_name = f.name
@@ -543,8 +543,8 @@ class MmsViewSet(viewsets.ViewSet):
                         emails.append(quote.uploader.email)
 
                         # Notify the manager and users
-                        subject = "Quote Request Uploaded [MMQS-AKHK]"
-                        message = f"Hello. \nQuote: {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}.\n\nRegards\n MMQS-AKHK"
+                        subject = f"Quote: {quote.qid} Request Uploaded [MMQS-AKHK]"
+                        message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}.\n\nRegards\n MMQS-AKHK"
                         # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
