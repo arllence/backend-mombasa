@@ -29,6 +29,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_superuser = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_suspended = models.BooleanField(default=False)
+    is_defaultpassword = models.BooleanField(default=True)
     date_created = models.DateTimeField(auto_now_add=True)
     department = models.ForeignKey(
         Department, related_name="user_department", 

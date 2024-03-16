@@ -101,8 +101,8 @@ class MmsViewSet(viewsets.ViewSet):
                     managers_emails = get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True)
 
                     # Notify the manager
-                    subject = f"A New Quote {qid} Received [MMQS-AKHK]"
-                    message = f"Hello, \nA new quote: {qid} of subject: {quote.subject} from department:  {department.name} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\nPending your action.\n\nRegards\n MMQS-AKHK"
+                    subject = f"A New Quote {qid} Received [PSMDQS-AKHK]"
+                    message = f"Hello, \nA new quote: {qid} of subject: {quote.subject} from department:  {department.name} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\nPending your action.\n\nRegards\n PSMDQS-AKHK"
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
@@ -195,7 +195,7 @@ class MmsViewSet(viewsets.ViewSet):
                         models.Quote.objects.filter(Q(id=quote_id)).update(**raw)
 
                         # Notify the manager
-                        subject = f"A Quote: {quote.qid} Has Been Resubmitted [MMQS-AKHK]"
+                        subject = f"A Quote: {quote.qid} Has Been Resubmitted [PSMDQS-AKHK]"
                         message = f"Hello, \nQuote:{quote.qid} of subject: {quote.subject} from department:  {department.name} has been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\nPending your action.\n\nRegards\nMMS-AKHK"
                         # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                         send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
@@ -234,7 +234,7 @@ class MmsViewSet(viewsets.ViewSet):
                     managers_emails = list(get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True))
                     emails = [quote.uploader.email] + managers_emails
 
-                    subject = f"Quote: {quote.qid} Progress Update [MMQS-AKHK]"
+                    subject = f"Quote: {quote.qid} Progress Update [PSMDQS-AKHK]"
                     message = f"Hello, \nThe Quote:{quote.qid} of subject {quote.subject}, from department: {quote.department.name} has been marked as {quote_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\n\nRegards\nMMS-AKHK"
 
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
@@ -345,14 +345,14 @@ class MmsViewSet(viewsets.ViewSet):
                     quote.save()
 
                     # Notify the uploader
-                    subject = "Quote Received [MMQS-AKHK]"
+                    subject = "Quote Received [PSMDQS-AKHK]"
                     message = f"Dear {quote.uploader.first_name}, \nYour quote has been received succefully and queued for processing.\nWe will update you on the progress.\n\nRegards\nMMS-AKHK"
 
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', [quote.uploader.email])
 
                     # Notify the staff
-                    subject = "Quote Assigned To You [MMQS-AKHK]"
+                    subject = "Quote Assigned To You [PSMDQS-AKHK]"
                     message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to MMQS to review.\n\nRegards\nMMS-AKHK"
 
                     # mailgun_general.send_mail(staff.first_name, staff.email,subject,message)
@@ -394,7 +394,7 @@ class MmsViewSet(viewsets.ViewSet):
                     quote.save()
 
                     # Notify the staff
-                    subject = "Quote Assigned To You [MMQS-AKHK]"
+                    subject = "Quote Assigned To You [PSMDQS-AKHK]"
                     message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to MMQS to review.\n\nRegards\nMMS-AKHK"
 
                     # mailgun_general.send_mail(staff.first_name, staff.email,subject,message)
@@ -543,8 +543,8 @@ class MmsViewSet(viewsets.ViewSet):
                         emails.append(quote.uploader.email)
 
                         # Notify the manager and users
-                        subject = f"Quote: {quote.qid} Request Uploaded [MMQS-AKHK]"
-                        message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}.\n\nRegards\n MMQS-AKHK"
+                        subject = f"Quote: {quote.qid} Request Uploaded [PSMDQS-AKHK]"
+                        message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}.\n\nRegards\n PSMDQS-AKHK"
                         # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 

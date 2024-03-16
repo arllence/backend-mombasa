@@ -1,3 +1,4 @@
+import csv
 import json
 import logging
 import random
@@ -73,6 +74,7 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                     'staff': is_authenticated.is_staff,
                     'department_name': department_name,
                     'department_id': str(department_id),
+                    'password_change_status': is_authenticated.is_defaultpassword,
                     'exp': datetime.utcnow() + timedelta(seconds=settings.TOKEN_EXPIRY),
                     'iat': datetime.utcnow()
                 }
@@ -192,7 +194,7 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
             user_details.password = hashed_password
             user_details.save()
 
-            subject = "Access Details [MMQS-AKHK]"
+            subject = "Access Details [PSMDQS-AKHK]"
             message = f"\
                             Dear {user_details.first_name}, \n\
                             Your email is {user_details.email}\n\
@@ -237,30 +239,30 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
 
                 string_check= re.compile('[-@_!#$%^&*()<>?/\|}{~:]') 
 
-                if(string_check.search(new_password) == None): 
-                    return Response({'details':
-                                     'Password Must contain a special character'},
-                                    status=status.HTTP_400_BAD_REQUEST)
+                # if(string_check.search(new_password) == None): 
+                #     return Response({'details':
+                #                      'Password Must contain a special character'},
+                #                     status=status.HTTP_400_BAD_REQUEST)
 
-                if not any(char.isupper() for char in new_password):
-                    return Response({'details':
-                                     'Password must contain at least 1 uppercase letter'},
-                                    status=status.HTTP_400_BAD_REQUEST)
+                # if not any(char.isupper() for char in new_password):
+                #     return Response({'details':
+                #                      'Password must contain at least 1 uppercase letter'},
+                #                     status=status.HTTP_400_BAD_REQUEST)
 
                 if len(new_password) < password_min_length:
                     return Response({'details':
-                                     'Password Must be atleast 8 characters'},
+                                     'Password Must be at least 8 characters'},
                                     status=status.HTTP_400_BAD_REQUEST)
 
-                if not any(char.isdigit() for char in new_password):
-                    return Response({'details':
-                                     'Password must contain at least 1 digit'},
-                                    status=status.HTTP_400_BAD_REQUEST)
+                # if not any(char.isdigit() for char in new_password):
+                #     return Response({'details':
+                #                      'Password must contain at least 1 digit'},
+                #                     status=status.HTTP_400_BAD_REQUEST)
                                     
-                if not any(char.isalpha() for char in new_password):
-                    return Response({'details':
-                                     'Password must contain at least 1 letter'},
-                                    status=status.HTTP_400_BAD_REQUEST)
+                # if not any(char.isalpha() for char in new_password):
+                #     return Response({'details':
+                #                      'Password must contain at least 1 letter'},
+                #                     status=status.HTTP_400_BAD_REQUEST)
                 try:
                     user_details = get_user_model().objects.get(id=authenticated_user.id)
                 except (ValidationError, ObjectDoesNotExist):
@@ -274,7 +276,9 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
 
 
                 if new_password != confirm_password:
-                    return Response({"details": "Passwords Do Not Match"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Passwords Do Not Match"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
                 is_current_password = authenticated_user.check_password(
                     current_password)
                 if is_current_password is False:
@@ -462,7 +466,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 user_details.password = hashed_password
                 user_details.save()
 
-                subject = "Access Details [MMQS-AKHK]"
+                subject = "Access Details [PSMDQS-AKHK]"
                 message = f"Dear {user_details.first_name}, \nYour email is {user_details.email}\nYour password is: {new_password}\nIf you encounter any challenge while navigating the platform, please let us know."
                 # mailgun_general.send_mail(user_details.first_name,user_details.email,subject,message)
                 send_mail(subject, message, 'notification@akhskenya.org',[user_details.email] )
@@ -641,6 +645,65 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             return Response({"details": serializer.errors},
                             status=status.HTTP_400_BAD_REQUEST)
 
+    @action(methods=["POST"], detail=False, url_path="bulk-create-user", url_name="bulk-create-user")
+    def upload(self, request):
+        if request.method == "POST":
+
+            formfiles = request.FILES
+            if not formfiles:
+                return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
+
+            def set_name(name):
+                return name.split(' ',1)
+            
+            def set_department(department):
+                try:
+                    department = models.Department.objects.get(name=department)
+                except (ValidationError, ObjectDoesNotExist):
+                    department = None
+                return department
+            
+            f = request.FILES.getlist('documents')[0]
+            if f.name.endswith('.csv'):
+
+                decoded_file = f.read().decode('utf-8')
+                csv_data = csv.reader(decoded_file.splitlines(), delimiter=',')
+
+                # Skip the header row
+                next(csv_data)
+
+                users = [
+                    models.User(
+                        first_name=set_name(row[0])[0].strip(), 
+                        last_name=set_name(row[0])[1].strip(), 
+                        email=row[1].strip(), 
+                        department=set_department(row[2].strip()),
+                        is_active=True,
+                        is_superuser=False,
+                        is_staff=False,
+                        is_suspended=False,
+                        password=make_password("welcome@123"),
+                    )
+                    for row in csv_data
+                ]
+
+                newInstances = models.User.objects.bulk_create(users)
+
+                try:
+                    group_details = Group.objects.get(name="USER")
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Role does not exist'}, 
+                                    status=status.HTTP_400_BAD_REQUEST) 
+
+                for instance in newInstances:
+                    group_details.user_set.add(instance)
+
+
+                return Response('Data uploaded successfully', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": "Please upload a CSV file."}, status=status.HTTP_400_BAD_REQUEST)
+            
 
     @action(methods=["POST"], detail=False, url_path="create-user", url_name="create-user")
     def create_user(self, request):
@@ -662,8 +725,6 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
 
                 if emailexists:
                     return Response({'details': 'User With Credentials Already Exist'}, status=status.HTTP_400_BAD_REQUEST)
-                
-
                 
                 try:
                     group_details = Group.objects.get(id=role_name)
@@ -690,6 +751,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     "is_suspended": False,
                     "password": hashed_pwd,
                 }
+
                 create_user = get_user_model().objects.create(**newuser)
                 group_details.user_set.add(create_user)
 
@@ -699,14 +761,8 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 # except (ValidationError, ObjectDoesNotExist):
                 #     pass
 
-
-                subject = "Platform Access Details [MMQS-AKHK]"
-                message = f"\
-                                Dear {first_name}, \n\
-                                Your email is {email}\n\
-                                Your password is: {password}\n\
-                                If you encounter any challenge while navigating the platform, please let us know.\
-                            "
+                subject = "Platform Access Details [PSMDQS-AKHK]"
+                message = f"Dear {first_name}, \nYour email is {email}\nYour password is: {password}\nIf you encounter any challenge while navigating the platform, please let us know."
                 # mailgun_general.send_mail(first_name,email,subject,message)
                 send_mail(subject, message, 'notification@akhskenya.org', [email])
 
@@ -860,4 +916,28 @@ class DepartmentViewSet(viewsets.ViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+    @action(methods=["POST"],
+            detail=False,
+            url_path="upload",
+            url_name="upload")
+    def upload(self, request):
+        if request.method == "POST":
+            formfiles = request.FILES
+            if not formfiles:
+                return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            f = request.FILES.getlist('documents')[0]
+            if f.name.endswith('.csv'):
+                decoded_file = f.read().decode('utf-8')
+                csv_data = csv.reader(decoded_file.splitlines(), delimiter=',')
+                # Skip the header row
+                next(csv_data)
+                departments = [models.Department(name=row[0].strip()) for row in csv_data]
+                models.Department.objects.bulk_create(departments)
+                return Response('Data uploaded successfully', status=status.HTTP_200_OK)
+            else:
+                return Response({"details": "Please upload a CSV file."}, status=status.HTTP_400_BAD_REQUEST)
 
