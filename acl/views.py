@@ -667,7 +667,8 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             f = request.FILES.getlist('documents')[0]
             if f.name.endswith('.csv'):
 
-                decoded_file = f.read().decode('utf-8')
+                # decoded_file = f.read().decode('utf-8')
+                decoded_file = f.read().decode('windows-1254')
                 csv_data = csv.reader(decoded_file.splitlines(), delimiter=',')
 
                 # Skip the header row
