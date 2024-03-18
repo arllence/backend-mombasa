@@ -107,7 +107,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                     # Notify the manager
                     subject = f"A New Quote {qid} Received [PSMDQS-AKHK]"
-                    message = f"Hello, \nA new quote: {qid} of subject: {quote.subject} from department:  {department.name} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\nPending your action.\n\nRegards\n PSMDQS-AKHK"
+                    message = f"Hello, \nA new quote: {qid} of subject: {quote.subject} from department:  {department.name} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\n PSMDQS-AKHK"
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
@@ -201,7 +201,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                         # Notify the manager
                         subject = f"A Quote: {quote.qid} Has Been Resubmitted [PSMDQS-AKHK]"
-                        message = f"Hello, \nQuote:{quote.qid} of subject: {quote.subject} from department:  {department.name} has been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\nPending your action.\n\nRegards\nMMS-AKHK"
+                        message = f"Hello, \nQuote:{quote.qid} of subject: {quote.subject} from department:  {department.name} has been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nMMS-AKHK"
                         # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                         send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
@@ -240,7 +240,7 @@ class MmsViewSet(viewsets.ViewSet):
                     emails = [quote.uploader.email] + managers_emails
 
                     subject = f"Quote: {quote.qid} Progress Update [PSMDQS-AKHK]"
-                    message = f"Hello, \nThe Quote:{quote.qid} of subject {quote.subject}, from department: {quote.department.name} has been marked as {quote_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}\n\nRegards\nMMS-AKHK"
+                    message = f"Hello, \nThe Quote:{quote.qid} of subject {quote.subject}, from department: {quote.department.name} has been marked as {quote_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nMMS-AKHK"
 
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', emails)
@@ -564,7 +564,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                         # Notify the manager and users
                         subject = f"Quote: {quote.qid} Request Uploaded [PSMDQS-AKHK]"
-                        message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))}.\n\nRegards\n PSMDQS-AKHK"
+                        message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\n PSMDQS-AKHK"
                         # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
