@@ -21,12 +21,17 @@ from django.db.models import Sum
 from acl.utils import mailgun_general
 from django.core.mail import send_mail
 
+from mms.utils.custom_pagination import CustomPagination
+from rest_framework.viewsets import ViewSetMixin
+from rest_framework.pagination import PageNumberPagination
 
 
 
 class MmsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
+    # pagination_class = CustomPagination
     search_fields = ['id', ]
+    
 
     def get_queryset(self):
         return []
@@ -35,7 +40,7 @@ class MmsViewSet(viewsets.ViewSet):
             detail=False,
             url_path="quote",
             url_name="quote")
-    def quote(self, request):
+    def quote(self, request, *args, **kwargs):
         authenticated_user = request.user
         if request.method == "POST":
             formfiles = request.FILES
@@ -280,11 +285,26 @@ class MmsViewSet(viewsets.ViewSet):
                         elif "USER" in roles:
                             resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')
 
-                    resp = serializers.FetchQuoteSerializer(resp, many=True, context={"user_id":request.user.id}).data
-                    return Response(resp, status=status.HTTP_200_OK)
+
+                    paginator = PageNumberPagination()
+                    paginator.page_size = 50
+                    result_page = paginator.paginate_queryset(resp, request)
+                    serializer = serializers.FetchQuoteSerializer(result_page, many=True, context={"user_id":request.user.id})
+                    return paginator.get_paginated_response(serializer.data)
+                
+
+                # page = self.paginate_queryset(queryset)
+                # if page is not None:
+                #     serializer = serializers.QuoteSerializer(page, many=True)
+                #     return self.get_paginated_response(serializer.data)
+
+                    # resp = serializers.FetchQuoteSerializer(resp, many=True, context={"user_id":request.user.id}).data
+                    
+                    # return Response(resp, status=status.HTTP_200_OK)
                 
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
