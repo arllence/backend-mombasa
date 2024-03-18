@@ -70,3 +70,18 @@ class AccountActivity(models.Model):
 
     def __str__(self):
         return str(self.id)
+
+
+class Sendmail(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    email = models.JSONField()
+    subject = models.CharField(max_length=500)
+    message = models.TextField()
+    status = models.CharField(max_length=55, default="PENDING")
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "send_mail"
+
+    def __str__(self):
+        return str(self.email)

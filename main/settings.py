@@ -238,3 +238,10 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'notification@akhskenya.org'
 EMAIL_HOST_PASSWORD = 'password@123'
+
+
+CRONJOBS = [
+    # ('*/10 * * * *', 'communication.utils.azure_sdk_v2.get_emails', '>> /opt/logs/azure_sdk_v2_cron.log'),
+    # ('0 * * * *', 'communication.utils.mailgun_sdk.get_emails', '>> /opt/logs/mailgun_sdk_cron.log'),
+    ('*/5 * * * *', 'acl.utils.cron_mailer.get_emails', '>> /opt/logs/cron_mailer.log'),
+]

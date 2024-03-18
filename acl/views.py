@@ -25,6 +25,7 @@ from acl import serializers
 from acl.utils import mailgun_general
 from django.core.mail import send_mail
 
+
 logger = logging.getLogger(__name__)
 
 class AuthenticationViewSet(viewsets.ModelViewSet):
@@ -694,9 +695,25 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Role does not exist'}, 
                                     status=status.HTTP_400_BAD_REQUEST) 
+                
+                subject = "Welcome To PSMDQS. Platform Access Details"
+                def set_message(instance):
+                    message = f"Dear {instance.first_name}, \nYour email is: {instance.email}\nYour password is: welcome@123\nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nPSMDQS-AKHK"
+                    return message
+                # send_mail(subject, message, 'notification@akhskenya.org', [email])
 
                 for instance in newInstances:
                     group_details.user_set.add(instance)
+
+                mails = [
+                    models.Sendmail(
+                        email=[instance.email], 
+                        subject=subject,
+                        message=set_message(instance),
+                    )
+                    for instance in newInstances
+                ]
+                models.Sendmail.objects.bulk_create(mails)
 
 
                 return Response('Data uploaded successfully', status=status.HTTP_200_OK)
