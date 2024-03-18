@@ -1,5 +1,6 @@
 import datetime
 import json
+import logging
 import uuid
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
@@ -25,7 +26,8 @@ from mms.utils.custom_pagination import CustomPagination
 from rest_framework.viewsets import ViewSetMixin
 from rest_framework.pagination import PageNumberPagination
 
-
+# Get an instance of a logger
+logger = logging.getLogger(__name__)
 
 class MmsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
@@ -85,7 +87,7 @@ class MmsViewSet(viewsets.ViewSet):
                                         file_type=file_type)
 
                         except Exception as e:
-                            # logger.error(e)
+                            logger.error(e)
                             print(e)
                             return Response({"details": "Unable to save File(s)"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -167,7 +169,7 @@ class MmsViewSet(viewsets.ViewSet):
                                         file_type=file_type)
 
                         except Exception as e:
-                            # logger.error(e)
+                            logger.error(e)
                             print(e)
                             return Response({"details": "Unable to save File(s)"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -206,7 +208,7 @@ class MmsViewSet(viewsets.ViewSet):
                         send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Quote created", "Quote Creation Executed")
+                    authenticated_user, authenticated_user, "Quote updated", f"QID: {quote_id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -306,6 +308,7 @@ class MmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 except Exception as e:
+                    logger.error(e)
                     print(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -379,7 +382,7 @@ class MmsViewSet(viewsets.ViewSet):
                     send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
 
                 user_util.log_account_activity(
-                    authenticated_user, staff, "Quote Assigned created", "Quote Assignation Executed")
+                    authenticated_user, staff, "Quote Assigned created", f"Quote Assignation Executed QID: {quote.id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -421,7 +424,7 @@ class MmsViewSet(viewsets.ViewSet):
                     send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
 
                 user_util.log_account_activity(
-                    authenticated_user, staff, "Quote Assigned created", "Quote Assignation Executed")
+                    authenticated_user, staff, "Quote Assigned created", f"Quote Assignation Executed QID: {quote.id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -569,10 +572,10 @@ class MmsViewSet(viewsets.ViewSet):
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
                         user_util.log_account_activity(
-                            authenticated_user, authenticated_user, "Quote Closed", "Quote Closure Executed")
+                            authenticated_user, authenticated_user, "Quote Closed", f"Quote Closure Executed QID: {quote.id}")
 
                     except Exception as e:
-                        # logger.error(e)
+                        logger.error(e)
                         print(e)
                         return Response({"details": "Unable to save File(s)"}, status=status.HTTP_400_BAD_REQUEST)
 
