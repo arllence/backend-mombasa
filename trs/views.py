@@ -12,14 +12,13 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.contrib.auth import get_user_model
 from django.db.models import  Q
 from django.db import transaction
-from mms import models
-from mms import serializers
+from trs import models
+from trs import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
 from acl.models import User, Department
 from main.utils import shared_fxns
 from django.db.models import Sum
-from acl.utils import mailgun_general
 from django.core.mail import send_mail
 
 from mms.utils.custom_pagination import CustomPagination
@@ -29,9 +28,8 @@ from rest_framework.pagination import PageNumberPagination
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
-class MmsViewSet(viewsets.ViewSet):
+class TrsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
-    # pagination_class = CustomPagination
     search_fields = ['id', ]
     
 
@@ -40,81 +38,77 @@ class MmsViewSet(viewsets.ViewSet):
     
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
-            url_path="quote",
-            url_name="quote")
-    def quote(self, request, *args, **kwargs):
+            url_path="traveler-details",
+            url_name="traveler-details")
+    def traveler(self, request):
         authenticated_user = request.user
         if request.method == "POST":
-            formfiles = request.FILES
-            # if not formfiles:
-            #     return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
 
             payload = json.loads(request.data['payload'])
-            serializer = serializers.QuoteSerializer(
+            serializer = serializers.TravelerSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
                 description = payload['description']
-                subject = payload['subject']
-                department = payload['department']
-                content = payload.get('content')
-                qid = shared_fxns.generate_unique_identifier()
+                purpose = payload['purpose']
+                position = payload['position']
+                employee_no = payload['employee_no']
+                route = payload['route']
+                departure_date = payload['departure_date']
+                return_date = payload['return_date']
+                visa_required_date = payload.get('visa_required_date')
+                accommodation = bool(payload.get('accommodation'))
+                tid = shared_fxns.generate_unique_identifier()
 
-                try:
-                    department = Department.objects.get(Q(id=department))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                if formfiles:
-                    exts = ['jpeg','jpg','png','tiff','pdf','doc','docx']
-                    for f in request.FILES.getlist('documents'):
-                        original_file_name = f.name
-                        ext = original_file_name.split('.')[1].strip().lower()
-                        if ext not in exts:
-                            return Response({"details": "Only Images, Word and PDFs allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+
+                # update employee no
+                empno = authenticated_user.employee_no
+                if not empno:
+                    authenticated_user = employee_no
+                    authenticated_user.save()
+
                 
                 with transaction.atomic():
-                    attachment = None
-                    if formfiles:                        
-                        f = request.FILES.getlist('documents')[0]
-                        file_type = shared_fxns.identify_file_type(original_file_name.split('.')[1].strip().lower())
-                        try:
-                            original_file_name = f.name                            
-                            attachment = models.Document.objects.create(
-                                        document=f, 
-                                        original_file_name=original_file_name, 
-                                        uploader=authenticated_user, 
-                                        file_type=file_type)
 
-                        except Exception as e:
-                            logger.error(e)
-                            print(e)
-                            return Response({"details": "Unable to save File(s)"}, status=status.HTTP_400_BAD_REQUEST)
 
-                    raw = {
-                        "department": department,
-                        "attachment": attachment,
-                        "uploader": authenticated_user,
-                        "subject": subject,
+                    traveler_raw = {
+                        "employee_no": employee_no,
+                        "position": position,
+                        "purpose": purpose,
+                        "traveler": authenticated_user,
                         "description": description,
-                        "content": content,
-                        "qid": qid
+                        "tid": tid
                     }  
 
-                    quote = models.Quote.objects.create(
-                        **raw
+                    traveler = models.Traveler.objects.create(
+                        **traveler_raw
                     )
 
-                    managers_emails = get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True)
+                    trip_raw = {
+                        "traveler": traveler,
+                        "route": route,
+                        "departure_date": departure_date,
+                        "return_date": return_date,
+                        "visa_required_date": visa_required_date,
+                        "accommodation": accommodation,
+                    }  
 
-                    # Notify the manager
-                    subject = f"A New Quote {qid} Received [PSMDQS-AKHK]"
-                    message = f"Hello, \nA new quote: {qid} of subject: {quote.subject} from department:  {department.name} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\n PSMDQS-AKHK"
-                    # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
+                    models.Trip.objects.create(
+                        **trip_raw
+                    )
+
+
+                    targets = ['HOD','SLT']
+                    managers_emails = get_user_model().objects.filter(Q(groups__name__in=targets) & Q(department=authenticated_user.department)).values_list('email', flat=True)
+
+                    # Notify the hods / slt
+                    subject = f"Travel Request {tid} Received [TRS-AKHK]"
+                    message = f"Hello, \nA new travel request: {tid} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\n TRS-AKHK"
+
                     send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Quote created", "Quote Creation Executed")
+                    authenticated_user, authenticated_user, "Travel Request created", f"Travel Request Id: {traveler.id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -122,93 +116,67 @@ class MmsViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == "PUT":
-            formfiles = request.FILES
-            # if not formfiles:
-            #     return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
-
             payload = json.loads(request.data['payload'])
-            serializer = serializers.PutQuoteSerializer(
+            serializer = serializers.PutTravelerSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
-                quote_id = payload['id']
+                traveler_id = payload['id']
                 description = payload['description']
-                subject = payload['subject']
-                department = payload['department']
-                content = payload.get('content')
+                purpose = payload['purpose']
+                position = payload['position']
+                employee_no = payload['employee_no']
+                route = payload['route']
+                departure_date = payload['departure_date']
+                return_date = payload['return_date']
+                visa_required_date = payload.get('visa_required_date')
+                accommodation = bool(payload.get('accommodation'))
 
                 try:
-                    department = Department.objects.get(Q(id=department))
+                    traveler = models.Traveler.objects.get(id=traveler_id)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                try:
-                    quote = models.Quote.objects.get(Q(id=quote_id))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                if formfiles:
-                    exts = ['jpeg','jpg','png','tiff','pdf']
-                    for f in request.FILES.getlist('documents'):
-                        original_file_name = f.name
-                        ext = original_file_name.split('.')[1].strip().lower()
-                        if ext not in exts:
-                            return Response({"details": "Only Images and PDFs allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Trip !"}, status=status.HTTP_400_BAD_REQUEST)
+
                 
                 with transaction.atomic():
 
-                    if formfiles:                        
-                        f = request.FILES.getlist('documents')[0]
-                        file_type = shared_fxns.identify_file_type(original_file_name.split('.')[1].strip().lower())
-                        try:
-                            original_file_name = f.name                            
-                            attachment = models.Document.objects.create(
-                                        document=f, 
-                                        original_file_name=original_file_name, 
-                                        uploader=authenticated_user, 
-                                        file_type=file_type)
+                    traveler_raw = {
+                        "employee_no": employee_no,
+                        "position": position,
+                        "purpose": purpose,
+                        "traveler": authenticated_user,
+                        "description": description
+                    }  
+                    models.Traveler.objects.filter(Q(id=traveler_id)).update(**traveler_raw)
 
-                        except Exception as e:
-                            logger.error(e)
-                            print(e)
-                            return Response({"details": "Unable to save File(s)"}, status=status.HTTP_400_BAD_REQUEST)
-
-                        raw = {
-                            "department": department,
-                            "attachment": attachment,
-                            "uploader": authenticated_user,
-                            "subject": subject,
-                            "description": description,
-                            "content": content,
-                        }  
-                    else:
-                        raw = {
-                            "department": department,
-                            "uploader": authenticated_user,
-                            "subject": subject,
-                            "description": description,
-                            "content": content,
-                        } 
+                    trip_raw = {
+                        "route": route,
+                        "departure_date": departure_date,
+                        "return_date": return_date,
+                        "visa_required_date": visa_required_date,
+                        "accommodation": accommodation,
+                    }  
+                    models.Traveler.objects.filter(Q(traveler=traveler_id)).update(**trip_raw)
 
 
-                    models.Quote.objects.filter(Q(id=quote_id)).update(**raw)
+                    if traveler.status == "INCOMPLETE":
+                        targets = ['HOD','SLT']
+                        managers_emails = get_user_model().objects.filter(Q(groups__name__in=targets) & Q(department=authenticated_user.department)).values_list('email', flat=True)
 
-                    if quote.status == "INCOMPLETE":
-                        managers_emails = list(get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True))
-                        assignee = models.QuoteAssignee.objects.get(Q(quote=quote))
-                        managers_emails.append(assignee.assigned.email)
+                        # assignee = models.QuoteAssignee.objects.get(Q(quote=quote))
+                        # managers_emails.append(assignee.assigned.email)
 
                         raw = {"status" : "RESUBMITTED"}
-                        models.Quote.objects.filter(Q(id=quote_id)).update(**raw)
+                        models.Traveler.objects.filter(Q(id=traveler_id)).update(**raw)
 
                         # Notify the manager
-                        subject = f"A Quote: {quote.qid} Has Been Resubmitted [PSMDQS-AKHK]"
-                        message = f"Hello, \nQuote:{quote.qid} of subject: {quote.subject} from department:  {department.name} has been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nPSMDQS-AKHK"
+                        subject = f"Travel Request: {traveler.tid} Has Been Resubmitted [TRS-AKHK]"
+                        message = f"Hello, \nTravel Request: {traveler.tid} has been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
 
                         send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Quote updated", f"QID: {quote_id}")
+                    authenticated_user, authenticated_user, "Travel Request updated", f"TID: {traveler_id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -217,56 +185,48 @@ class MmsViewSet(viewsets.ViewSet):
             
         elif request.method == "PATCH":
             payload = request.data
-            serializer = serializers.PatchQuoteSerializer(
+            serializer = serializers.PatchTravelerSerializer(
                 data=payload, many=False)
             
             if serializer.is_valid():
-                quote_id = payload['quote_id']
-                quote_status = payload['status'].upper()
+                traveler_id = payload['traveler_id']
+                traveler_status = payload['status'].upper()
 
                 try:
-                    quote = models.Quote.objects.get(id=quote_id)
+                    traveler = models.Traveler.objects.get(id=traveler_id)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                
-
+                    return Response({"details": "Unknown Travel !"}, status=status.HTTP_400_BAD_REQUEST)
+            
                 
                 with transaction.atomic():
 
-                    quote.status = quote_status
-                    quote.save()
+                    traveler.status = traveler_status
+                    traveler.save()
 
-                    # Notify the manager
-                    managers_emails = list(get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True))
-                    emails = [quote.uploader.email] + managers_emails
+                    # Notify requestor
+                    emails = [traveler.traveler.email]
 
-                    subject = f"Quote: {quote.qid} Progress Update [PSMDQS-AKHK]"
-                    message = f"Hello, \nThe Quote:{quote.qid} of subject {quote.subject}, from department: {quote.department.name} has been marked as {quote_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nPSMDQS-AKHK"
+                    subject = f"Travel Request: {traveler.tid} Progress Update [TRS-AKHK]"
+                    message = f"Hello, \nThe Request:{traveler.tid} has been marked as {traveler_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
 
-                    # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', emails)
-
-                    # update quote assignee status
-                    raw = {"status" : 'REVIEWED'}
-                    models.QuoteAssignee.objects.filter(Q(quote=quote_id) & Q(assigned=request.user)).update(**raw)
                                                 
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Quote Progress Updated", f"Updated Quote: {quote_id}")
+                    authenticated_user, authenticated_user, "Travel Request Progress Updated", f"Travel Request: {traveler_id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
-            assigned = request.query_params.get('assigned')
             roles = user_util.fetchusergroups(request.user.id)  
 
             if request_id:
                 try:
-                    resp = models.Quote.objects.get(Q(id=request_id))
-                    resp = serializers.FetchQuoteSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    resp = models.Traveler.objects.get(Q(id=request_id))
+                    resp = serializers.FetchTravelerSerializer(resp, many=False, context={"user_id":request.user.id}).data
                     return Response(resp, status=status.HTTP_200_OK)
+                
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Quote!"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
@@ -274,25 +234,33 @@ class MmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    if assigned:
-                        quote_ids = models.QuoteAssignee.objects.filter(Q(assigned=request.user) & Q(is_deleted=False)).values_list('quote__id', flat=True)
-                        resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(id__in=quote_ids)).order_by('-date_created')
-                    else:
-                        if "MMD" in roles:
-                            resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')
 
-                        elif "USER_MANAGER" in roles:
-                            resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')
+                    if "HOD" in roles or "SLT" in roles or "USER_MANAGER" in roles:
+                        resp = models.Traveler.objects.filter(Q(is_deleted=False)).order_by('-date_created')
 
-                        elif "USER" in roles:
-                            resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')
+                    elif "CEO" in roles or "HOF" in roles:
+                        targets = list(models.Approval.objects.filter(Q(approval_for='SLT') & Q(is_deleted=False)).values_list('traveler__id', flat=True))
+                        resp = models.Traveler.objects.filter(Q(id__in=targets) & Q(is_deleted=False)).order_by('-date_created')
+
+                    elif "USER" in roles:
+                        resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(traveler=request.user)).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
                     result_page = paginator.paginate_queryset(resp, request)
-                    serializer = serializers.FetchQuoteSerializer(result_page, many=True, context={"user_id":request.user.id})
+                    serializer = serializers.FetchTravelerSerializer(result_page, many=True, context={"user_id":request.user.id})
                     return paginator.get_paginated_response(serializer.data)
+                
+
+                # page = self.paginate_queryset(queryset)
+                # if page is not None:
+                #     serializer = serializers.QuoteSerializer(page, many=True)
+                #     return self.get_paginated_response(serializer.data)
+
+                    # resp = serializers.FetchQuoteSerializer(resp, many=True, context={"user_id":request.user.id}).data
+                    
+                    # return Response(resp, status=status.HTTP_200_OK)
                 
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)
@@ -309,7 +277,9 @@ class MmsViewSet(viewsets.ViewSet):
             with transaction.atomic():
                 try:
                     raw = {"is_deleted" : True}
-                    models.Quote.objects.filter(Q(id=request_id)).update(**raw)
+                    models.Traveler.objects.filter(Q(id=request_id)).update(**raw)
+                    models.Trip.objects.filter(Q(traveler=request_id)).update(**raw)
+                    models.Approval.objects.filter(Q(traveler=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)    
@@ -317,55 +287,74 @@ class MmsViewSet(viewsets.ViewSet):
     
     @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
-            url_path="assign",
-            url_name="assign")
-    def assign_quote(self, request):
+            url_path="approval",
+            url_name="approval")
+    def approval(self, request):
+
         authenticated_user = request.user
+
         if request.method == "POST":
 
             payload = request.data
+            roles = user_util.fetchusergroups(request.user.id) 
 
-            serializer = serializers.AssignQuoteSerializer(
+            serializer = serializers.ApprovalSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
-                quote = payload['quote']
-                staff = payload['staff']
+                traveler = payload['traveler']
+                budget_code = payload.get('budget_code')
 
                 try:
-                    quote = models.Quote.objects.get(Q(id=quote))
+                    traveler = models.Traveler.objects.get(Q(id=traveler))
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                try:
-                    staff = get_user_model().objects.get(Q(id=staff))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Staff !"}, status=status.HTTP_400_BAD_REQUEST)
-                
+                    return Response({"details": "Unknown Trip !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
 
+                    is_hod = False
+                    is_ceo = False
+
+                    if "HOD" in roles or "SLT" in roles:
+                        is_hod = True
+                        approval_for = "SLT"
+                        traveler_status = "APPROVED"
+                        if not budget_code:
+                            return Response({"details": "Budget Code Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                    elif "CEO" in roles or "HOF" in roles:
+                        is_ceo = True
+                        approval_for = "BUDGET"
+                        traveler_status = "CLOSED"
+
+                    is_existing = models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).exists()
+
                     raw = {
-                        "quote": quote,
-                        "assigned": staff,
+                        "traveler": traveler,
+                        "approval_for": approval_for,
+                        "approved_by": authenticated_user
                     }  
 
-                    models.QuoteAssignee.objects.create(
-                        **raw
-                    )
+                    if is_existing:
+                        models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).update(**raw)
+                    else:
+                        models.Approval.objects.create(
+                            **raw
+                        )
 
-                    quote.status = 'ASSIGNED'
-                    quote.save()
+                    traveler.status = traveler_status
+                    traveler.budget_code = budget_code
+                    traveler.save()
 
                     # Notify the uploader
-                    subject = "Quote Received [PSMDQS-AKHK]"
-                    message = f"Dear {quote.uploader.first_name}, \nYour quote has been received successfully and queued for processing.\nWe will update you on the progress.\n\nRegards\nPSMDQS-AKHK"
+                    subject = "Quote Received [TRS-AKHK]"
+                    message = f"Dear {quote.uploader.first_name}, \nYour quote has been received succefully and queued for processing.\nWe will update you on the progress.\n\nRegards\nTRS-AKHK"
 
                     send_mail(subject, message, 'notification@akhskenya.org', [quote.uploader.email])
 
                     # Notify the staff
-                    subject = "Quote Assigned To You [PSMDQS-AKHK]"
-                    message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to PSMDQS to review.\n\nRegards\nPSMDQS-AKHK"
+                    subject = "Quote Assigned To You [TRS-AKHK]"
+                    message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to MMQS to review.\n\nRegards\nTRS-AKHK"
 
                     send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
 
@@ -405,8 +394,8 @@ class MmsViewSet(viewsets.ViewSet):
                     quote.save()
 
                     # Notify the staff
-                    subject = "Quote Assigned To You [PSMDQS-AKHK]"
-                    message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to PSMDQS to review.\n\nRegards\nPSMDQS-AKHK"
+                    subject = "Quote Assigned To You [TRS-AKHK]"
+                    message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to MMQS to review.\n\nRegards\nTRS-AKHK"
 
                     # mailgun_general.send_mail(staff.first_name, staff.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
@@ -554,9 +543,9 @@ class MmsViewSet(viewsets.ViewSet):
                         emails.append(quote.uploader.email)
 
                         # Notify the manager and users
-                        subject = f"Quote: {quote.qid} Request Uploaded [PSMDQS-AKHK]"
-                        message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\n PSMDQS-AKHK"
-
+                        subject = f"Quote: {quote.qid} Request Uploaded [TRS-AKHK]"
+                        message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\n TRS-AKHK"
+                        # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
                         user_util.log_account_activity(
@@ -575,7 +564,7 @@ class MmsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-class PSMDQSReportsViewSet(viewsets.ViewSet):
+class MMQSReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]
 
     def get_queryset(self):
@@ -658,7 +647,7 @@ class PSMDQSReportsViewSet(viewsets.ViewSet):
         #     print(e)
         #     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
         
-class PSMDQSAnalyticsViewSet(viewsets.ViewSet):
+class MMQSAnalyticsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):

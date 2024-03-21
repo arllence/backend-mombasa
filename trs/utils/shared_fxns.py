@@ -1,8 +1,7 @@
 from datetime import datetime
-import random
 import string
-
-from trs.models import Traveler
+import random
+from mms.models import Quote
 
 def find_date_difference(start_date,end_date,period):
     try:
@@ -20,6 +19,10 @@ def find_date_difference(start_date,end_date,period):
             difference = (end_date.year - start_date.year) * 12 + (end_date.month - start_date.month)
         elif period == 'years':
             difference = end_date.year - start_date.year
+        elif period == 'hours':
+            difference = (end_date - start_date).total_seconds() // 3600
+        elif period == 'minutes':
+            difference = (end_date - start_date).total_seconds() // 60
 
         # return difference
         return difference
@@ -32,7 +35,7 @@ def find_date_difference(start_date,end_date,period):
 def identify_file_type(ext):
     images = ['jpeg', 'jpg', 'png', 'tiff']
     videos = ['mp4','webm', 'mkv']
-    files = ['pdf','doc','docx']
+    files = ['pdf']
 
     if ext.lower() in images:
         return 'IMAGE'
@@ -42,14 +45,16 @@ def identify_file_type(ext):
         return 'FILE'
     else:
         return 'UNKNOWN'
-    
+
+
 def generate_unique_identifier():
     characters = string.ascii_uppercase + string.digits
     identifier = ''.join(random.choices(characters, k=6))
-    tid =  "TRS#" + identifier
+    qid =  "QS#" + identifier
 
-    is_existing = Traveler.objects.filter(tid=tid).exists()
+    is_existing = Quote.objects.filter(qid=qid).exists()
     if is_existing:
         generate_unique_identifier()
     else:
-        return tid
+        return qid
+
