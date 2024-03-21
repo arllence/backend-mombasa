@@ -346,17 +346,15 @@ class TrsViewSet(viewsets.ViewSet):
                     traveler.budget_code = budget_code
                     traveler.save()
 
-                    # Notify the uploader
-                    subject = "Quote Received [TRS-AKHK]"
-                    message = f"Dear {quote.uploader.first_name}, \nYour quote has been received succefully and queued for processing.\nWe will update you on the progress.\n\nRegards\nTRS-AKHK"
+                    # Notify the requestor
+                    if is_hod:
+                        subject = f"Travel Request {traveler.tid} SLT Approved  [TRS-AKHK]"
+                        message = f"Dear {traveler.traveler.first_name}, \nTransport Request Approved by HOD/SLT.\n\nRegards\nTRS-AKHK"
+                    elif is_ceo:
+                        subject = f"Travel Request {traveler.tid} Budget Approved  [TRS-AKHK]"
+                        message = f"Dear {traveler.traveler.first_name}, \nYour Transport Request: {traveler.tid} budget Approved by CEO.\n\nRegards\nTRS-AKHK"
 
-                    send_mail(subject, message, 'notification@akhskenya.org', [quote.uploader.email])
-
-                    # Notify the staff
-                    subject = "Quote Assigned To You [TRS-AKHK]"
-                    message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to MMQS to review.\n\nRegards\nTRS-AKHK"
-
-                    send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
+                    send_mail(subject, message, 'notification@akhskenya.org', [traveler.traveler.email])
 
                 user_util.log_account_activity(
                     authenticated_user, staff, "Quote Assigned created", f"Quote Assignation Executed QID: {quote.id}")
