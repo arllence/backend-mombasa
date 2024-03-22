@@ -575,7 +575,7 @@ class MmsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-class PSMDQSReportsViewSet(viewsets.ViewSet):
+class MMQSReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]
 
     def get_queryset(self):
@@ -658,7 +658,7 @@ class PSMDQSReportsViewSet(viewsets.ViewSet):
         #     print(e)
         #     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
         
-class PSMDQSAnalyticsViewSet(viewsets.ViewSet):
+class MMQSAnalyticsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
