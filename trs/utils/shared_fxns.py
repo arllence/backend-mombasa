@@ -2,6 +2,7 @@ from datetime import datetime
 import string
 import random
 from mms.models import Quote
+from trs.models import Traveler
 
 def find_date_difference(start_date,end_date,period):
     try:
@@ -50,11 +51,11 @@ def identify_file_type(ext):
 def generate_unique_identifier():
     characters = string.ascii_uppercase + string.digits
     identifier = ''.join(random.choices(characters, k=6))
-    qid =  "QS#" + identifier
+    tid =  "TRS#" + identifier
 
-    is_existing = Quote.objects.filter(qid=qid).exists()
+    is_existing = Traveler.objects.filter(tid=tid).exists()
     if is_existing:
         generate_unique_identifier()
     else:
-        return qid
+        return tid
 

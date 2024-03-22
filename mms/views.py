@@ -17,7 +17,7 @@ from mms import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
 from acl.models import User, Department
-from main.utils import shared_fxns
+from mms.utils import shared_fxns
 from django.db.models import Sum
 from acl.utils import mailgun_general
 from django.core.mail import send_mail

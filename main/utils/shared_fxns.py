@@ -2,7 +2,7 @@ from datetime import datetime
 import random
 import string
 
-from trs.models import Traveler
+# from trs.models import Traveler
 
 def find_date_difference(start_date,end_date,period):
     try:
@@ -43,13 +43,13 @@ def identify_file_type(ext):
     else:
         return 'UNKNOWN'
     
-def generate_unique_identifier():
-    characters = string.ascii_uppercase + string.digits
-    identifier = ''.join(random.choices(characters, k=6))
-    tid =  "TRS#" + identifier
+# def generate_unique_identifier():
+#     characters = string.ascii_uppercase + string.digits
+#     identifier = ''.join(random.choices(characters, k=6))
+#     tid =  "TRS#" + identifier
 
-    is_existing = Traveler.objects.filter(tid=tid).exists()
-    if is_existing:
-        generate_unique_identifier()
-    else:
-        return tid
+#     is_existing = Traveler.objects.filter(tid=tid).exists()
+#     if is_existing:
+#         generate_unique_identifier()
+#     else:
+#         return tid
