@@ -44,7 +44,7 @@ class TrsViewSet(viewsets.ViewSet):
         authenticated_user = request.user
         if request.method == "POST":
 
-            payload = json.loads(request.data['payload'])
+            payload = request.data
             serializer = serializers.TravelerSerializer(
                     data=payload, many=False)
             
@@ -64,7 +64,7 @@ class TrsViewSet(viewsets.ViewSet):
                 # update employee no
                 empno = authenticated_user.employee_no
                 if not empno:
-                    authenticated_user = employee_no
+                    authenticated_user.employee_no = employee_no
                     authenticated_user.save()
 
                 
@@ -116,7 +116,7 @@ class TrsViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == "PUT":
-            payload = json.loads(request.data['payload'])
+            payload = request.data
             serializer = serializers.PutTravelerSerializer(
                     data=payload, many=False)
             
@@ -285,282 +285,171 @@ class TrsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)    
 
     
-    @action(methods=["POST", "GET", "PUT", "DELETE"],
-            detail=False,
-            url_path="approval",
-            url_name="approval")
-    def approval(self, request):
+    # @action(methods=["POST", "GET", "PUT", "DELETE"],
+    #         detail=False,
+    #         url_path="approval",
+    #         url_name="approval")
+    # def approval(self, request):
 
-        authenticated_user = request.user
+    #     authenticated_user = request.user
 
-        if request.method == "POST":
+    #     if request.method == "POST":
 
-            payload = request.data
-            roles = user_util.fetchusergroups(request.user.id) 
+    #         payload = request.data
+    #         roles = user_util.fetchusergroups(request.user.id) 
 
-            serializer = serializers.ApprovalSerializer(
-                    data=payload, many=False)
+    #         serializer = serializers.ApprovalSerializer(
+    #                 data=payload, many=False)
             
-            if serializer.is_valid():
-                traveler = payload['traveler']
-                budget_code = payload.get('budget_code')
+    #         if serializer.is_valid():
+    #             traveler = payload['traveler']
+    #             budget_code = payload.get('budget_code')
 
-                try:
-                    traveler = models.Traveler.objects.get(Q(id=traveler))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Trip !"}, status=status.HTTP_400_BAD_REQUEST)
+    #             try:
+    #                 traveler = models.Traveler.objects.get(Q(id=traveler))
+    #             except (ValidationError, ObjectDoesNotExist):
+    #                 return Response({"details": "Unknown Trip !"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                with transaction.atomic():
+    #             with transaction.atomic():
 
-                    is_hod = False
-                    is_ceo = False
+    #                 is_hod = False
+    #                 is_ceo = False
 
-                    if "HOD" in roles or "SLT" in roles:
-                        is_hod = True
-                        approval_for = "SLT"
-                        traveler_status = "APPROVED"
-                        if not budget_code:
-                            return Response({"details": "Budget Code Required !"}, status=status.HTTP_400_BAD_REQUEST)
+    #                 if "HOD" in roles or "SLT" in roles:
+    #                     is_hod = True
+    #                     approval_for = "SLT"
+    #                     traveler_status = "APPROVED"
+    #                     if not budget_code:
+    #                         return Response({"details": "Budget Code Required !"}, status=status.HTTP_400_BAD_REQUEST)
                         
-                    elif "CEO" in roles or "HOF" in roles:
-                        is_ceo = True
-                        approval_for = "BUDGET"
-                        traveler_status = "CLOSED"
+    #                 elif "CEO" in roles or "HOF" in roles:
+    #                     is_ceo = True
+    #                     approval_for = "BUDGET"
+    #                     traveler_status = "CLOSED"
 
-                    is_existing = models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).exists()
+    #                 is_existing = models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).exists()
 
-                    raw = {
-                        "traveler": traveler,
-                        "approval_for": approval_for,
-                        "approved_by": authenticated_user
-                    }  
+    #                 raw = {
+    #                     "traveler": traveler,
+    #                     "approval_for": approval_for,
+    #                     "approved_by": authenticated_user
+    #                 }  
 
-                    if is_existing:
-                        models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).update(**raw)
-                    else:
-                        models.Approval.objects.create(
-                            **raw
-                        )
+    #                 if is_existing:
+    #                     models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).update(**raw)
+    #                 else:
+    #                     models.Approval.objects.create(
+    #                         **raw
+    #                     )
 
-                    traveler.status = traveler_status
-                    traveler.budget_code = budget_code
-                    traveler.save()
+    #                 traveler.status = traveler_status
+    #                 traveler.budget_code = budget_code
+    #                 traveler.save()
 
-                    # Notify the requestor
-                    if is_hod:
-                        subject = f"Travel Request {traveler.tid} SLT Approved  [TRS-AKHK]"
-                        message = f"Dear {traveler.traveler.first_name}, \nTransport Request Approved by HOD/SLT.\n\nRegards\nTRS-AKHK"
-                    elif is_ceo:
-                        subject = f"Travel Request {traveler.tid} Budget Approved  [TRS-AKHK]"
-                        message = f"Dear {traveler.traveler.first_name}, \nYour Transport Request: {traveler.tid} budget Approved by CEO.\n\nRegards\nTRS-AKHK"
+    #                 # Notify the requestor
+    #                 if is_hod:
+    #                     subject = f"Travel Request {traveler.tid} SLT Approved  [TRS-AKHK]"
+    #                     message = f"Dear {traveler.traveler.first_name}, \nTransport Request Approved by HOD/SLT.\n\nRegards\nTRS-AKHK"
+    #                 elif is_ceo:
+    #                     subject = f"Travel Request {traveler.tid} Budget Approved  [TRS-AKHK]"
+    #                     message = f"Dear {traveler.traveler.first_name}, \nYour Transport Request: {traveler.tid} budget Approved by CEO.\n\nRegards\nTRS-AKHK"
 
-                    send_mail(subject, message, 'notification@akhskenya.org', [traveler.traveler.email])
+    #                 send_mail(subject, message, 'notification@akhskenya.org', [traveler.traveler.email])
 
-                user_util.log_account_activity(
-                    authenticated_user, staff, "Quote Assigned created", f"Quote Assignation Executed QID: {quote.id}")
+    #             user_util.log_account_activity(
+    #                 authenticated_user, traveler.traveler, "Travel Request approval", f"Approval Executed TID: {traveler.id}")
                 
-                return Response('success', status=status.HTTP_200_OK)
+    #             return Response('success', status=status.HTTP_200_OK)
             
-            else:
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    #         else:
+    #             return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-        if request.method == "PUT":
-
-            payload = request.data
-
-            serializer = serializers.AssignQuoteSerializer(
-                    data=payload, many=False)
-            
-            if serializer.is_valid():
-                quote = payload['quote']
-                staff = payload['staff']
-
-                try:
-                    quote = models.QuoteAssignee.objects.get(Q(quote=quote))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                try:
-                    staff = get_user_model().objects.get(Q(id=staff))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Staff !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                
-                with transaction.atomic():
-                    
-                    quote.assigned = staff
-                    quote.save()
-
-                    # Notify the staff
-                    subject = "Quote Assigned To You [TRS-AKHK]"
-                    message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to MMQS to review.\n\nRegards\nTRS-AKHK"
-
-                    # mailgun_general.send_mail(staff.first_name, staff.email,subject,message)
-                    send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
-
-                user_util.log_account_activity(
-                    authenticated_user, staff, "Quote Assigned created", f"Quote Assignation Executed QID: {quote.id}")
-                
-                return Response('success', status=status.HTTP_200_OK)
-            
-            else:
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-            
-        elif request.method == "GET":
-            request_id = request.query_params.get('request_id')
-            assigned = request.query_params.get('assigned')
-            roles = user_util.fetchusergroups(request.user.id)  
-
-            if request_id:
-                try:
-                    resp = models.QuoteAssignee.objects.get(Q(id=request_id))
-                    resp = serializers.FetchAssignQuoteSerializer(resp,many=False).data
-                    return Response(resp, status=status.HTTP_200_OK)
-                
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                try:
-                    if assigned:
-                        resp = models.QuoteAssignee.objects.filter(Q(assigned=request.user) & Q(is_deleted=False))
-
-                    elif "MMD" in roles or "USER_MANAGER" in roles:
-                        resp = models.QuoteAssignee.objects.filter(Q(is_deleted=False)).order_by('-date_created')
-
-                    resp = serializers.FetchAssignQuoteSerializer(resp,many=True).data
-
-                    return Response(resp, status=status.HTTP_200_OK)
-                
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
-        
-        elif request.method == "DELETE":
-            request_id = request.query_params.get('request_id')
-
-            if not request_id:
-                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            with transaction.atomic():
-                try:
-                    raw = {"is_deleted" : True}
-                    models.QuoteAssignee.objects.filter(Q(id=request_id)).update(**raw)
-                    return Response('200', status=status.HTTP_200_OK)     
-                except Exception as e:
-                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
                 
     
-    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
-            detail=False,
-            url_path="close-quote",
-            url_name="close-quote")
-    def close_quote(self, request):
-        authenticated_user = request.user
-        if request.method == "POST":
-            formfiles = request.FILES
-            if not formfiles:
-                return Response({"details": "Please upload attachments"}, status=status.HTTP_400_BAD_REQUEST)
+    # @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
+    #         detail=False,
+    #         url_path="close-quote",
+    #         url_name="close-quote")
+    # def close_quote(self, request):
+    #     authenticated_user = request.user
+    #     if request.method == "POST":
+    #         formfiles = request.FILES
+    #         if not formfiles:
+    #             return Response({"details": "Please upload attachments"}, status=status.HTTP_400_BAD_REQUEST)
 
-            payload = json.loads(request.data['payload'])
-            serializer = serializers.CloseQuoteSerializer(
-                    data=payload, many=False)
+    #         payload = json.loads(request.data['payload'])
+    #         serializer = serializers.CloseQuoteSerializer(
+    #                 data=payload, many=False)
             
-            if serializer.is_valid():
-                quote = payload['quote']
+    #         if serializer.is_valid():
+    #             quote = payload['quote']
 
-                try:
-                    quote = models.Quote.objects.get(Q(id=quote))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
+    #             try:
+    #                 quote = models.Quote.objects.get(Q(id=quote))
+    #             except (ValidationError, ObjectDoesNotExist):
+    #                 return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                if formfiles:
-                    exts = ['jpeg','jpg','png','tiff','pdf','doc','docx']
+    #             if formfiles:
+    #                 exts = ['jpeg','jpg','png','tiff','pdf','doc','docx']
 
-                    for f in request.FILES.getlist('quote'):
-                        original_file_name = f.name
-                        ext = original_file_name.split('.')[1].strip().lower()
-                        if ext not in exts:
-                            return Response({"details": "Only Images, Word and PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
-                        
-                    # for f in request.FILES.getlist('comparative_analysis'):
-                    #     original_file_name = f.name
-                    #     ext = original_file_name.split('.')[1].strip().lower()
-                    #     if ext not in exts:
-                    #         return Response({"details": "Only PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                with transaction.atomic():
+    #                 for f in request.FILES.getlist('quote'):
+    #                     original_file_name = f.name
+    #                     ext = original_file_name.split('.')[1].strip().lower()
+    #                     if ext not in exts:
+    #                         return Response({"details": "Only Images, Word and PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+
+    #             with transaction.atomic():
     
-                    try:
-                        quoteFile = request.FILES.getlist('quote')[0]
-                        file_type1 = shared_fxns.identify_file_type(quoteFile.name.split('.')[1].strip().lower())
-                        title1 = "CLOSE_QUOTE_FILE"
-                    except Exception as e:
-                        return Response({"details": "Upload Quote File !"}, status=status.HTTP_400_BAD_REQUEST)
+    #                 try:
+    #                     quoteFile = request.FILES.getlist('quote')[0]
+    #                     file_type1 = shared_fxns.identify_file_type(quoteFile.name.split('.')[1].strip().lower())
+    #                     title1 = "CLOSE_QUOTE_FILE"
+    #                 except Exception as e:
+    #                     return Response({"details": "Upload Quote File !"}, status=status.HTTP_400_BAD_REQUEST)
                     
-                    # try:
-                    #     comparativeAnalysisFile = request.FILES.getlist('comparative_analysis')[0]
-                    #     file_type2 = shared_fxns.identify_file_type(comparativeAnalysisFile.name.split('.')[1].strip().lower())
-                    #     title2 = "CLOSE_COMPARATIVE_ANALYSIS_FILE"
-                    # except Exception as e:
-                    #     return Response({"details": "Upload Comparative Analysis File !"}, status=status.HTTP_400_BAD_REQUEST)
-                    
-                    
-                    try:                         
-                        quote_file = models.Document.objects.create(
-                                    document=quoteFile, 
-                                    original_file_name=quoteFile.name, 
-                                    uploader=authenticated_user, 
-                                    file_type=file_type1,
-                                    title=title1,
-                                    )
-                        # comparative_analysis_file = models.Document.objects.create(
-                        #             document=comparativeAnalysisFile, 
-                        #             original_file_name=comparativeAnalysisFile.name, 
-                        #             uploader=authenticated_user, 
-                        #             file_type=file_type2,
-                        #             title=title2,
-                        #             )
+    #                 try:                         
+    #                     quote_file = models.Document.objects.create(
+    #                                 document=quoteFile, 
+    #                                 original_file_name=quoteFile.name, 
+    #                                 uploader=authenticated_user, 
+    #                                 file_type=file_type1,
+    #                                 title=title1,
+    #                                 )
                         
-                        attachments = {
-                            "quote_file": str(quote_file.id),
-                            # "comparative_analysis_file": str(comparative_analysis_file.id),
-                        }
+    #                     attachments = {
+    #                         "quote_file": str(quote_file.id),
+    #                     }
 
-                        # update quote instance
-                        quote.close_attachments = attachments
-                        quote.status = "CLOSED"
-                        quote.date_closed = datetime.datetime.now()
-                        quote.save()
+    #                     # update quote instance
+    #                     quote.close_attachments = attachments
+    #                     quote.status = "CLOSED"
+    #                     quote.date_closed = datetime.datetime.now()
+    #                     quote.save()
 
-                        emails = list(get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True))
-                        emails.append(quote.uploader.email)
+    #                     emails = list(get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True))
+    #                     emails.append(quote.uploader.email)
 
-                        # Notify the manager and users
-                        subject = f"Quote: {quote.qid} Request Uploaded [TRS-AKHK]"
-                        message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\n TRS-AKHK"
-                        # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
-                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+    #                     # Notify the manager and users
+    #                     subject = f"Quote: {quote.qid} Request Uploaded [TRS-AKHK]"
+    #                     message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\n TRS-AKHK"
+    #                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
+    #                     send_mail(subject, message, 'notification@akhskenya.org', emails)
 
-                        user_util.log_account_activity(
-                            authenticated_user, authenticated_user, "Quote Closed", f"Quote Closure Executed QID: {quote.id}")
+    #                     user_util.log_account_activity(
+    #                         authenticated_user, authenticated_user, "Quote Closed", f"Quote Closure Executed QID: {quote.id}")
 
-                    except Exception as e:
-                        logger.error(e)
-                        print(e)
-                        return Response({"details": "Unable to save File(s)"}, status=status.HTTP_400_BAD_REQUEST)
+    #                 except Exception as e:
+    #                     logger.error(e)
+    #                     print(e)
+    #                     return Response({"details": "Unable to save File(s)"}, status=status.HTTP_400_BAD_REQUEST)
 
 
                     
                 
-                return Response('success', status=status.HTTP_200_OK)
+    #             return Response('success', status=status.HTTP_200_OK)
             
-            else:
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    #         else:
+    #             return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 class MMQSReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]
