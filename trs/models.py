@@ -19,6 +19,8 @@ class Traveler(models.Model):
     description = models.TextField()
     budget_code = models.CharField(max_length=255, null=True, blank=True)
     travel_order_no = models.CharField(max_length=255, null=True, blank=True)
+    is_hod_approved = models.BooleanField(default=False)
+    is_ceo_approved = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
     date_closed = models.DateTimeField(null=True, blank=True)

@@ -285,84 +285,86 @@ class TrsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)    
 
     
-    # @action(methods=["POST", "GET", "PUT", "DELETE"],
-    #         detail=False,
-    #         url_path="approval",
-    #         url_name="approval")
-    # def approval(self, request):
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
+            detail=False,
+            url_path="approve-request",
+            url_name="approve-request")
+    def approval(self, request):
 
-    #     authenticated_user = request.user
+        authenticated_user = request.user
 
-    #     if request.method == "POST":
+        if request.method == "POST":
 
-    #         payload = request.data
-    #         roles = user_util.fetchusergroups(request.user.id) 
+            payload = request.data
+            roles = user_util.fetchusergroups(request.user.id) 
 
-    #         serializer = serializers.ApprovalSerializer(
-    #                 data=payload, many=False)
+            serializer = serializers.ApprovalSerializer(
+                    data=payload, many=False)
             
-    #         if serializer.is_valid():
-    #             traveler = payload['traveler']
-    #             budget_code = payload.get('budget_code')
+            if serializer.is_valid():
+                traveler = payload['traveler']
+                budget_code = payload.get('budget_code')
 
-    #             try:
-    #                 traveler = models.Traveler.objects.get(Q(id=traveler))
-    #             except (ValidationError, ObjectDoesNotExist):
-    #                 return Response({"details": "Unknown Trip !"}, status=status.HTTP_400_BAD_REQUEST)
+                try:
+                    traveler = models.Traveler.objects.get(Q(id=traveler))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Trip !"}, status=status.HTTP_400_BAD_REQUEST)
                 
-    #             with transaction.atomic():
+                with transaction.atomic():
 
-    #                 is_hod = False
-    #                 is_ceo = False
+                    is_hod = False
+                    is_ceo = False
 
-    #                 if "HOD" in roles or "SLT" in roles:
-    #                     is_hod = True
-    #                     approval_for = "SLT"
-    #                     traveler_status = "APPROVED"
-    #                     if not budget_code:
-    #                         return Response({"details": "Budget Code Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                    if "HOD" in roles or "SLT" in roles:
+                        is_hod = True
+                        approval_for = "SLT"
+                        traveler_status = "APPROVED"
+                        if not budget_code:
+                            return Response({"details": "Budget Code Required !"}, status=status.HTTP_400_BAD_REQUEST)
                         
-    #                 elif "CEO" in roles or "HOF" in roles:
-    #                     is_ceo = True
-    #                     approval_for = "BUDGET"
-    #                     traveler_status = "CLOSED"
+                    elif "CEO" in roles or "HOF" in roles:
+                        is_ceo = True
+                        approval_for = "BUDGET"
+                        traveler_status = "CLOSED"
 
-    #                 is_existing = models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).exists()
+                    is_existing = models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).exists()
 
-    #                 raw = {
-    #                     "traveler": traveler,
-    #                     "approval_for": approval_for,
-    #                     "approved_by": authenticated_user
-    #                 }  
+                    raw = {
+                        "traveler": traveler,
+                        "approval_for": approval_for,
+                        "approved_by": authenticated_user
+                    }  
 
-    #                 if is_existing:
-    #                     models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).update(**raw)
-    #                 else:
-    #                     models.Approval.objects.create(
-    #                         **raw
-    #                     )
+                    if is_existing:
+                        models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).update(**raw)
+                    else:
+                        models.Approval.objects.create(
+                            **raw
+                        )
 
-    #                 traveler.status = traveler_status
-    #                 traveler.budget_code = budget_code
-    #                 traveler.save()
+                    traveler.status = traveler_status
+                    traveler.budget_code = budget_code
+                    traveler.is_hod_approved = is_hod
+                    traveler.is_ceo_approved = is_ceo
+                    traveler.save()
 
-    #                 # Notify the requestor
-    #                 if is_hod:
-    #                     subject = f"Travel Request {traveler.tid} SLT Approved  [TRS-AKHK]"
-    #                     message = f"Dear {traveler.traveler.first_name}, \nTransport Request Approved by HOD/SLT.\n\nRegards\nTRS-AKHK"
-    #                 elif is_ceo:
-    #                     subject = f"Travel Request {traveler.tid} Budget Approved  [TRS-AKHK]"
-    #                     message = f"Dear {traveler.traveler.first_name}, \nYour Transport Request: {traveler.tid} budget Approved by CEO.\n\nRegards\nTRS-AKHK"
+                    # Notify the requestor
+                    if is_hod:
+                        subject = f"Travel Request {traveler.tid} SLT Approved  [TRS-AKHK]"
+                        message = f"Dear {traveler.traveler.first_name}, \nTransport Request Approved by HOD/SLT.\n\nRegards\nTRS-AKHK"
+                    elif is_ceo:
+                        subject = f"Travel Request {traveler.tid} Budget Approved  [TRS-AKHK]"
+                        message = f"Dear {traveler.traveler.first_name}, \nYour Transport Request: {traveler.tid} budget Approved by CEO.\n\nRegards\nTRS-AKHK"
 
-    #                 send_mail(subject, message, 'notification@akhskenya.org', [traveler.traveler.email])
+                    send_mail(subject, message, 'notification@akhskenya.org', [traveler.traveler.email])
 
-    #             user_util.log_account_activity(
-    #                 authenticated_user, traveler.traveler, "Travel Request approval", f"Approval Executed TID: {traveler.id}")
+                user_util.log_account_activity(
+                    authenticated_user, traveler.traveler, "Travel Request approval", f"Approval Executed TID: {traveler.id}")
                 
-    #             return Response('success', status=status.HTTP_200_OK)
+                return Response('success', status=status.HTTP_200_OK)
             
-    #         else:
-    #             return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
                 
     
