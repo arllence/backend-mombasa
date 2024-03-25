@@ -156,7 +156,7 @@ class TrsViewSet(viewsets.ViewSet):
                         "visa_required_date": visa_required_date,
                         "accommodation": accommodation,
                     }  
-                    models.Traveler.objects.filter(Q(traveler=traveler_id)).update(**trip_raw)
+                    models.Trip.objects.filter(Q(traveler=traveler_id)).update(**trip_raw)
 
 
                     if traveler.status == "INCOMPLETE":
@@ -534,7 +534,7 @@ class MMQSReportsViewSet(viewsets.ViewSet):
         #     print(e)
         #     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
         
-class MMQSAnalyticsViewSet(viewsets.ViewSet):
+class TRSAnalyticsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
@@ -548,23 +548,25 @@ class MMQSAnalyticsViewSet(viewsets.ViewSet):
         roles = user_util.fetchusergroups(request.user.id)
 
         if 'USER' in roles:
-            quotes = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).count()
-            requested = models.Quote.objects.filter(Q(status="REQUESTED") & Q(is_deleted=False) & Q(uploader=request.user)).count()
-            closed = models.Quote.objects.filter(Q(status="CLOSED") & Q(is_deleted=False) & Q(uploader=request.user)).count()
-            assiged = models.Quote.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False) & Q(uploader=request.user)).count()
-            incomplete = models.Quote.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False) & Q(uploader=request.user)).count()
+            requests = models.Traveler.objects.filter(Q(is_deleted=False) & Q(traveler=request.user)).count()
+            # requested = models.Traveler.objects.filter(Q(status="REQUESTED") & Q(is_deleted=False) & Q(traveler=request.user)).count()
+            requested = models.Traveler.objects.filter(Q(status="REQUESTED") | Q(status="RESUBMITTED") & Q(traveler=request.user), is_deleted=False).count()
+
+            closed = models.Traveler.objects.filter(Q(status="CLOSED") & Q(is_deleted=False) & Q(traveler=request.user)).count()
+            # assigned = models.Traveler.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False) & Q(traveler=request.user)).count()
+            incomplete = models.Traveler.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False) & Q(traveler=request.user)).count()
         else:
-            quotes = models.Quote.objects.filter(Q(is_deleted=False)).count()
-            requested = models.Quote.objects.filter(Q(status="REQUESTED") & Q(is_deleted=False)).count()
-            closed = models.Quote.objects.filter(Q(status="CLOSED") & Q(is_deleted=False)).count()
-            assiged = models.Quote.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False)).count()
-            incomplete = models.Quote.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False)).count()
+            requests = models.Traveler.objects.filter(Q(is_deleted=False)).count()
+            requested = models.Traveler.objects.filter(Q(status="REQUESTED") | Q(status="RESUBMITTED"), is_deleted=False).count()
+            closed = models.Traveler.objects.filter(Q(status="CLOSED") & Q(is_deleted=False)).count()
+            assigned = models.Traveler.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False)).count()
+            incomplete = models.Traveler.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False)).count()
 
         resp = {
-            "quotes": quotes,
+            "requests": requests,
             "requested": requested,
             "closed": closed,
-            "assiged": assiged,
+            # "assigned": assigned,
             "incomplete": incomplete,
         }
 
