@@ -16,6 +16,7 @@ class GeneralNameSerializer(serializers.Serializer):
 class FetchTravelerSerializer(serializers.ModelSerializer):
     traveler = UsersSerializer()
     trip = serializers.SerializerMethodField()
+    salary_advance = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Traveler
@@ -32,6 +33,18 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return []
+    
+    def get_salary_advance(self, obj):
+        try:
+            request = models.AdvanceSalaryRequests.objects.get(traveler=obj)
+            serializer = FetchAdvanceSalaryRequestsSerializer(request, many=False)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {}
 
 class TravelerSerializer(serializers.Serializer):
     employee_no = serializers.CharField(max_length=500)
@@ -62,6 +75,12 @@ class FetchTripSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Trip
+        fields = '__all__'
+
+class FetchAdvanceSalaryRequestsSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.AdvanceSalaryRequests
         fields = '__all__'
 
 class FetchApprovalSerializer(serializers.ModelSerializer):

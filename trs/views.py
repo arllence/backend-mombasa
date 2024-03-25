@@ -58,7 +58,15 @@ class TrsViewSet(viewsets.ViewSet):
                 return_date = payload['return_date']
                 visa_required_date = payload.get('visa_required_date')
                 accommodation = bool(payload.get('accommodation'))
+                salary_advance_required = bool(payload.get('salary_advance_required'))
+                salary_amount_required = payload.get('salary_amount_required')
                 tid = shared_fxns.generate_unique_identifier()
+
+                if not salary_advance_required:
+                    salary_amount_required = 0
+                else:
+                    if salary_amount_required < 1:
+                        return Response({"details": "Advance Amount Required !"}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 # update employee no
@@ -70,13 +78,13 @@ class TrsViewSet(viewsets.ViewSet):
                 
                 with transaction.atomic():
 
-
                     traveler_raw = {
                         "employee_no": employee_no,
                         "position": position,
                         "purpose": purpose,
                         "traveler": authenticated_user,
                         "description": description,
+                        "salary_advance_required": salary_advance_required,
                         "tid": tid
                     }  
 
@@ -97,6 +105,17 @@ class TrsViewSet(viewsets.ViewSet):
                         **trip_raw
                     )
 
+                    if salary_advance_required:
+                        # save salary advances
+                        salary_raw = {
+                            "traveler": traveler,
+                            "amount": salary_amount_required,
+                        }  
+
+                        models.AdvanceSalaryRequests.objects.create(
+                            **salary_raw
+                        )
+
 
                     targets = ['HOD','SLT']
                     managers_emails = get_user_model().objects.filter(Q(groups__name__in=targets) & Q(department=authenticated_user.department)).values_list('email', flat=True)
@@ -106,6 +125,15 @@ class TrsViewSet(viewsets.ViewSet):
                     message = f"Hello, \nA new travel request: {tid} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\n TRS-AKHK"
 
                     send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+
+                    # Notify the hof
+                    if salary_advance_required:
+                        emails = get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True)
+
+                        subject = f"Salary Advance Requested {tid} Received [TRS-AKHK]"
+                        message = f"Hello, \nSalary Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\n TRS-AKHK"
+
+                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Travel Request created", f"Travel Request Id: {traveler.id}")
@@ -131,6 +159,14 @@ class TrsViewSet(viewsets.ViewSet):
                 return_date = payload['return_date']
                 visa_required_date = payload.get('visa_required_date')
                 accommodation = bool(payload.get('accommodation'))
+                salary_advance_required = bool(payload.get('salary_advance_required'))
+                salary_amount_required = payload.get('salary_amount_required')
+
+                if not salary_advance_required:
+                    salary_amount_required = 0
+                else:
+                    if salary_amount_required < 1:
+                        return Response({"details": "Advance Amount Required !"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     traveler = models.Traveler.objects.get(id=traveler_id)
@@ -157,6 +193,17 @@ class TrsViewSet(viewsets.ViewSet):
                         "accommodation": accommodation,
                     }  
                     models.Trip.objects.filter(Q(traveler=traveler_id)).update(**trip_raw)
+
+                    if salary_advance_required:
+                        # save salary advances
+                        salary_raw = {
+                            "amount": salary_amount_required,
+                        }  
+
+                        models.AdvanceSalaryRequests.objects.create(
+                            **salary_raw
+                        )
+                        models.AdvanceSalaryRequests.objects.filter(Q(traveler=traveler_id)).update(**salary_raw)
 
 
                     if traveler.status == "INCOMPLETE":
@@ -219,6 +266,7 @@ class TrsViewSet(viewsets.ViewSet):
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
+            query = request.query_params.get('q')
             roles = user_util.fetchusergroups(request.user.id)  
 
             if request_id:
@@ -239,11 +287,22 @@ class TrsViewSet(viewsets.ViewSet):
                         resp = models.Traveler.objects.filter(Q(is_deleted=False)).order_by('-date_created')
 
                     elif "CEO" in roles or "HOF" in roles:
-                        targets = list(models.Approval.objects.filter(Q(approval_for='SLT') & Q(is_deleted=False)).values_list('traveler__id', flat=True))
-                        resp = models.Traveler.objects.filter(Q(id__in=targets) & Q(is_deleted=False)).order_by('-date_created')
+                        # targets = list(models.Approval.objects.filter(Q(approval_for='SLT') & Q(is_deleted=False)).values_list('traveler__id', flat=True))
+                        # resp = models.Traveler.objects.filter(Q(id__in=targets) & Q(is_deleted=False)).order_by('-date_created')
+                        if not query:
+                            resp = models.Traveler.objects.filter(Q(is_hod_approved=True) & Q(is_ceo_approved=False),is_deleted=False).order_by('-date_created')
+
+                        if query == 'salary-advance':
+                            targets = models.AdvanceSalaryRequests.objects.filter(Q(status='REQUESTED')).order_by('-date_created')
+                            resp = [x.traveler for x in targets]
 
                     elif "USER" in roles:
-                        resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(traveler=request.user)).order_by('-date_created')
+                        if not query:
+                            resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(traveler=request.user)).order_by('-date_created')
+
+                        if query == 'salary-advance':
+                            targets = models.AdvanceSalaryRequests.objects.filter(Q(status='REQUESTED') & Q(traveler__traveler=request.user)).order_by('-date_created')
+                            resp = [x.traveler for x in targets]
 
 
                     paginator = PageNumberPagination()

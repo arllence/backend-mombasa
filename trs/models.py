@@ -19,6 +19,7 @@ class Traveler(models.Model):
     description = models.TextField()
     budget_code = models.CharField(max_length=255, null=True, blank=True)
     travel_order_no = models.CharField(max_length=255, null=True, blank=True)
+    salary_advance_required = models.BooleanField(default=False)
     is_hod_approved = models.BooleanField(default=False)
     is_ceo_approved = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
@@ -73,6 +74,29 @@ class Approval(models.Model):
 
     class Meta:
         db_table = u'"{}\".\"approvals"'.format(settings.TRAVEL_REQUEST_SYSTEM)
+
+
+class AdvanceSalaryRequests(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    traveler = models.ForeignKey(
+       Traveler, on_delete=models.DO_NOTHING, 
+       related_name="advance_salary_requestor"
+    )
+    approved_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="advance_salary_approver",
+       null=True, blank=True
+    )
+    status = models.CharField(max_length=255, default='REQUESTED')
+    amount = models.CharField(max_length=255)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.traveler.tid
+
+    class Meta:
+        db_table = u'"{}\".\"advance_salary_requests"'.format(settings.TRAVEL_REQUEST_SYSTEM)
 
 
 class Costing(models.Model):
