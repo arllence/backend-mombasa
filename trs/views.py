@@ -325,7 +325,7 @@ class TrsViewSet(viewsets.ViewSet):
                     elif "CEO" in roles or "HOF" in roles:
                         is_ceo = True
                         approval_for = "BUDGET"
-                        traveler_status = "CLOSED"
+                        # traveler_status = "CLOSED"
 
                     is_existing = models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).exists()
 
@@ -344,17 +344,19 @@ class TrsViewSet(viewsets.ViewSet):
 
                     traveler.status = traveler_status
                     traveler.budget_code = budget_code
-                    traveler.is_hod_approved = is_hod
-                    traveler.is_ceo_approved = is_ceo
+                    if is_hod:
+                        traveler.is_hod_approved = is_hod
+                    if is_ceo:
+                        traveler.is_ceo_approved = is_ceo
                     traveler.save()
 
                     # Notify the requestor
                     if is_hod:
                         subject = f"Travel Request {traveler.tid} SLT Approved  [TRS-AKHK]"
-                        message = f"Dear {traveler.traveler.first_name}, \nTransport Request Approved by HOD/SLT.\n\nRegards\nTRS-AKHK"
+                        message = f"Dear {traveler.traveler.first_name}, \nTransport Request Approved by HOD/SLT. Pending Budget Approval.\n\nRegards\nTRS-AKHK"
                     elif is_ceo:
                         subject = f"Travel Request {traveler.tid} Budget Approved  [TRS-AKHK]"
-                        message = f"Dear {traveler.traveler.first_name}, \nYour Transport Request: {traveler.tid} budget Approved by CEO.\n\nRegards\nTRS-AKHK"
+                        message = f"Dear {traveler.traveler.first_name}, \nYour Transport Request: {traveler.tid} budget Approved by CEO/HOF. Pending administration and costing.\n\nRegards\nTRS-AKHK"
 
                     send_mail(subject, message, 'notification@akhskenya.org', [traveler.traveler.email])
 
@@ -563,6 +565,9 @@ class TRSAnalyticsViewSet(viewsets.ViewSet):
             closed = models.Traveler.objects.filter(Q(status="CLOSED") & Q(is_deleted=False)).count()
             assigned = models.Traveler.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False)).count()
             incomplete = models.Traveler.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False)).count()
+
+        if 'CEO' in roles:
+            requested = models.Traveler.objects.filter(Q(status="APPROVED"), is_ceo_approved=False, is_deleted=False).count()
 
         resp = {
             "requests": requests,
