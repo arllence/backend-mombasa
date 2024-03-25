@@ -311,15 +311,6 @@ class TrsViewSet(viewsets.ViewSet):
                     serializer = serializers.FetchTravelerSerializer(result_page, many=True, context={"user_id":request.user.id})
                     return paginator.get_paginated_response(serializer.data)
                 
-
-                # page = self.paginate_queryset(queryset)
-                # if page is not None:
-                #     serializer = serializers.QuoteSerializer(page, many=True)
-                #     return self.get_paginated_response(serializer.data)
-
-                    # resp = serializers.FetchQuoteSerializer(resp, many=True, context={"user_id":request.user.id}).data
-                    
-                    # return Response(resp, status=status.HTTP_200_OK)
                 
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)
