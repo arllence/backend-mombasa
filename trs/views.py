@@ -74,6 +74,8 @@ class TrsViewSet(viewsets.ViewSet):
                 if not empno:
                     authenticated_user.employee_no = employee_no
                     authenticated_user.save()
+                else:
+                    employee_no = authenticated_user.employee_no
 
                 
                 with transaction.atomic():
@@ -122,7 +124,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     # Notify the hods / slt
                     subject = f"Travel Request {tid} Received [TRS-AKHK]"
-                    message = f"Hello, \nA new travel request: {tid} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\n TRS-AKHK"
+                    message = f"Hello, \nA new travel request: {tid} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
 
                     send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
@@ -131,9 +133,9 @@ class TrsViewSet(viewsets.ViewSet):
                         emails = get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True)
 
                         subject = f"Salary Advance Requested {tid} Received [TRS-AKHK]"
-                        message = f"Hello, \nSalary Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\n TRS-AKHK"
+                        message = f"Hello, \nSalary Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
 
-                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
 
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Travel Request created", f"Travel Request Id: {traveler.id}")
@@ -284,7 +286,11 @@ class TrsViewSet(viewsets.ViewSet):
                 try:
 
                     if "HOD" in roles or "SLT" in roles or "USER_MANAGER" in roles:
-                        resp = models.Traveler.objects.filter(Q(is_deleted=False)).order_by('-date_created')
+                        if query == 'salary-advance':
+                            targets = models.AdvanceSalaryRequests.objects.filter(Q(status='REQUESTED')).order_by('-date_created')
+                            resp = [x.traveler for x in targets]
+                        else:
+                            resp = models.Traveler.objects.filter(Q(is_deleted=False)).order_by('-date_created')
 
                     elif "CEO" in roles or "HOF" in roles:
                         # targets = list(models.Approval.objects.filter(Q(approval_for='SLT') & Q(is_deleted=False)).values_list('traveler__id', flat=True))
@@ -293,7 +299,8 @@ class TrsViewSet(viewsets.ViewSet):
                             resp = models.Traveler.objects.filter(Q(is_hod_approved=True) & Q(is_ceo_approved=False),is_deleted=False).order_by('-date_created')
 
                         if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(Q(status='REQUESTED')).order_by('-date_created')
+                            # targets = models.AdvanceSalaryRequests.objects.filter(Q(status='REQUESTED')).order_by('-date_created')
+                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
                             resp = [x.traveler for x in targets]
 
                     elif "USER" in roles:
@@ -301,7 +308,7 @@ class TrsViewSet(viewsets.ViewSet):
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(traveler=request.user)).order_by('-date_created')
 
                         if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(Q(status='REQUESTED') & Q(traveler__traveler=request.user)).order_by('-date_created')
+                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False) & Q(traveler__traveler=request.user)).order_by('-date_created')
                             resp = [x.traveler for x in targets]
 
 
@@ -411,7 +418,56 @@ class TrsViewSet(viewsets.ViewSet):
                     send_mail(subject, message, 'notification@akhskenya.org', [traveler.traveler.email])
 
                 user_util.log_account_activity(
-                    authenticated_user, traveler.traveler, "Travel Request approval", f"Approval Executed TID: {traveler.id}")
+                    authenticated_user, traveler.traveler, "Travel Request approval", f"Approval Executed TID: {str(traveler.id)}")
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
+            detail=False,
+            url_path="update-salary-request",
+            url_name="update-salary-request")
+    def salary_request(self, request):
+
+        authenticated_user = request.user
+
+        if request.method == "POST":
+
+            payload = request.data
+            roles = user_util.fetchusergroups(request.user.id) 
+
+            serializer = serializers.PatchAdvanceSalaryRequestsSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                update_status = payload['status'].upper()
+                request_id = payload.get('request_id')
+
+                try:
+                    salaryRequest = models.AdvanceSalaryRequests.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Salary Request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+
+                    if "CEO" in roles or "HOF" in roles:
+                        salaryRequest.status = update_status
+                        salaryRequest.approved_by = authenticated_user
+                        salaryRequest.save()
+                    else:
+                        return Response({"details": "Not Permitted !"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    # Notify the requestor
+                    subject = f"Salary Advance Request {update_status.capitalize()}  [TRS-AKHK]"
+                    message = f"Hello, \nYour Advance Salary Request for travel:{salaryRequest.traveler.tid} has been {update_status.capitalize()} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
+
+                    send_mail(subject, message, 'notification@akhskenya.org', [salaryRequest.traveler.traveler.email])
+
+                user_util.log_account_activity(
+                    authenticated_user, salaryRequest.traveler.traveler, "Salary Request approval", f"Approval Executed instance ID: {str(salaryRequest.id)}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             

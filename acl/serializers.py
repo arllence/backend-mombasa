@@ -68,7 +68,7 @@ class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = [
-            'id', 'email', 'first_name', 'last_name', 'is_active', 'is_suspended','department', 'user_groups','date_created'
+            'id', 'email', 'first_name', 'last_name', 'employee_no', 'is_active', 'is_suspended','department', 'user_groups','date_created'
         ]
 
     def get_user_groups(self, obj):

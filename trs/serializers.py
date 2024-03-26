@@ -83,6 +83,10 @@ class FetchAdvanceSalaryRequestsSerializer(serializers.ModelSerializer):
         model = models.AdvanceSalaryRequests
         fields = '__all__'
 
+class PatchAdvanceSalaryRequestsSerializer(serializers.Serializer):
+    status = serializers.CharField(max_length=500)
+    request_id = serializers.CharField(max_length=500)
+
 class FetchApprovalSerializer(serializers.ModelSerializer):
     approved_by = UsersSerializer()
 
