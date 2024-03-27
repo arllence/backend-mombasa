@@ -65,7 +65,7 @@ class TrsViewSet(viewsets.ViewSet):
                 if not salary_advance_required:
                     salary_amount_required = 0
                 else:
-                    if salary_amount_required < 1:
+                    if int(salary_amount_required) < 1:
                         return Response({"details": "Advance Amount Required !"}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -167,7 +167,7 @@ class TrsViewSet(viewsets.ViewSet):
                 if not salary_advance_required:
                     salary_amount_required = 0
                 else:
-                    if salary_amount_required < 1:
+                    if int(salary_amount_required) < 1:
                         return Response({"details": "Advance Amount Required !"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
@@ -183,7 +183,8 @@ class TrsViewSet(viewsets.ViewSet):
                         "position": position,
                         "purpose": purpose,
                         "traveler": authenticated_user,
-                        "description": description
+                        "description": description,
+                        "salary_advance_required": salary_advance_required,
                     }  
                     models.Traveler.objects.filter(Q(id=traveler_id)).update(**traveler_raw)
 
@@ -199,13 +200,21 @@ class TrsViewSet(viewsets.ViewSet):
                     if salary_advance_required:
                         # save salary advances
                         salary_raw = {
+                            "traveler": traveler,
                             "amount": salary_amount_required,
                         }  
-
-                        models.AdvanceSalaryRequests.objects.create(
-                            **salary_raw
-                        )
-                        models.AdvanceSalaryRequests.objects.filter(Q(traveler=traveler_id)).update(**salary_raw)
+                        # models.AdvanceSalaryRequests.objects.filter(Q(traveler=traveler_id)).update(**salary_raw)
+                        advance = models.AdvanceSalaryRequests.objects.filter(Q(traveler=traveler_id))
+                        if advance:
+                            advance = advance[0]
+                            current_status = advance.status
+                            if current_status != 'REJECTED':
+                                advance.amount = salary_amount_required
+                                advance.save()
+                        else:
+                            models.AdvanceSalaryRequests.objects.create(
+                                **salary_raw
+                            )
 
 
                     if traveler.status == "INCOMPLETE":
@@ -438,8 +447,8 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify HOF
                     if is_hod and traveler_status == 'APPROVED':
                         emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
-                        subject = f"Budget Approval for Travel Request: {traveler.tid}.  [TRS-AKHK]"
-                        message = f"Hello, \nTravel Request: {traveler.tid} is pending budget approval by CEO/HOF.\n\nRegards\nTRS-AKHK"
+                        subject = f"Request for Travel Budget Approval: {traveler.tid}.  [TRS-AKHK]"
+                        message = f"Hello. \nTravel Request: {traveler.tid} is pending budget approval by CEO/HOF.\n\nRegards\nTRS-AKHK"
 
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
@@ -447,7 +456,7 @@ class TrsViewSet(viewsets.ViewSet):
                     if is_ceo:
                         emails = list(get_user_model().objects.filter(Q(groups__name='ADMINISTRATOR')).values_list('email', flat=True))
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
-                        message = f"Hello, \nTravel Request: {traveler.tid} has been approved by both HOD/SLT and HOF/CEO, and is now pending administration and costing\n\nRegards\nTRS-AKHK"
+                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by both HOD/SLT and HOF/CEO, and is now pending administration and costing\n\nRegards\nTRS-AKHK"
 
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
@@ -561,6 +570,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     traveler.status = "CLOSED"
                     traveler.travel_order_no = travel_order_no
+                    traveler.date_closed = datetime.datetime.now()
                     traveler.save()
 
                     # Notify the requestor
@@ -775,7 +785,7 @@ class TRSAnalyticsViewSet(viewsets.ViewSet):
             assigned = models.Traveler.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False)).count()
             incomplete = models.Traveler.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False)).count()
 
-        if 'CEO' in roles:
+        if 'CEO' in roles or 'HOF' in roles:
             requested = models.Traveler.objects.filter(Q(status="APPROVED"), is_ceo_approved=False, is_deleted=False).count()
 
         resp = {
