@@ -359,7 +359,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                     # Notify the uploader
                     subject = "Quote Received [PSMDQS-AKHK]"
-                    message = f"Dear {quote.uploader.first_name}, \nYour quote has been received successfully\nand assigned to {staff.first_name} {staff.first_name} for processing.\nWe will update you on the progress.\n\nRegards\nPSMDQS-AKHK"
+                    message = f"Dear {quote.uploader.first_name}, \nYour quote has been received successfully\nand assigned to {staff.first_name} {staff.last_name} for processing.\nWe will update you on the progress.\n\nRegards\nPSMDQS-AKHK"
 
                     send_mail(subject, message, 'notification@akhskenya.org', [quote.uploader.email])
 
