@@ -359,7 +359,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                     # Notify the uploader
                     subject = "Quote Received [PSMDQS-AKHK]"
-                    message = f"Dear {quote.uploader.first_name}, \nYour quote has been received successfully and queued for processing.\nWe will update you on the progress.\n\nRegards\nPSMDQS-AKHK"
+                    message = f"Dear {quote.uploader.first_name}, \nYour quote has been received successfully\nand assigned to {staff.first_name} {staff.first_name} for processing.\nWe will update you on the progress.\n\nRegards\nPSMDQS-AKHK"
 
                     send_mail(subject, message, 'notification@akhskenya.org', [quote.uploader.email])
 
@@ -555,7 +555,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                         # Notify the manager and users
                         subject = f"Quote: {quote.qid} Request Uploaded [PSMDQS-AKHK]"
-                        message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\n PSMDQS-AKHK"
+                        message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPlease log in to PSMDQS to download.\n\nRegards\n PSMDQS-AKHK"
 
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
@@ -673,13 +673,13 @@ class MMQSAnalyticsViewSet(viewsets.ViewSet):
 
         if 'USER' in roles:
             quotes = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).count()
-            requested = models.Quote.objects.filter(Q(status="REQUESTED") & Q(is_deleted=False) & Q(uploader=request.user)).count()
+            requested = models.Quote.objects.filter(Q(status="REQUESTED") | Q(status="ASSIGNED") ,is_deleted=False, uploader=request.user).count()
             closed = models.Quote.objects.filter(Q(status="CLOSED") & Q(is_deleted=False) & Q(uploader=request.user)).count()
             assiged = models.Quote.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False) & Q(uploader=request.user)).count()
             incomplete = models.Quote.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False) & Q(uploader=request.user)).count()
         else:
             quotes = models.Quote.objects.filter(Q(is_deleted=False)).count()
-            requested = models.Quote.objects.filter(Q(status="REQUESTED") & Q(is_deleted=False)).count()
+            requested = models.Quote.objects.filter(Q(status="REQUESTED") & Q(status="ASSIGNED") & Q(is_deleted=False)).count()
             closed = models.Quote.objects.filter(Q(status="CLOSED") & Q(is_deleted=False)).count()
             assiged = models.Quote.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False)).count()
             incomplete = models.Quote.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False)).count()

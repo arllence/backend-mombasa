@@ -17,6 +17,7 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
     traveler = UsersSerializer()
     trip = serializers.SerializerMethodField()
     salary_advance = serializers.SerializerMethodField()
+    administration = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Traveler
@@ -44,7 +45,19 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
         except Exception as e:
             print(e)
             # logger.error(e)
+            return {} 
+
+    def get_administration(self, obj):
+        try:
+            request = models.Costing.objects.get(traveler=obj)
+            serializer = FetchCostingSerializer(request, many=False)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
             return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
 
 class TravelerSerializer(serializers.Serializer):
     employee_no = serializers.CharField(max_length=500)
@@ -103,6 +116,11 @@ class FetchCostingSerializer(serializers.ModelSerializer):
 
 class ApprovalSerializer(serializers.Serializer):
     traveler = serializers.CharField(max_length=500)
+
+class CostingSerializer(serializers.Serializer):
+    traveler = serializers.CharField(max_length=500)
+    bill_settlement_by = serializers.CharField(max_length=500)
+    
 
 
 
