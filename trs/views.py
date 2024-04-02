@@ -106,8 +106,6 @@ class TrsViewSet(viewsets.ViewSet):
                 
                 with transaction.atomic():
                     traveler_raw = {
-                        "employee_no": employee_no,
-                        "position": position,
                         "purpose": purpose,
                         "created_by": authenticated_user,
                         "description": description,
@@ -119,7 +117,11 @@ class TrsViewSet(viewsets.ViewSet):
                     }  
 
                     if is_individual:
-                        traveler_raw.update({"traveler": authenticated_user})
+                        traveler_raw.update({
+                                                "traveler": authenticated_user,
+                                                "employee_no": employee_no,
+                                                "position": position,
+                                            })
 
                     if not is_individual:
                         traveler_raw.update({"employees": employees})
@@ -137,9 +139,11 @@ class TrsViewSet(viewsets.ViewSet):
                         "route": route,
                         "departure_date": departure_date,
                         "return_date": return_date,
-                        "visa_required_date": visa_required_date,
                         "accommodation": accommodation,
                     }  
+
+                    if visa_required_date:
+                        traveler_raw.update({"visa_required_date": visa_required_date})
 
                     models.Trip.objects.create(
                         **trip_raw
@@ -342,7 +346,7 @@ class TrsViewSet(viewsets.ViewSet):
                             targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
                             resp = [x.traveler for x in targets]
                         else:
-                            resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(traveler__department=request.user.department)).order_by('-date_created')
+                            resp = models.Traveler.objects.filter(Q(traveler__department=request.user.department) | Q(department=request.user.department), is_deleted=False).order_by('-date_created')
 
                     elif "SLT" in roles or "USER_MANAGER" in roles:
                         if query == 'salary-advance':

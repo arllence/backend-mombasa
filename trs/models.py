@@ -22,13 +22,13 @@ class Traveler(models.Model):
        related_name="department",
        null=True, blank=True
     )
-    employee_no = models.CharField(max_length=50)
+    employee_no = models.CharField(max_length=50, null=True, blank=True)
     employees = models.JSONField(null=True, blank=True)
     requesting_for = models.JSONField(null=True, blank=True)
     status = models.CharField(max_length=255, default='REQUESTED')
     mode_of_transport = models.CharField(max_length=255, null=True, blank=True)
-    group = models.CharField(max_length=255, null=True, blank=True)
-    position = models.CharField(max_length=255)
+    # group = models.CharField(max_length=255, null=True, blank=True)
+    position = models.CharField(max_length=255, null=True, blank=True)
     tid = models.CharField(max_length=50, unique=True)
     purpose = models.CharField(max_length=50)
     description = models.TextField()
