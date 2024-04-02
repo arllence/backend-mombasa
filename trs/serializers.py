@@ -60,14 +60,18 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
             return {} 
 
 class TravelerSerializer(serializers.Serializer):
-    employee_no = serializers.CharField(max_length=500)
-    position = serializers.CharField(max_length=500)
+    # employee_no = serializers.CharField(max_length=500)
+    # position = serializers.CharField(max_length=500)
     purpose = serializers.CharField(max_length=500)
+    department = serializers.CharField(max_length=500)
     description = serializers.CharField(max_length=5000)
 
     route = serializers.CharField(max_length=5000)
     departure_date = serializers.CharField(max_length=255)
     return_date = serializers.CharField(max_length=255)
+
+    mode_of_transport = serializers.CharField(max_length=255)
+    requesting_for = serializers.CharField(max_length=255)
 
 class PutTravelerSerializer(serializers.Serializer):
     id = serializers.CharField(max_length=500)

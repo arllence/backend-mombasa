@@ -49,18 +49,39 @@ class TrsViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
+                is_individual = True
                 description = payload['description']
                 purpose = payload['purpose']
-                position = payload['position']
-                employee_no = payload['employee_no']
                 route = payload['route']
                 departure_date = payload['departure_date']
                 return_date = payload['return_date']
+                mode_of_transport = payload['mode_of_transport']
+                department = payload['department']
                 visa_required_date = payload.get('visa_required_date')
                 accommodation = bool(payload.get('accommodation'))
                 salary_advance_required = bool(payload.get('salary_advance_required'))
                 salary_amount_required = payload.get('salary_amount_required')
+                requesting_for = payload.get('requesting_for')
                 tid = shared_fxns.generate_unique_identifier()
+
+                if requesting_for == 'OTHERS':
+                    employees = list(payload.get('employees'))
+
+                    if not employees:
+                        return Response({"details": "Target Employees Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    is_individual = False
+                else:
+                    try:
+                        position = payload['position']
+                        employee_no = payload['employee_no']
+                    except Exception as e:
+                        return Response({"details": "Employee No / Position Title Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if mode_of_transport == 'PSV':
+                    travel_cost = payload.get('travel_cost')
+                    if not travel_cost:
+                        return Response({"details": "Travel Cost Required !"}, status=status.HTTP_400_BAD_REQUEST)
 
                 if not salary_advance_required:
                     salary_amount_required = 0
@@ -77,18 +98,35 @@ class TrsViewSet(viewsets.ViewSet):
                 else:
                     employee_no = authenticated_user.employee_no
 
+                try:
+                    department = Department.objects.get(id=department)
+                except Exception as e:
+                    return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
+
                 
                 with transaction.atomic():
-
                     traveler_raw = {
                         "employee_no": employee_no,
                         "position": position,
                         "purpose": purpose,
-                        "traveler": authenticated_user,
+                        "created_by": authenticated_user,
                         "description": description,
+                        "department": department,
+                        "mode_of_transport": mode_of_transport,
+                        "requesting_for": requesting_for,
                         "salary_advance_required": salary_advance_required,
                         "tid": tid
                     }  
+
+                    if is_individual:
+                        traveler_raw.update({"traveler": authenticated_user})
+
+                    if not is_individual:
+                        traveler_raw.update({"employees": employees})
+
+                    if mode_of_transport == 'PSV':
+                        traveler_raw.update({"travel_cost": travel_cost})
+
 
                     traveler = models.Traveler.objects.create(
                         **traveler_raw
@@ -137,6 +175,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
+   
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Travel Request created", f"Travel Request Id: {traveler.id}")
                 
