@@ -1,6 +1,5 @@
 from acl.models import Sendmail, User
 
-
 def main():
     subject = "Welcome To Quotation System [PSMDQS]. "
 
