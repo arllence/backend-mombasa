@@ -8,9 +8,31 @@ from django.contrib.auth.models import Group, PermissionsMixin
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 
 
+class Slt(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    lead = models.ForeignKey(
+        'User', related_name='slts', 
+        null=True, blank=True,
+        on_delete=models.DO_NOTHING
+    )
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "slts"
+        
+
 class Department(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=255)
+    slt = models.ForeignKey(
+        Slt, related_name='departments', 
+        null=True, blank=True,
+        on_delete=models.DO_NOTHING
+    )
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

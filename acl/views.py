@@ -959,3 +959,124 @@ class DepartmentViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": "Please upload a CSV file."}, status=status.HTTP_400_BAD_REQUEST)
 
+class SltViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    search_fields = ['id', ]
+
+    def get_queryset(self):
+        return []
+
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="slt",
+            url_name="slt")
+    def slt(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.CreateSltSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+
+                name = payload['name']
+                lead = payload['lead']
+
+                try:
+                    lead = models.User.objects.get(id=lead)
+                except Exception as e:
+                    return Response({"details": "Unknown lead !"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    raw = {
+                        "name": name,
+                        "lead": lead,
+                    }
+                    models.Slt.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+            serializer = serializers.UpdateSltSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+
+                slt_id = payload['request_id']
+                name = payload['name']
+                lead = payload['lead']
+
+                try:
+                    lead = models.User.objects.get(id=lead)
+                except Exception as e:
+                    return Response({"details": "Unknown lead !"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    try:
+                        instance = models.Slt.objects.get(id=slt_id)
+                        instance.name = name
+                        instance.lead = lead
+                        instance.save()
+                    except (ValidationError, ObjectDoesNotExist):
+                        return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.Slt.objects.get(Q(id=request_id))
+                    resp = serializers.FetchSltSerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Slt!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+
+                    if 'USER' in roles:
+                        resp = request.user.department.slt
+                        resp = serializers.FetchSltSerializer(resp,many=False).data
+                        return Response([resp], status=status.HTTP_200_OK)
+                    else:
+                        resp = models.Slt.objects.all().order_by('name')
+                        resp = serializers.FetchSltSerializer(resp,many=True).data
+                        return Response(resp, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+    @action(methods=["POST"],
+            detail=False,
+            url_path="upload",
+            url_name="upload")
+    def upload(self, request):
+        if request.method == "POST":
+            formfiles = request.FILES
+            if not formfiles:
+                return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            f = request.FILES.getlist('documents')[0]
+            if f.name.endswith('.csv'):
+                decoded_file = f.read().decode('utf-8')
+                csv_data = csv.reader(decoded_file.splitlines(), delimiter=',')
+                # Skip the header row
+                next(csv_data)
+                slts = [models.Slt(name=row[0].strip()) for row in csv_data]
+                models.Slt.objects.bulk_create(slts)
+                return Response('Data uploaded successfully', status=status.HTTP_200_OK)
+            else:
+                return Response({"details": "Please upload a CSV file."}, status=status.HTTP_400_BAD_REQUEST)

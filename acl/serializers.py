@@ -95,3 +95,17 @@ class PasswordChangeSerializer(serializers.Serializer):
 class GeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
 
+class CreateSltSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    lead = serializers.CharField()
+
+class UpdateSltSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
+    lead = serializers.CharField(max_length=255)
+
+class FetchSltSerializer(serializers.ModelSerializer):
+    lead = UsersSerializer()
+    class Meta:
+        model = models.Slt
+        fields = '__all__'

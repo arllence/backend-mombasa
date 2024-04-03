@@ -42,6 +42,8 @@ class TrsViewSet(viewsets.ViewSet):
             url_name="traveler-details")
     def traveler(self, request):
         authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
         if request.method == "POST":
 
             payload = request.data
@@ -129,6 +131,11 @@ class TrsViewSet(viewsets.ViewSet):
                     if mode_of_transport == 'PSV':
                         traveler_raw.update({"travel_cost": travel_cost})
 
+                    if "HOD" in roles:
+                        traveler_raw.update({
+                                "is_hod_approved": True,
+                                "status": "APPROVED"
+                            })
 
                     traveler = models.Traveler.objects.create(
                         **traveler_raw
@@ -160,9 +167,12 @@ class TrsViewSet(viewsets.ViewSet):
                             **salary_raw
                         )
 
-
-                    targets = ['HOD','SLT']
-                    managers_emails = get_user_model().objects.filter(Q(groups__name__in=targets) & Q(department=authenticated_user.department)).values_list('email', flat=True)
+                    if "HOD" in roles:
+                        email_targets = ['SLT']
+                    else:
+                        email_targets = ['HOD','SLT']
+                        
+                    managers_emails = get_user_model().objects.filter(Q(groups__name__in=email_targets) & Q(department=authenticated_user.department)).values_list('email', flat=True)
 
                     # Notify the hods / slt
                     subject = f"Travel Request {tid} Received [TRS-AKHK]"
