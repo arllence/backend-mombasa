@@ -410,9 +410,9 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         
         try:
             if username :
-                user_details = get_user_model().objects.filter(Q(email__icontains=username) | Q(first_name__icontains=username) | Q(last_name__icontains=username))
+                user_details = get_user_model().objects.filter(Q(email__icontains=username) | Q(first_name__icontains=username) | Q(last_name__icontains=username)).order_by('first_name')
             elif username is None or not username:
-                user_details = get_user_model().objects.all()
+                user_details = get_user_model().objects.all().order_by('first_name')
                 # print(len(user_details))
         except (ValidationError, ObjectDoesNotExist):
             return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
@@ -875,10 +875,21 @@ class DepartmentViewSet(viewsets.ViewSet):
                 data=payload, many=False)
             if serializer.is_valid():
                 name = payload['name']
+                slt = payload.get('slt')
+
                 with transaction.atomic():
                     raw = {
                         "name": name
                     }
+
+                    if slt:
+                        try:
+                            slt = models.Slt.objects.get(id=slt)
+                        except Exception as e:
+                            return Response({"details": "Unknown SLT"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        raw.update({"slt": slt})
+
                     models.Department.objects.create(**raw)
 
                     return Response("Success", status=status.HTTP_200_OK)
@@ -892,11 +903,22 @@ class DepartmentViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 dept_id = payload['request_id']
                 name = payload['name']
+                slt = payload.get('slt')
+
+                if slt:
+                    try:
+                        slt = models.Slt.objects.get(id=slt)
+                    except Exception as e:
+                        return Response({"details": "Unknown SLT"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+
                 with transaction.atomic():
                     try:
                         dept = models.Department.objects.get(id=dept_id)
                         dept.name = name
+                        dept.slt = slt if slt else dept.slt
                         dept.save()
+                        
                     except (ValidationError, ObjectDoesNotExist):
                         return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
 

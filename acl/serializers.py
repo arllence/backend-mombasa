@@ -11,8 +11,14 @@ class CreateDepartmentSerializer(serializers.Serializer):
 class UpdateDepartmentSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
     name = serializers.CharField(max_length=255)
+
+class SlimFetchSltSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Slt
+        fields = '__all__'
     
 class FetchDepartmentSerializer(serializers.ModelSerializer):
+    slt = SlimFetchSltSerializer()
     class Meta:
         model = models.Department
         fields = '__all__'
