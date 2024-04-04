@@ -343,7 +343,7 @@ class TrsViewSet(viewsets.ViewSet):
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             query = request.query_params.get('q')
-            roles = user_util.fetchusergroups(request.user.id)  
+            # roles = user_util.fetchusergroups(request.user.id)  
 
             if request_id:
                 try:
@@ -397,6 +397,10 @@ class TrsViewSet(viewsets.ViewSet):
                         else:
                             allowed_statuses = ['APPROVED', 'CLOSED']
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(is_ceo_approved=True) & Q(status__in=allowed_statuses)).order_by('-date_created')
+                    
+                    elif "CASH_OFFICE" in roles :
+                        allowed_statuses = ['APPROVED', 'CLOSED']
+                        resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(is_hof_approved=True) & Q(status__in=allowed_statuses)).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
