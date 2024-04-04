@@ -400,7 +400,11 @@ class TrsViewSet(viewsets.ViewSet):
                     
                     elif "CASH_OFFICE" in roles :
                         allowed_statuses = ['APPROVED', 'CLOSED']
-                        resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(is_hof_approved=True) & Q(status__in=allowed_statuses)).order_by('-date_created')
+                        resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(is_hof_approved=True) & Q(status__in=allowed_statuses) & Q(mode_of_transport='PSV')).order_by('-date_created')
+
+                    elif "TRANSPORT" in roles :
+                        allowed_statuses = ['APPROVED', 'CLOSED']
+                        resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(is_hof_approved=True) & Q(status__in=allowed_statuses) & Q(mode_of_transport='HOSPITAL VEHICLE')).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
