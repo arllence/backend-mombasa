@@ -122,6 +122,7 @@ class FetchCostingSerializer(serializers.ModelSerializer):
 
 class ApprovalSerializer(serializers.Serializer):
     traveler = serializers.CharField(max_length=500)
+    status = serializers.CharField(max_length=500)
 
 class CostingSerializer(serializers.Serializer):
     traveler = serializers.CharField(max_length=500)

@@ -93,12 +93,15 @@ class TrsViewSet(viewsets.ViewSet):
 
 
                 # update employee no
-                empno = authenticated_user.employee_no
-                if not empno:
-                    authenticated_user.employee_no = employee_no
-                    authenticated_user.save()
-                else:
-                    employee_no = authenticated_user.employee_no
+                try:
+                    empno = authenticated_user.employee_no
+                    if not empno:
+                        authenticated_user.employee_no = employee_no
+                        authenticated_user.save()
+                    else:
+                        employee_no = authenticated_user.employee_no
+                except Exception as e:
+                    pass
 
                 try:
                     department = Department.objects.get(id=department)
@@ -168,11 +171,16 @@ class TrsViewSet(viewsets.ViewSet):
                         )
 
                     if "HOD" in roles:
-                        email_targets = ['SLT']
+                        if department.slt:
+                            managers_emails = [department.slt.lead.email]
                     else:
-                        email_targets = ['HOD','SLT']
-                        
-                    managers_emails = get_user_model().objects.filter(Q(groups__name__in=email_targets) & Q(department=authenticated_user.department)).values_list('email', flat=True)
+                        email_targets = ['HOD']
+
+                        managers_emails = get_user_model().objects.filter(Q(groups__name__in=email_targets) & Q(department=department) ).values_list('email', flat=True)
+
+                        if department.slt:
+                            managers_emails.append(department.slt.lead.email)
+
 
                     # Notify the hods / slt
                     subject = f"Travel Request {tid} Received [TRS-AKHK]"
@@ -439,6 +447,7 @@ class TrsViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 traveler = payload['traveler']
+                travel_status = payload['status']
                 budget_code = payload.get('budget_code')
 
                 try:
@@ -450,18 +459,26 @@ class TrsViewSet(viewsets.ViewSet):
 
                     is_hod = False
                     is_ceo = False
+                    is_slt = False
+                    is_hof = False
 
-                    if "HOD" in roles or "SLT" in roles:
+                    if travel_status == 'HOD':
                         is_hod = True
+                        approval_for = "HOD"
+                        traveler_status = "APPROVED"
+                        
+                    elif travel_status == "SLT":
+                        is_slt = True
                         approval_for = "SLT"
                         traveler_status = "APPROVED"
-                        if not budget_code:
-                            return Response({"details": "Budget Code Required !"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    elif travel_status == "HOF" :
+                        is_hof = True
+                        approval_for = "HOF"
                         
-                    elif "CEO" in roles or "HOF" in roles:
+                    elif travel_status == "CEO" :
                         is_ceo = True
-                        approval_for = "BUDGET"
-                        # traveler_status = "CLOSED"
+                        approval_for = "CEO"
 
                     is_existing = models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).exists()
 
@@ -489,16 +506,22 @@ class TrsViewSet(viewsets.ViewSet):
 
                     # Notify the requestor
                     if is_hod:
-                        subject = f"Travel Request {traveler.tid} SLT Approved  [TRS-AKHK]"
-                        message = f"Dear {traveler.traveler.first_name}, \nYour Travel Request Approved by HOD/SLT.\nPending Budget Approval.\n\nRegards\nTRS-AKHK"
+                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
+                        message = f"Dear {traveler.traveler.first_name}, \nYour Travel Request has been Approved by HOD.\nPending SLT Approval.\n\nRegards\nTRS-AKHK"
+                    elif is_slt:
+                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
+                        message = f"Dear {traveler.traveler.first_name}, \nYour Travel Request has been Approved by SLT.\nPending Finance Approval.\n\nRegards\nTRS-AKHK"
+                    elif is_hof:
+                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
+                        message = f"Dear {traveler.traveler.first_name}, \nYour Travel Request has been Approved by Finance.\n\nRegards\nTRS-AKHK"
                     elif is_ceo:
                         subject = f"Travel Request {traveler.tid} Budget Approved  [TRS-AKHK]"
-                        message = f"Dear {traveler.traveler.first_name}, \nYour Travel Request: {traveler.tid} budget Approved by CEO/HOF.\nPending administration and costing.\n\nRegards\nTRS-AKHK"
+                        message = f"Dear {traveler.traveler.first_name}, \nYour Travel Request has been Approved by CEO.\n\nRegards\nTRS-AKHK"
 
                     send_mail(subject, message, 'notification@akhskenya.org', [traveler.traveler.email])
 
                     # Notify HOF
-                    if is_hod and traveler_status == 'APPROVED':
+                    if is_slt and traveler_status == 'APPROVED':
                         emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
                         subject = f"Request for Travel Budget Approval: {traveler.tid}.  [TRS-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} is pending budget approval by CEO/HOF.\n\nRegards\nTRS-AKHK"
