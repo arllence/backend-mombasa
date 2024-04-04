@@ -37,6 +37,7 @@ class Traveler(models.Model):
     travel_cost = models.BigIntegerField(default=0)
     salary_advance_required = models.BooleanField(default=False)
     is_hod_approved = models.BooleanField(default=False)
+    is_hof_approved = models.BooleanField(default=False)
     is_slt_approved = models.BooleanField(default=False)
     is_ceo_approved = models.BooleanField(default=False)
     is_transport_dpt_approved = models.BooleanField(default=False)

@@ -497,28 +497,34 @@ class TrsViewSet(viewsets.ViewSet):
 
                     
                     traveler.budget_code = budget_code
+
                     if is_hod:
                         traveler.status = traveler_status
                         traveler.is_hod_approved = is_hod
                     if is_ceo:
                         traveler.is_ceo_approved = is_ceo
+                    if is_slt:
+                        traveler.is_slt_approved = is_slt
+                    if is_hof:
+                        traveler.is_hof_approved = is_hof
+
                     traveler.save()
 
                     # Notify the requestor
                     if is_hod:
                         subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
-                        message = f"Dear {traveler.traveler.first_name}, \nYour Travel Request has been Approved by HOD.\nPending SLT Approval.\n\nRegards\nTRS-AKHK"
+                        message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request has been Approved by HOD.\nPending SLT Approval.\n\nRegards\nTRS-AKHK"
                     elif is_slt:
                         subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
-                        message = f"Dear {traveler.traveler.first_name}, \nYour Travel Request has been Approved by SLT.\nPending Finance Approval.\n\nRegards\nTRS-AKHK"
+                        message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request has been Approved by SLT.\nPending Finance Approval.\n\nRegards\nTRS-AKHK"
                     elif is_hof:
                         subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
-                        message = f"Dear {traveler.traveler.first_name}, \nYour Travel Request has been Approved by Finance.\n\nRegards\nTRS-AKHK"
+                        message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request has been Approved by Finance.\n\nRegards\nTRS-AKHK"
                     elif is_ceo:
                         subject = f"Travel Request {traveler.tid} Budget Approved  [TRS-AKHK]"
-                        message = f"Dear {traveler.traveler.first_name}, \nYour Travel Request has been Approved by CEO.\n\nRegards\nTRS-AKHK"
+                        message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request has been Approved by CEO.\n\nRegards\nTRS-AKHK"
 
-                    send_mail(subject, message, 'notification@akhskenya.org', [traveler.traveler.email])
+                    send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
 
                     # Notify HOF
                     if is_slt and traveler_status == 'APPROVED':
@@ -537,7 +543,7 @@ class TrsViewSet(viewsets.ViewSet):
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
                 user_util.log_account_activity(
-                    authenticated_user, traveler.traveler, "Travel Request approval", f"Approval Executed TID: {str(traveler.id)}")
+                    authenticated_user, traveler.created_by, "Travel Request approval", f"Approval Executed TID: {str(traveler.id)}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
