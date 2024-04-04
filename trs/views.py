@@ -542,6 +542,22 @@ class TrsViewSet(viewsets.ViewSet):
 
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
+                    # Notify CASH OFFICE
+                    if is_hof and traveler.mode_of_transport == 'PSV':
+                        emails = list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE')).values_list('email', flat=True))
+                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
+                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by finance office and is now pending your action\n\nRegards\nTRS-AKHK"
+
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+
+                    # Notify TRANSPORT
+                    if is_hof and traveler.mode_of_transport == 'HOSPITAL VEHICLE':
+                        emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
+                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
+                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by finance office and is now pending your action\n\nRegards\nTRS-AKHK"
+
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+
                 user_util.log_account_activity(
                     authenticated_user, traveler.created_by, "Travel Request approval", f"Approval Executed TID: {str(traveler.id)}")
                 
