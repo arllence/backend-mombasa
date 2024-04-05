@@ -469,6 +469,8 @@ class TrsViewSet(viewsets.ViewSet):
                     is_ceo = False
                     is_slt = False
                     is_hof = False
+                    is_cash_office = False
+                    is_transport_office = False
 
                     if travel_status == 'HOD':
                         is_hod = True
@@ -484,17 +486,33 @@ class TrsViewSet(viewsets.ViewSet):
                         is_hof = True
                         approval_for = "HOF"
                         
-                    elif travel_status == "CEO" :
+                    elif travel_status == "CEO":
                         is_ceo = True
                         approval_for = "CEO"
+
+                    elif travel_status == "TRANSPORT":
+                        is_transport_office = True
+                        approval_for = "TRANSPORT"
+
+                    elif travel_status == "CASH_OFFICE":
+                        is_cash_office = True
+                        approval_for = "CASH_OFFICE"
+
+                        approval_msg = payload.get('text')
+                        if not approval_msg:
+                            return Response({"details": "Amount / Transaction Code / Message Required !"}, status=status.HTTP_400_BAD_REQUEST)
+
 
                     is_existing = models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).exists()
 
                     raw = {
                         "traveler": traveler,
                         "approval_for": approval_for,
-                        "approved_by": authenticated_user
+                        "approved_by": authenticated_user,
                     }  
+
+                    if is_cash_office:
+                        raw.update({"approval_msg": approval_msg})
 
                     if is_existing:
                         models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).update(**raw)
@@ -509,12 +527,23 @@ class TrsViewSet(viewsets.ViewSet):
                     if is_hod:
                         traveler.status = traveler_status
                         traveler.is_hod_approved = is_hod
+
                     if is_ceo:
                         traveler.is_ceo_approved = is_ceo
+
                     if is_slt:
                         traveler.is_slt_approved = is_slt
+
                     if is_hof:
                         traveler.is_hof_approved = is_hof
+
+                    if is_cash_office:
+                        traveler.status = "CLOSED"
+                        traveler.is_cash_office_approved = is_cash_office
+
+                    if is_transport_office:
+                        traveler.status = "CLOSED"
+                        traveler.is_transport_dpt_approved = is_transport_office
 
                     traveler.save()
 
@@ -529,8 +558,14 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
                         message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request has been Approved by Finance.\n\nRegards\nTRS-AKHK"
                     elif is_ceo:
-                        subject = f"Travel Request {traveler.tid} Budget Approved  [TRS-AKHK]"
+                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
                         message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request has been Approved by CEO.\n\nRegards\nTRS-AKHK"
+                    elif is_cash_office:
+                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
+                        message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request has been Approved by Cash Office.\n\nRegards\nTRS-AKHK"
+                    elif is_transport_office:
+                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
+                        message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request has been Approved by Transport Office.\n\nRegards\nTRS-AKHK"
 
                     send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
 
