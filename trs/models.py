@@ -17,6 +17,11 @@ class Traveler(models.Model):
        related_name="created_by",
        null=True, blank=True
     )
+    closed_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="closed_by",
+       null=True, blank=True
+    )
     department = models.ForeignKey(
        Department, on_delete=models.DO_NOTHING, 
        related_name="department",

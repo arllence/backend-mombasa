@@ -564,11 +564,13 @@ class TrsViewSet(viewsets.ViewSet):
 
                     if is_cash_office:
                         traveler.status = "CLOSED"
+                        traveler.closed_by = authenticated_user
                         traveler.date_closed = datetime.datetime.now()
                         traveler.is_cash_office_approved = is_cash_office
 
                     if is_transport_office:
                         traveler.status = "CLOSED"
+                        traveler.closed_by = authenticated_user
                         traveler.date_closed = datetime.datetime.now()
                         traveler.is_transport_dpt_approved = is_transport_office
 
