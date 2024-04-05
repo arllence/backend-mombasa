@@ -749,18 +749,20 @@ class TrsViewSet(viewsets.ViewSet):
                         )
 
                     traveler.status = "CLOSED"
+                    traveler.closed_by = authenticated_user
                     traveler.travel_order_no = travel_order_no
+                    traveler.is_administrator_approved = True
                     traveler.date_closed = datetime.datetime.now()
                     traveler.save()
 
                     # Notify the requestor
                     subject = f"Travel Request {traveler.tid} Closed  [TRS-AKHK]"
-                    message = f"Dear {traveler.traveler.first_name}, \nYour Transport Request: {traveler.tid},  has been fully processed and closed.\nThank you for your patience.\n\nRegards\nTRS-AKHK"
+                    message = f"Dear {traveler.created_by.first_name}, \nYour Transport Request: {traveler.tid},  has been fully processed and closed.\nThank you for your patience.\n\nRegards\nTRS-AKHK"
 
-                    send_mail(subject, message, 'notification@akhskenya.org', [traveler.traveler.email])
+                    send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
 
                 user_util.log_account_activity(
-                    authenticated_user, traveler.traveler, "Travel Request closed", f"TID: {str(traveler.id)}")
+                    authenticated_user, traveler.created_by, "Travel Request closed", f"TID: {str(traveler.id)}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
