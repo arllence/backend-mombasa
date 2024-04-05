@@ -366,19 +366,44 @@ class TrsViewSet(viewsets.ViewSet):
                         else:
                             resp = models.Traveler.objects.filter(Q(traveler__department=request.user.department) | Q(department=request.user.department), is_deleted=False).order_by('-date_created')
 
-                    elif "SLT" in roles or "USER_MANAGER" in roles:
+                    elif "USER_MANAGER" in roles:
                         if query == 'salary-advance':
                             targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
-                            resp = [x.traveler for x in targets]
+                            resp = [
+                                    x.traveler 
+                                    for x in targets 
+                                ]
                         else:
-                            resp = models.Traveler.objects.filter(Q(is_deleted=False)).order_by('-date_created')
+                            resp = models.Traveler.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
 
-                    elif "CEO" in roles or "HOF" in roles:
+                    elif "SLT" in roles:
+                        if query == 'salary-advance':
+                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
+                            resp = [
+                                    x.traveler 
+                                    for x in targets 
+                                    if x.department.slt.lead == authenticated_user
+                                ]
+                        else:
+                            if "HOF" in roles:
+                                resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) | Q(is_hod_approved=True)).order_by('-date_created')
+                            else:
+                                resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user)).order_by('-date_created')
+
+                    elif "HOF" in roles:
                         if not query:
-                            resp = models.Traveler.objects.filter(Q(is_hod_approved=True) & Q(is_ceo_approved=False),is_deleted=False).order_by('-date_created')
+                            resp = models.Traveler.objects.filter(Q(is_hod_approved=True),is_deleted=False).order_by('-date_created')
 
                         if query == 'salary-advance':
                             # targets = models.AdvanceSalaryRequests.objects.filter(Q(status='REQUESTED')).order_by('-date_created')
+                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
+                            resp = [x.traveler for x in targets]
+                    
+                    elif "CEO" in roles:
+                        if not query:
+                            resp = models.Traveler.objects.filter(Q(is_hof_approved=True) & Q(mode_of_transport='FLIGHT'),is_deleted=False).order_by('-date_created')
+
+                        if query == 'salary-advance':
                             targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
                             resp = [x.traveler for x in targets]
 
