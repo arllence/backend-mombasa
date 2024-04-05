@@ -539,10 +539,12 @@ class TrsViewSet(viewsets.ViewSet):
 
                     if is_cash_office:
                         traveler.status = "CLOSED"
+                        traveler.date_closed = datetime.datetime.now()
                         traveler.is_cash_office_approved = is_cash_office
 
                     if is_transport_office:
                         traveler.status = "CLOSED"
+                        traveler.date_closed = datetime.datetime.now()
                         traveler.is_transport_dpt_approved = is_transport_office
 
                     traveler.save()
@@ -574,6 +576,14 @@ class TrsViewSet(viewsets.ViewSet):
                         emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
                         subject = f"Request for Travel Budget Approval: {traveler.tid}.  [TRS-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} is pending budget approval by CEO/HOF.\n\nRegards\nTRS-AKHK"
+
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+
+                    # Notify CEO
+                    if is_hof and traveler.mode_of_transport == 'FLIGHT':
+                        emails = list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
+                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
+                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by both Finance and is now pending your approval.\n\nRegards\nTRS-AKHK"
 
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
