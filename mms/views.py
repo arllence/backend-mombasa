@@ -65,21 +65,21 @@ class MmsViewSet(viewsets.ViewSet):
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                if formfiles:
-                    exts = ['jpeg','jpg','png','tiff','pdf','doc','docx']
-                    for f in request.FILES.getlist('documents'):
-                        original_file_name = f.name
-                        ext = original_file_name.split('.')[1].strip().lower()
-                        if ext not in exts:
-                            return Response({"details": "Only Images, Word and PDFs allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+                # if formfiles:
+                #     exts = ['jpeg','jpg','png','tiff','pdf','doc','docx']
+                #     for f in request.FILES.getlist('documents'):
+                #         original_file_name = f.name
+                #         ext = original_file_name.split('.')[1].strip().lower()
+                #         if ext not in exts:
+                #             return Response({"details": "Only Images, Word and PDFs allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
                     attachment = None
                     if formfiles:                        
                         f = request.FILES.getlist('documents')[0]
+                        original_file_name = f.name
                         file_type = shared_fxns.identify_file_type(original_file_name.split('.')[1].strip().lower())
-                        try:
-                            original_file_name = f.name                            
+                        try:                          
                             attachment = models.Document.objects.create(
                                         document=f, 
                                         original_file_name=original_file_name, 
@@ -109,7 +109,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                     # Notify the manager
                     subject = f"A New Quote {qid} Received [PSMDQS-AKHK]"
-                    message = f"Hello, \nA new quote: {qid} of subject: {quote.subject} from department:  {department.name} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\n PSMDQS-AKHK"
+                    message = f"Hello, \nA new quote: {qid} of subject: {quote.subject} from department:  {department.name}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name}\non {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\n PSMDQS-AKHK"
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
@@ -147,21 +147,21 @@ class MmsViewSet(viewsets.ViewSet):
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                if formfiles:
-                    exts = ['jpeg','jpg','png','tiff','pdf']
-                    for f in request.FILES.getlist('documents'):
-                        original_file_name = f.name
-                        ext = original_file_name.split('.')[1].strip().lower()
-                        if ext not in exts:
-                            return Response({"details": "Only Images and PDFs allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+                # if formfiles:
+                #     exts = ['jpeg','jpg','png','tiff','pdf']
+                #     for f in request.FILES.getlist('documents'):
+                #         original_file_name = f.name
+                #         ext = original_file_name.split('.')[1].strip().lower()
+                #         if ext not in exts:
+                #             return Response({"details": "Only Images and PDFs allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
 
                     if formfiles:                        
                         f = request.FILES.getlist('documents')[0]
+                        original_file_name = f.name
                         file_type = shared_fxns.identify_file_type(original_file_name.split('.')[1].strip().lower())
-                        try:
-                            original_file_name = f.name                            
+                        try:                         
                             attachment = models.Document.objects.create(
                                         document=f, 
                                         original_file_name=original_file_name, 
@@ -203,7 +203,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                         # Notify the manager
                         subject = f"A Quote: {quote.qid} Has Been Resubmitted [PSMDQS-AKHK]"
-                        message = f"Hello, \nQuote:{quote.qid} of subject: {quote.subject} from department:  {department.name} has been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nPSMDQS-AKHK"
+                        message = f"Hello, \nQuote:{quote.qid} of subject: {quote.subject} from department:  {department.name} \nhas been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} \non {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nPSMDQS-AKHK"
 
                         send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
@@ -491,20 +491,15 @@ class MmsViewSet(viewsets.ViewSet):
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                if formfiles:
-                    exts = ['jpeg','jpg','png','tiff','pdf','doc','docx']
+                # if formfiles:
+                #     exts = ['jpeg','jpg','png','tiff','pdf','doc','docx']
 
-                    for f in request.FILES.getlist('quote'):
-                        original_file_name = f.name
-                        ext = original_file_name.split('.')[1].strip().lower()
-                        if ext not in exts:
-                            return Response({"details": "Only Images, Word and PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
-                        
-                    # for f in request.FILES.getlist('comparative_analysis'):
-                    #     original_file_name = f.name
-                    #     ext = original_file_name.split('.')[1].strip().lower()
-                    #     if ext not in exts:
-                    #         return Response({"details": "Only PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+                #     for f in request.FILES.getlist('quote'):
+                #         original_file_name = f.name
+                #         ext = original_file_name.split('.')[1].strip().lower()
+                #         if ext not in exts:
+                #             return Response({"details": "Only Images, Word and PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
+
                 
                 with transaction.atomic():
     
@@ -513,15 +508,7 @@ class MmsViewSet(viewsets.ViewSet):
                         file_type1 = shared_fxns.identify_file_type(quoteFile.name.split('.')[1].strip().lower())
                         title1 = "CLOSE_QUOTE_FILE"
                     except Exception as e:
-                        return Response({"details": "Upload Quote File !"}, status=status.HTTP_400_BAD_REQUEST)
-                    
-                    # try:
-                    #     comparativeAnalysisFile = request.FILES.getlist('comparative_analysis')[0]
-                    #     file_type2 = shared_fxns.identify_file_type(comparativeAnalysisFile.name.split('.')[1].strip().lower())
-                    #     title2 = "CLOSE_COMPARATIVE_ANALYSIS_FILE"
-                    # except Exception as e:
-                    #     return Response({"details": "Upload Comparative Analysis File !"}, status=status.HTTP_400_BAD_REQUEST)
-                    
+                        return Response({"details": "Upload Quote File !"}, status=status.HTTP_400_BAD_REQUEST)                  
                     
                     try:                         
                         quote_file = models.Document.objects.create(
@@ -531,17 +518,10 @@ class MmsViewSet(viewsets.ViewSet):
                                     file_type=file_type1,
                                     title=title1,
                                     )
-                        # comparative_analysis_file = models.Document.objects.create(
-                        #             document=comparativeAnalysisFile, 
-                        #             original_file_name=comparativeAnalysisFile.name, 
-                        #             uploader=authenticated_user, 
-                        #             file_type=file_type2,
-                        #             title=title2,
-                        #             )
+
                         
                         attachments = {
                             "quote_file": str(quote_file.id),
-                            # "comparative_analysis_file": str(comparative_analysis_file.id),
                         }
 
                         # update quote instance
