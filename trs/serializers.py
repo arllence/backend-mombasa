@@ -16,6 +16,7 @@ class GeneralNameSerializer(serializers.Serializer):
 class FetchTravelerSerializer(serializers.ModelSerializer):
     traveler = UsersSerializer()
     created_by = UsersSerializer()
+    closed_by = UsersSerializer()
     department = FetchDepartmentSerializer()
     trip = serializers.SerializerMethodField()
     salary_advance = serializers.SerializerMethodField()
