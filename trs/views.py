@@ -44,9 +44,12 @@ class TrsViewSet(viewsets.ViewSet):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
 
+        
+
         if request.method == "POST":
 
             payload = request.data
+
             serializer = serializers.TravelerSerializer(
                     data=payload, many=False)
             
@@ -64,6 +67,9 @@ class TrsViewSet(viewsets.ViewSet):
                 salary_advance_required = bool(payload.get('salary_advance_required'))
                 salary_amount_required = payload.get('salary_amount_required')
                 requesting_for = payload.get('requesting_for')
+                travel_cost = payload.get('travel_cost')
+                travel_cost_items = payload.get('travel_cost_items')
+                send_to = payload.get('travel_cost_items')
                 tid = shared_fxns.generate_unique_identifier()
 
                 if requesting_for == 'OTHERS':
@@ -80,10 +86,8 @@ class TrsViewSet(viewsets.ViewSet):
                     except Exception as e:
                         return Response({"details": "Employee No / Position Title Required !"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                if mode_of_transport == 'PSV':
-                    travel_cost = payload.get('travel_cost')
-                    if not travel_cost:
-                        return Response({"details": "Travel Cost Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                if travel_cost and not travel_cost_items:
+                    return Response({"details": "Travel Cost Breakdown Required !"}, status=status.HTTP_400_BAD_REQUEST)
 
                 if not salary_advance_required:
                     salary_amount_required = 0
@@ -118,7 +122,9 @@ class TrsViewSet(viewsets.ViewSet):
                         "mode_of_transport": mode_of_transport,
                         "requesting_for": requesting_for,
                         "salary_advance_required": salary_advance_required,
-                        "tid": tid
+                        "tid": tid,
+                        "travel_cost": travel_cost,
+                        "travel_cost_items": travel_cost_items
                     }  
 
                     if is_individual:
@@ -131,8 +137,14 @@ class TrsViewSet(viewsets.ViewSet):
                     if not is_individual:
                         traveler_raw.update({"employees": employees})
 
-                    if mode_of_transport == 'PSV':
-                        traveler_raw.update({"travel_cost": travel_cost})
+                    if send_to == 'CEO':
+                        traveler_raw.update({"requires_ceo_approval": True})
+                    elif send_to == 'HOF':
+                        traveler_raw.update({"requires_hof_approval": True})
+                    elif send_to == 'SLT':
+                        traveler_raw.update({"requires_slt_approval": True})
+                    elif send_to == 'HOD':
+                        traveler_raw.update({"requires_hod_approval": True})
 
                     if "HOD" in roles:
                         traveler_raw.update({
@@ -170,19 +182,23 @@ class TrsViewSet(viewsets.ViewSet):
                             **salary_raw
                         )
 
-                    if "HOD" in roles:
-                        if department.slt:
-                            managers_emails = [department.slt.lead.email]
-                    else:
-                        email_targets = ['HOD']
+                    if send_to == 'HOD':
+                        managers_emails = get_user_model().objects.filter(Q(groups__name='HOD') & Q(department=department) ).values_list('email', flat=True)
 
-                        managers_emails = get_user_model().objects.filter(Q(groups__name__in=email_targets) & Q(department=department) ).values_list('email', flat=True)
-
+                    elif send_to == 'SLT':
                         if department.slt:
                             managers_emails.append(department.slt.lead.email)
+                        else:
+                            return Response({"details": "Selected Department has no SLT assigned !"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                    elif send_to == 'HOF':
+                        managers_emails = get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True)
 
+                    elif send_to == 'CEO':
+                        managers_emails = get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True)
+                        
 
-                    # Notify the hods / slt
+                    # Notify selected send to
                     subject = f"Travel Request {tid} Received [TRS-AKHK]"
                     message = f"Hello, \nA new travel request: {tid} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
 
@@ -192,8 +208,8 @@ class TrsViewSet(viewsets.ViewSet):
                     if salary_advance_required:
                         emails = get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True)
 
-                        subject = f"Salary Advance Requested {tid} Received [TRS-AKHK]"
-                        message = f"Hello, \nSalary Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
+                        subject = f"Travel Advance Request {tid} Received [TRS-AKHK]"
+                        message = f"Hello, \nSalary Travel Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
 
                         send_mail(subject, message, 'notification@akhskenya.org', emails)
 
