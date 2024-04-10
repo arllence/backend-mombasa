@@ -69,8 +69,11 @@ class TrsViewSet(viewsets.ViewSet):
                 requesting_for = payload.get('requesting_for')
                 travel_cost = payload.get('travel_cost')
                 travel_cost_items = payload.get('travel_cost_items')
-                send_to = payload.get('travel_cost_items')
+                send_to = payload.get('send_to')
                 tid = shared_fxns.generate_unique_identifier()
+
+                if not send_to:
+                    return Response({"details": "Please select Send To!"}, status=status.HTTP_400_BAD_REQUEST)
 
                 if requesting_for == 'OTHERS':
                     employees = list(payload.get('employees'))
@@ -187,6 +190,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     elif send_to == 'SLT':
                         if department.slt:
+                            print(department.slt)
                             managers_emails.append(department.slt.lead.email)
                         else:
                             return Response({"details": "Selected Department has no SLT assigned !"}, status=status.HTTP_400_BAD_REQUEST)
