@@ -118,7 +118,7 @@ class TravelForwarding(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     traveler = models.ForeignKey(
         Traveler, on_delete=models.DO_NOTHING,
-        related_name="status_change_track_instance"
+        related_name="travel_forwarding_instance"
     )
     forward_from = models.CharField(max_length=255)
     forward_to = models.CharField(max_length=255)
