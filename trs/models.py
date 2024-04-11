@@ -59,6 +59,7 @@ class Traveler(models.Model):
     requires_ceo_approval = models.BooleanField(default=False)
     requires_administrator_approval = models.BooleanField(default=False)
     requires_transport_approval = models.BooleanField(default=False)
+    requires_cash_office_approval = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
     date_closed = models.DateTimeField(null=True, blank=True)

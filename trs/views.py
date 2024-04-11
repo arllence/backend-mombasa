@@ -460,12 +460,8 @@ class TrsViewSet(viewsets.ViewSet):
                             resp = [x.traveler for x in targets]
 
                     elif "ADMINISTRATOR" in roles :
-                        if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
-                            resp = [x.traveler for x in targets]
-                        else:
-                            allowed_statuses = ['APPROVED', 'CLOSED']
-                            resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(is_ceo_approved=True) & Q(status__in=allowed_statuses)).order_by('-date_created')
+                        allowed_statuses = ['APPROVED', 'CLOSED']
+                        resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(requires_administrator_approval=True) & Q(status__in=allowed_statuses)).order_by('-date_created')
                     
                     elif "CASH_OFFICE" in roles :
                         allowed_statuses = ['APPROVED', 'CLOSED']
@@ -473,7 +469,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     elif "TRANSPORT" in roles :
                         allowed_statuses = ['APPROVED', 'CLOSED']
-                        resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(is_hof_approved=True) & Q(status__in=allowed_statuses) & Q(mode_of_transport='HOSPITAL VEHICLE')).order_by('-date_created')
+                        resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(requires_transport_approval=True) & Q(status__in=allowed_statuses) ).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
