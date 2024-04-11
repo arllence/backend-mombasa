@@ -363,8 +363,12 @@ class TrsViewSet(viewsets.ViewSet):
                     traveler.save()
 
                     raw = {
-                        ""
+                        "traveler": traveler,
+                        "status": traveler_status,
+                        "action_by": authenticated_user,
                     }
+
+                    models.StatusChange.objects.create(**raw)
 
                     # Notify requestor
                     emails = [traveler.traveler.email]
@@ -537,6 +541,8 @@ class TrsViewSet(viewsets.ViewSet):
                     is_cash_office = False
                     is_transport_office = False
 
+                    traveler_status = "APPROVED"
+
                     if travel_status == 'HOD':
                         is_hod = True
                         approval_for = "HOD"
@@ -603,18 +609,28 @@ class TrsViewSet(viewsets.ViewSet):
                         traveler.is_hof_approved = is_hof
 
                     if is_cash_office:
+                        traveler_status = "CLOSED"
                         traveler.status = "CLOSED"
                         traveler.closed_by = authenticated_user
                         traveler.date_closed = datetime.datetime.now()
                         traveler.is_cash_office_approved = is_cash_office
 
                     if is_transport_office:
+                        traveler_status = "CLOSED"
                         traveler.status = "CLOSED"
                         traveler.closed_by = authenticated_user
                         traveler.date_closed = datetime.datetime.now()
                         traveler.is_transport_dpt_approved = is_transport_office
 
                     traveler.save()
+
+                    raw = {
+                        "traveler": traveler,
+                        "status": traveler_status,
+                        "action_by": authenticated_user,
+                    }
+
+                    models.StatusChange.objects.create(**raw)
 
                     # Notify the requestor
                     if is_hod:
