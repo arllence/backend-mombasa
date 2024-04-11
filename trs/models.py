@@ -67,21 +67,26 @@ class Traveler(models.Model):
     class Meta:
         db_table = u'"{}\".\"traveler"'.format(settings.TRAVEL_REQUEST_SYSTEM)
 
-# class TravelGroup(models.Model):
-#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-#     traveler = models.ForeignKey(
-#         Traveler, on_delete=models.DO_NOTHING,
-#         related_name="group_travel_instance"
-#     )
-#     group_id = models.CharField(max_length=255)
-#     is_deleted = models.BooleanField(default=False)
-#     date_created = models.DateTimeField(auto_now_add=True)
+class StatusChange(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    traveler = models.ForeignKey(
+        Traveler, on_delete=models.DO_NOTHING,
+        related_name="status_change_track_instance"
+    )
+    status = models.CharField(max_length=255)
+    action_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="action_by",
+       null=True, blank=True
+    )
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
 
-#     def __str__(self):
-#         return str(self.group_id)
+    def __str__(self):
+        return str(self.traveler.tid)
 
-#     class Meta:
-#         db_table = u'"{}\".\"travel_group"'.format(settings.TRAVEL_REQUEST_SYSTEM)
+    class Meta:
+        db_table = u'"{}\".\"status_change"'.format(settings.TRAVEL_REQUEST_SYSTEM)
 
 class Trip(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

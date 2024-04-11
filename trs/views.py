@@ -73,7 +73,10 @@ class TrsViewSet(viewsets.ViewSet):
                 tid = shared_fxns.generate_unique_identifier()
 
                 if not send_to:
-                    return Response({"details": "Please select Send To!"}, status=status.HTTP_400_BAD_REQUEST)
+                    if 'USER' in roles:
+                        send_to = 'HOD'
+                    else:
+                        return Response({"details": "Please select Send To!"}, status=status.HTTP_400_BAD_REQUEST)
 
                 if requesting_for == 'OTHERS':
                     employees = list(payload.get('employees'))
@@ -159,6 +162,7 @@ class TrsViewSet(viewsets.ViewSet):
                         **traveler_raw
                     )
 
+                    # create trip instance
                     trip_raw = {
                         "traveler": traveler,
                         "route": route,
@@ -173,6 +177,18 @@ class TrsViewSet(viewsets.ViewSet):
                     models.Trip.objects.create(
                         **trip_raw
                     )
+
+                    # create approval instance
+                    if "HOD" in roles:
+                        raw = {
+                            "traveler": traveler,
+                            "approval_for": "HOD",
+                            "approved_by": authenticated_user,
+                        }  
+
+                        models.Approval.objects.create(
+                            **raw
+                        )
 
                     if salary_advance_required:
                         # save salary advances
@@ -340,13 +356,15 @@ class TrsViewSet(viewsets.ViewSet):
                 
                 with transaction.atomic():
 
-                    # if "CEO" in roles or "HOF" in roles:
-                    #     traveler.is_ceo_approved = True
                     if traveler_status == 'REJECTED':
                         traveler.rejected_by = authenticated_user
 
                     traveler.status = traveler_status
                     traveler.save()
+
+                    raw = {
+                        ""
+                    }
 
                     # Notify requestor
                     emails = [traveler.traveler.email]
@@ -358,7 +376,7 @@ class TrsViewSet(viewsets.ViewSet):
                                                 
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Travel Request Progress Updated", f"Travel Request: {traveler_id}")
+                    authenticated_user, authenticated_user, f"Travel Request Status: {traveler_status}", f"Travel Request: {traveler_id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -423,7 +441,7 @@ class TrsViewSet(viewsets.ViewSet):
                     
                     elif "CEO" in roles:
                         if not query:
-                            resp = models.Traveler.objects.filter(Q(is_hof_approved=True) & Q(mode_of_transport='FLIGHT'),is_deleted=False).order_by('-date_created')
+                            resp = models.Traveler.objects.filter(Q(requires_ceo_approval=True), is_deleted=False).order_by('-date_created')
 
                         if query == 'salary-advance':
                             targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
