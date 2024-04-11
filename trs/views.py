@@ -408,7 +408,7 @@ class TrsViewSet(viewsets.ViewSet):
                             targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
                             resp = [x.traveler for x in targets]
                         else:
-                            resp = models.Traveler.objects.filter(Q(traveler__department=request.user.department) | Q(department=request.user.department), is_deleted=False).order_by('-date_created')
+                            resp = models.Traveler.objects.filter(Q(traveler__department=request.user.department) | Q(department=request.user.department) | Q(created_by=request.user) | Q(requires_hod_approval=True) , is_deleted=False).order_by('-date_created')
 
                     elif "USER_MANAGER" in roles:
                         if query == 'salary-advance':
@@ -430,13 +430,13 @@ class TrsViewSet(viewsets.ViewSet):
                                 ]
                         else:
                             if "HOF" in roles:
-                                resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) | Q(is_hod_approved=True)).order_by('-date_created')
+                                resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) | Q(requires_slt_approval=True) | Q(requires_hof_approval=True)).order_by('-date_created')
                             else:
-                                resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user)).order_by('-date_created')
+                                resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)).order_by('-date_created')
 
                     elif "HOF" in roles:
                         if not query:
-                            resp = models.Traveler.objects.filter(Q(is_hod_approved=True),is_deleted=False).order_by('-date_created')
+                            resp = models.Traveler.objects.filter(Q(requires_hof_approval=True),is_deleted=False).order_by('-date_created')
 
                         if query == 'salary-advance':
                             # targets = models.AdvanceSalaryRequests.objects.filter(Q(status='REQUESTED')).order_by('-date_created')
