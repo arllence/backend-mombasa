@@ -2,6 +2,7 @@ import math
 from urllib import request
 from django.db.models import  Q
 from acl.serializers import UsersSerializer, FetchDepartmentSerializer
+from acl.utils.user_util import fetchusergroups as get_user_roles
 from trs import models
 from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -22,6 +23,7 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
     salary_advance = serializers.SerializerMethodField()
     administration = serializers.SerializerMethodField()
     approvals = serializers.SerializerMethodField()
+    is_slt_and_hof = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Traveler
@@ -74,6 +76,22 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return {} 
+        
+    def get_is_slt_and_hof(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            roles = get_user_roles(user_id)
+
+            if "SLT" in roles and "HOF" in roles:
+                return True
+            return False
+            
+        except (ValidationError, ObjectDoesNotExist):
+            return False
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False
 
 class TravelerSerializer(serializers.Serializer):
     # employee_no = serializers.CharField(max_length=500)
