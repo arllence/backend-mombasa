@@ -206,8 +206,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     elif send_to == 'SLT':
                         if department.slt:
-                            print(department.slt)
-                            managers_emails.append(department.slt.lead.email)
+                            managers_emails = [department.slt.lead.email]
                         else:
                             return Response({"details": "Selected Department has no SLT assigned !"}, status=status.HTTP_400_BAD_REQUEST)
                         
