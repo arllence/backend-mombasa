@@ -163,6 +163,10 @@ class ApprovalSerializer(serializers.Serializer):
     traveler = serializers.CharField(max_length=500)
     status = serializers.CharField(max_length=500)
 
+class TravelForwardingSerializer(serializers.Serializer):
+    traveler = serializers.CharField(max_length=500)
+    send_to = serializers.CharField(max_length=500)
+
 class CostingSerializer(serializers.Serializer):
     traveler = serializers.CharField(max_length=500)
     bill_settlement_by = serializers.CharField(max_length=500)
