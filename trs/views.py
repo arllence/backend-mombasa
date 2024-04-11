@@ -627,7 +627,7 @@ class TrsViewSet(viewsets.ViewSet):
                     raw = {
                         "traveler": traveler,
                         "status": traveler_status,
-                        "action_by": authenticated_user,
+                        "action_by": authenticated_user
                     }
 
                     models.StatusChange.objects.create(**raw)
