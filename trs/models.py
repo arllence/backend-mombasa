@@ -70,6 +70,28 @@ class Traveler(models.Model):
     class Meta:
         db_table = u'"{}\".\"traveler"'.format(settings.TRAVEL_REQUEST_SYSTEM)
 
+class Trip(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    traveler = models.ForeignKey(
+        Traveler, on_delete=models.DO_NOTHING,
+        related_name="traveler_instance"
+    )
+    route = models.TextField()
+    departure_date = models.DateField()
+    return_date = models.DateField()
+    accommodation = models.BooleanField(default=False)
+    visa_required_date = models.DateField(null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    
+
+    def __str__(self):
+        return str(self.traveler.tid)
+
+    class Meta:
+        db_table = u'"{}\".\"trip"'.format(settings.TRAVEL_REQUEST_SYSTEM)
+
+
 class StatusChange(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     traveler = models.ForeignKey(
@@ -91,26 +113,28 @@ class StatusChange(models.Model):
     class Meta:
         db_table = u'"{}\".\"status_change"'.format(settings.TRAVEL_REQUEST_SYSTEM)
 
-class Trip(models.Model):
+
+class TravelForwarding(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     traveler = models.ForeignKey(
         Traveler, on_delete=models.DO_NOTHING,
-        related_name="traveler_instance"
+        related_name="status_change_track_instance"
     )
-    route = models.TextField()
-    departure_date = models.DateField()
-    return_date = models.DateField()
-    accommodation = models.BooleanField(default=False)
-    visa_required_date = models.DateField(null=True, blank=True)
+    forward_from = models.CharField(max_length=255)
+    forward_to = models.CharField(max_length=255)
+    forward_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="forward_by",
+       null=True, blank=True
+    )
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
-    
 
     def __str__(self):
         return str(self.traveler.tid)
 
     class Meta:
-        db_table = u'"{}\".\"trip"'.format(settings.TRAVEL_REQUEST_SYSTEM)
+        db_table = u'"{}\".\"travel_forwarding"'.format(settings.TRAVEL_REQUEST_SYSTEM)
 
 
 class Approval(models.Model):
