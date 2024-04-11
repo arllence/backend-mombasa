@@ -44,8 +44,6 @@ class TrsViewSet(viewsets.ViewSet):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
 
-        
-
         if request.method == "POST":
 
             payload = request.data
@@ -189,6 +187,15 @@ class TrsViewSet(viewsets.ViewSet):
                         models.Approval.objects.create(
                             **raw
                         )
+
+                    # create forwarding instance
+                    raw = {
+                        "traveler": traveler,
+                        "forward_to": send_to,
+                        "forward_from": "CREATOR",
+                        "forward_by": authenticated_user,
+                    }
+                    models.TravelForwarding.objects.create(**raw)
 
                     if salary_advance_required:
                         # save salary advances
