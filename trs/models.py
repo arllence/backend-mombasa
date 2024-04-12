@@ -149,7 +149,7 @@ class Approval(models.Model):
        related_name="approver"
     )
     approval_for = models.CharField(max_length=255)
-    approval_msg = models.TextField(null=True, blank=True)
+    approval_msg = models.JSONField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
