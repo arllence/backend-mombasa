@@ -798,7 +798,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     # Notify recipient
                     subject = f"Travel Request Received [{traveler.tid}]"
-                    message = f"Hello. \nTravel Request: of ID {traveler.tid}\nhas been forwarded to you by {authenticated_user.first_name} {authenticated_user.first_name},\npending your action.\n\nRegards\nTRS-AKHK"
+                    message = f"Hello. \n\nTravel Request: of ID {traveler.tid}\nhas been forwarded to you by {authenticated_user.first_name} {authenticated_user.last_name},\npending your action.\n\nRegards\nTRS-AKHK"
 
                     send_mail(subject, message, 'notification@akhskenya.org', emails)
 
