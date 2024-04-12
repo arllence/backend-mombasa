@@ -96,7 +96,11 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
             roles = get_user_roles(user_id)
 
             if "SLT" in roles and "HOF" in roles:
-                return True
+                try:
+                    if obj.department.slt.lead.id == user_id:
+                        return True
+                except Exception as e:
+                    pass
             return False
             
         except (ValidationError, ObjectDoesNotExist):
