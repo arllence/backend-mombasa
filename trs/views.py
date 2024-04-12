@@ -352,7 +352,7 @@ class TrsViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 traveler_id = payload['traveler_id']
                 traveler_status = payload['status'].upper()
-                roles = user_util.fetchusergroups(request.user.id)  
+                # roles = user_util.fetchusergroups(request.user.id)  
 
                 try:
                     traveler = models.Traveler.objects.get(id=traveler_id)
@@ -371,6 +371,7 @@ class TrsViewSet(viewsets.ViewSet):
                     raw = {
                         "traveler": traveler,
                         "status": traveler_status,
+                        "status_for": '/'.join(roles),
                         "action_by": authenticated_user,
                     }
 
@@ -629,6 +630,7 @@ class TrsViewSet(viewsets.ViewSet):
                     raw = {
                         "traveler": traveler,
                         "status": traveler_status,
+                        "status_for": travel_status,
                         "action_by": authenticated_user
                     }
 

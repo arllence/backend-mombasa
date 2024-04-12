@@ -68,7 +68,7 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
 
     def get_approvals(self, obj):
         try:
-            request = models.StatusChange.objects.fetch(traveler=obj)
+            request = models.StatusChange.objects.filter(traveler=obj)
             serializer = FetchStatusChangeSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
@@ -149,7 +149,7 @@ class FetchAdvanceSalaryRequestsSerializer(serializers.ModelSerializer):
 
 
 class FetchStatusChangeSerializer(serializers.ModelSerializer):
-
+    action_by = UsersSerializer()
     class Meta:
         model = models.StatusChange
         fields = '__all__'
