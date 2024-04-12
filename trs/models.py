@@ -99,6 +99,7 @@ class StatusChange(models.Model):
         related_name="status_change_track_instance"
     )
     status = models.CharField(max_length=255)
+    status_for = models.CharField(max_length=255, null=True, blank=True)
     action_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
        related_name="action_by",
