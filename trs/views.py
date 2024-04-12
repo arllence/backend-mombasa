@@ -555,6 +555,7 @@ class TrsViewSet(viewsets.ViewSet):
                     is_hof = False
                     is_cash_office = False
                     is_transport_office = False
+                    is_administrator_office = False
 
                     traveler_status = "APPROVED"
 
@@ -580,6 +581,10 @@ class TrsViewSet(viewsets.ViewSet):
                         is_transport_office = True
                         approval_for = "TRANSPORT"
 
+                        approval_msg = payload.get('text')
+                        if not approval_msg:
+                            return Response({"details": "Number Plate / Date of Travel !"}, status=status.HTTP_400_BAD_REQUEST)
+
                     elif travel_status == "CASH_OFFICE":
                         is_cash_office = True
                         approval_for = "CASH_OFFICE"
@@ -589,7 +594,8 @@ class TrsViewSet(viewsets.ViewSet):
                             return Response({"details": "Amount / Transaction Code / Message Required !"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-                    is_existing = models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).exists()
+                    is_existing = models.Approval.objects.filter(Q(traveler=traveler) & 
+                                                                 Q(approval_for=approval_for)).exists()
 
                     raw = {
                         "traveler": traveler,
@@ -597,11 +603,12 @@ class TrsViewSet(viewsets.ViewSet):
                         "approved_by": authenticated_user,
                     }  
 
-                    if is_cash_office:
+                    if is_cash_office or is_transport_office:
                         raw.update({"approval_msg": approval_msg})
 
                     if is_existing:
-                        models.Approval.objects.filter(Q(traveler=traveler) & Q(approval_for=approval_for)).update(**raw)
+                        models.Approval.objects.filter(Q(traveler=traveler) & 
+                                                       Q(approval_for=approval_for)).update(**raw)
                     else:
                         models.Approval.objects.create(
                             **raw
