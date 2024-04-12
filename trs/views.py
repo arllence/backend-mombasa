@@ -436,8 +436,10 @@ class TrsViewSet(viewsets.ViewSet):
                                     if x.department.slt.lead == authenticated_user
                                 ]
                         else:
+                            resp = []
+                            pass
                             if "HOF" in roles:
-                                resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) | Q(requires_slt_approval=True) | Q(requires_hof_approval=True)).order_by('-date_created')
+                                resp = models.Traveler.objects.filter((Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)) | Q(requires_hof_approval=True), is_deleted=False).order_by('-date_created')
                             else:
                                 resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)).order_by('-date_created')
 
