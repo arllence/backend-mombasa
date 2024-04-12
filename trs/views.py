@@ -596,6 +596,8 @@ class TrsViewSet(viewsets.ViewSet):
                         
                         approval_msg.update({"date_created": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))})
 
+                        
+
 
                     is_existing = models.Approval.objects.filter(Q(traveler=traveler) & 
                                                                  Q(approval_for=approval_for)).first()
@@ -606,14 +608,17 @@ class TrsViewSet(viewsets.ViewSet):
                         "approved_by": authenticated_user,
                     }  
 
-                    if is_cash_office or is_transport_office:
+                    if is_cash_office:
+                        raw.update({"approval_msg": [approval_msg]})
+
+                    if is_transport_office:
                         raw.update({"approval_msg": approval_msg})
 
                     if is_existing:
                         is_update = True
                         # models.Approval.objects.filter(Q(traveler=traveler) & 
                         #                                Q(approval_for=approval_for)).update(**raw)
-                        previous_approval_msg = [is_existing.approval_msg]
+                        previous_approval_msg = is_existing.approval_msg
                         previous_approval_msg.append(approval_msg)
 
                         # update existing instance
@@ -646,7 +651,7 @@ class TrsViewSet(viewsets.ViewSet):
                     if is_cash_office:
                         def close_cash_office():
                             traveler_status = "CLOSED"
-                            traveler.travel_cost = traveler_status
+                            traveler.status = traveler_status
                             traveler.closed_by = authenticated_user
                             traveler.date_closed = datetime.datetime.now()
                             traveler.is_cash_office_approved = is_cash_office
@@ -658,6 +663,7 @@ class TrsViewSet(viewsets.ViewSet):
                             amount = 0
                             approval_msg = is_existing.approval_msg
 
+
                             for msg in approval_msg:
                                 amount += int(msg.get('amount',0))
 
@@ -666,6 +672,7 @@ class TrsViewSet(viewsets.ViewSet):
                         else:
                             if amount >= travel_cost:
                                 close_cash_office()
+
 
                     if is_transport_office:
                         traveler_status = "CLOSED"
