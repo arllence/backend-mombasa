@@ -624,8 +624,11 @@ class TrsViewSet(viewsets.ViewSet):
                         traveler.is_hof_approved = is_hof
 
                     if is_cash_office:
-                        traveler_status = "CLOSED"
-                        traveler.status = "CLOSED"
+                        amount = int(approval_msg.get('amount',0))
+                        travel_cost = int(traveler.travel_cost)
+                        if amount >= travel_cost:
+                            traveler_status = "CLOSED"
+                            traveler.travel_cost = traveler_status
                         traveler.closed_by = authenticated_user
                         traveler.date_closed = datetime.datetime.now()
                         traveler.is_cash_office_approved = is_cash_office
