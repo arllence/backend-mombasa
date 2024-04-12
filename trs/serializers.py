@@ -23,6 +23,7 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
     salary_advance = serializers.SerializerMethodField()
     administration = serializers.SerializerMethodField()
     approvals = serializers.SerializerMethodField()
+    cash_office = serializers.SerializerMethodField()
     is_slt_and_hof = serializers.SerializerMethodField()
     forwardings = serializers.SerializerMethodField()
     is_department_slt = serializers.SerializerMethodField()
@@ -78,6 +79,25 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return {} 
+        
+    def get_cash_office(self, obj):
+        try:
+            approval_msg = models.Approval.objects.filter(
+                traveler=obj,approval_for='CASH_OFFICE').order_by('-date_created').first().approval_msg
+            
+            if isinstance(approval_msg, list):
+                return approval_msg
+            elif isinstance(approval_msg, dict):
+                return [approval_msg]
+            else:
+                return []
+            
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
         
     def get_forwardings(self, obj):
         try:
