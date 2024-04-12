@@ -680,7 +680,8 @@ class TrsViewSet(viewsets.ViewSet):
                         "action_by": authenticated_user
                     }
 
-                    models.StatusChange.objects.create(**raw)
+                    if not is_update:
+                        models.StatusChange.objects.create(**raw)
 
                     # Notify the requestor
                     if is_hod:
