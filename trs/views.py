@@ -584,6 +584,7 @@ class TrsViewSet(viewsets.ViewSet):
                         approval_msg = payload.get('text')
                         if not approval_msg:
                             return Response({"details": "Number Plate / Date of Travel !"}, status=status.HTTP_400_BAD_REQUEST)
+                        approval_msg.update({"date_created": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))})
 
                     elif travel_status == "CASH_OFFICE":
                         is_cash_office = True
@@ -592,6 +593,8 @@ class TrsViewSet(viewsets.ViewSet):
                         approval_msg = payload.get('text')
                         if not approval_msg:
                             return Response({"details": "Amount / Transaction Code / Message Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        approval_msg.update({"date_created": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))})
 
 
                     is_existing = models.Approval.objects.filter(Q(traveler=traveler) & 
