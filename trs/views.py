@@ -188,6 +188,16 @@ class TrsViewSet(viewsets.ViewSet):
                             **raw
                         )
 
+                        # track status change
+                        raw = {
+                            "traveler": traveler,
+                            "status": "APPROVED",
+                            "status_for": "HOD",
+                            "action_by": authenticated_user
+                        }
+
+                        models.StatusChange.objects.create(**raw)
+
                     # create forwarding instance
                     raw = {
                         "traveler": traveler,
