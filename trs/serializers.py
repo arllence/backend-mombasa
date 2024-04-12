@@ -24,6 +24,7 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
     administration = serializers.SerializerMethodField()
     approvals = serializers.SerializerMethodField()
     is_slt_and_hof = serializers.SerializerMethodField()
+    forwardings = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Traveler
@@ -67,8 +68,20 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
 
     def get_approvals(self, obj):
         try:
-            request = models.StatusChange.objects.get(traveler=obj)
-            serializer = FetchStatusChangeSerializer(request, many=False)
+            request = models.StatusChange.objects.fetch(traveler=obj)
+            serializer = FetchStatusChangeSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+        
+    def get_forwardings(self, obj):
+        try:
+            request = models.TravelForwarding.objects.filter(traveler=obj)
+            serializer = FetchTravelForwardingSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return {}
@@ -139,6 +152,12 @@ class FetchStatusChangeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.StatusChange
+        fields = '__all__'
+
+class FetchTravelForwardingSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = models.TravelForwarding
         fields = '__all__'
 
 class PatchAdvanceSalaryRequestsSerializer(serializers.Serializer):
