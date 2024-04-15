@@ -676,9 +676,10 @@ class TrsViewSet(viewsets.ViewSet):
 
                     if is_transport_office:
                         traveler_status = "CLOSED"
-                        traveler.status = "CLOSED"
-                        traveler.closed_by = authenticated_user
-                        traveler.date_closed = datetime.datetime.now()
+                        if traveler.status != "CLOSED":
+                            traveler.status = "CLOSED"
+                            traveler.closed_by = authenticated_user
+                            traveler.date_closed = datetime.datetime.now()
                         traveler.is_transport_dpt_approved = is_transport_office
 
                     traveler.save()
