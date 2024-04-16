@@ -24,6 +24,7 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
     administration = serializers.SerializerMethodField()
     approvals = serializers.SerializerMethodField()
     cash_office = serializers.SerializerMethodField()
+    transport = serializers.SerializerMethodField()
     is_slt_and_hof = serializers.SerializerMethodField()
     forwardings = serializers.SerializerMethodField()
     is_department_slt = serializers.SerializerMethodField()
@@ -91,6 +92,20 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
                 return [approval_msg]
             else:
                 return []
+            
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
+    
+    def get_transport_office(self, obj):
+        try:
+            approval_msg = models.Approval.objects.filter(
+                traveler=obj,approval_for='TRANSPORT').order_by('-date_created').first().approval_msg
+            
+            return approval_msg
             
         except (ValidationError, ObjectDoesNotExist):
             return []
