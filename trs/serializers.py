@@ -24,7 +24,7 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
     administration = serializers.SerializerMethodField()
     approvals = serializers.SerializerMethodField()
     cash_office = serializers.SerializerMethodField()
-    transport = serializers.SerializerMethodField()
+    transport_office = serializers.SerializerMethodField()
     is_slt_and_hof = serializers.SerializerMethodField()
     forwardings = serializers.SerializerMethodField()
     is_department_slt = serializers.SerializerMethodField()

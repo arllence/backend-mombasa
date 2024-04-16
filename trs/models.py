@@ -196,6 +196,7 @@ class Costing(models.Model):
     cost = models.JSONField()
     accommodation = models.JSONField()
     bill_settlement_by = models.CharField(max_length=255)
+    air_ticket = models.FileField(upload_to='documents/air_ticket/', null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 

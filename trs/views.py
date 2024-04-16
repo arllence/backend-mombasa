@@ -934,8 +934,11 @@ class TrsViewSet(viewsets.ViewSet):
 
         if request.method == "POST":
 
-            payload = request.data
+            # payload = request.data
             roles = user_util.fetchusergroups(request.user.id) 
+
+            payload = json.loads(request.data['payload'])
+            air_ticket_file = request.FILES.get('ticket', None)
 
             if "ADMINISTRATOR" not in roles:
                 return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
@@ -944,7 +947,6 @@ class TrsViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
-                travel_order_no = payload['travel_order_no']
                 traveler = payload['traveler']
                 bill_settlement_by = payload['bill_settlement_by']
                 accommodation = payload.get('accommodation')
