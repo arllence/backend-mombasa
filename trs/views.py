@@ -667,11 +667,17 @@ class TrsViewSet(viewsets.ViewSet):
                             for msg in approval_msg:
                                 amount += int(msg.get('amount',0))
 
-                            if amount >= travel_cost:
+                            if amount == travel_cost:
                                 close_cash_office()
+                            elif amount > travel_cost:
+                                return Response({"details": "Disbursement cannot be more than requested amount!"}, 
+                                                status=status.HTTP_400_BAD_REQUEST)
                         else:
-                            if amount >= travel_cost:
+                            if amount == travel_cost:
                                 close_cash_office()
+                            elif amount > travel_cost:
+                                return Response({"details": "Disbursement cannot be more than requested amount!"}, 
+                                                status=status.HTTP_400_BAD_REQUEST)
 
 
                     if is_transport_office:
