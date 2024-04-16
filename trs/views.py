@@ -964,6 +964,7 @@ class TrsViewSet(viewsets.ViewSet):
                         "bill_settlement_by": bill_settlement_by,
                         "accommodation": accommodation,
                         "cost": cost,
+                        "air_ticket": air_ticket_file,
                         "created_by": authenticated_user
                     }  
 
