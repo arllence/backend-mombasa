@@ -576,6 +576,15 @@ class TrsViewSet(viewsets.ViewSet):
                     elif travel_status == "CEO":
                         is_ceo = True
                         approval_for = "CEO"
+                        traveler.requires_cash_office_approval = True
+
+                        if traveler.mode_of_transport == 'FLIGHT':
+                            traveler.requires_administrator_approval = True
+                        elif traveler.mode_of_transport == 'HOSPITAL VEHICLE':
+                            traveler.requires_transport_approval = True
+
+                            
+
 
                     elif travel_status == "TRANSPORT":
                         is_transport_office = True
@@ -738,37 +747,39 @@ class TrsViewSet(viewsets.ViewSet):
 
                     #     send_mail(subject, message, 'notification@akhskenya.org', emails)
 
-                    # # Notify ADMINISTRATOR
-                    # if is_ceo:
-                    #     emails = list(get_user_model().objects.filter(Q(groups__name='ADMINISTRATOR')).values_list('email', flat=True))
-                    #     subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
-                    #     message = f"Hello. \nTravel Request: {traveler.tid} has been approved by both HOD/SLT and HOF/CEO, and is now pending administration and costing\n\nRegards\nTRS-AKHK"
+                    # Notify ADMINISTRATOR
+                    if is_ceo and traveler.mode_of_transport == 'FLIGHT':
+                        emails = list(get_user_model().objects.filter(Q(groups__name='ADMINISTRATOR')).values_list('email', flat=True))
+                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
+                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by both HOD/SLT and HOF/CEO, and is now pending administration and costing\n\nRegards\nTRS-AKHK"
 
-                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
 
-                    # # Notify CASH OFFICE
-                    # if is_hof and traveler.mode_of_transport == 'PSV':
-                    #     emails = list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE')).values_list('email', flat=True))
-                    #     subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
-                    #     message = f"Hello. \nTravel Request: {traveler.tid} has been approved by finance office and is now pending your action\n\nRegards\nTRS-AKHK"
+                    # Notify CASH OFFICE
+                    if is_ceo:
+                        emails = list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE')).values_list('email', flat=True))
+                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
+                        message = f"Hello. \nTravel Request: {traveler.tid} has been forwarded to you,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
-                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
 
                     # # Notify TRANSPORT
-                    # if is_hof and traveler.mode_of_transport == 'HOSPITAL VEHICLE':
-                    #     emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
-                    #     subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
-                    #     message = f"Hello. \nTravel Request: {traveler.tid} has been approved by finance office and is now pending your action\n\nRegards\nTRS-AKHK"
+                    if is_ceo and traveler.mode_of_transport == 'HOSPITAL VEHICLE':
+                        emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
+                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
+                        message = f"Hello. \nTravel Request: {traveler.tid} has been forwarded to you,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
-                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
 
                 user_util.log_account_activity(
-                    authenticated_user, traveler.created_by, "Travel Request approval", f"Approval Executed TID: {str(traveler.id)}")
+                    authenticated_user, traveler.created_by, "Travel Request approval", 
+                    f"Approval Executed TID: {str(traveler.id)}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
             else:
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
             
     @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
