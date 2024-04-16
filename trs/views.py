@@ -979,7 +979,6 @@ class TrsViewSet(viewsets.ViewSet):
 
                     traveler.status = "CLOSED"
                     traveler.closed_by = authenticated_user
-                    traveler.travel_order_no = travel_order_no
                     traveler.is_administrator_approved = True
                     traveler.date_closed = datetime.datetime.now()
                     traveler.save()
