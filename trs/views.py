@@ -701,11 +701,9 @@ class TrsViewSet(viewsets.ViewSet):
                                     if disbursement_type == msg.get('disbursement_type'):
                                         amount += int(msg.get('amount',0))
 
-                                print('is Travel Advance')
                                 advance = models.AdvanceSalaryRequests.objects.get(traveler=traveler)
                                 travel_cost = advance.amount
-                                print(amount)
-                                print(travel_cost)
+                                
                                 if amount == travel_cost:
                                     advance.status = "CLOSED"
                                     advance.save()
