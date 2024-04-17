@@ -100,8 +100,9 @@ class TrsViewSet(viewsets.ViewSet):
                         advance_requests = list(payload.get('advance_requests'))
                         if not advance_requests:
                             return Response({"details": "Target Employees Required !"}, status=status.HTTP_400_BAD_REQUEST)
-                    if int(salary_amount_required) < 1:
-                        return Response({"details": "Advance Amount Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                    else:
+                        if int(salary_amount_required) < 1:
+                            return Response({"details": "Advance Amount Required !"}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 # update employee no
@@ -144,6 +145,9 @@ class TrsViewSet(viewsets.ViewSet):
 
                     if not is_individual:
                         traveler_raw.update({"employees": employees})
+
+                    if salary_advance_required and not is_individual:
+                        traveler_raw.update({"advance_requests": advance_requests})
 
                     if send_to == 'CEO':
                         traveler_raw.update({"requires_ceo_approval": True})
