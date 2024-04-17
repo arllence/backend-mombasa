@@ -605,6 +605,7 @@ class TrsViewSet(viewsets.ViewSet):
                             return Response({"details": "Amount / Transaction Code / Message Required !"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         approval_msg.update({"date_created": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))})
+                        original_approval_msg = approval_msg
 
 
                     is_existing = models.Approval.objects.filter(Q(traveler=traveler) & 
@@ -657,7 +658,7 @@ class TrsViewSet(viewsets.ViewSet):
                     if is_cash_office:
                         def update_approval():
                             previous_approval_msg = is_existing.approval_msg
-                            previous_approval_msg.append(approval_msg)
+                            previous_approval_msg.append(original_approval_msg)
 
                             # update existing instance
                             is_existing.approval_msg = previous_approval_msg
@@ -676,7 +677,8 @@ class TrsViewSet(viewsets.ViewSet):
                         travel_cost = int(traveler.travel_cost)
                         
                         if is_update:
-                            amount = 0
+                            print("is update")
+                            amount = int(payload.get('text').get('amount'))
                             approval_msg = is_existing.approval_msg
 
                             for msg in approval_msg:
@@ -692,21 +694,31 @@ class TrsViewSet(viewsets.ViewSet):
                                 elif amount > travel_cost:
                                     return Response({"details": "Disbursement cannot be more than requested amount!"}, 
                                                     status=status.HTTP_400_BAD_REQUEST)
+                                
                             elif disbursement_type == 'Travel Advance':
+                                amount = int(payload.get('text').get('amount'))
+                                for msg in approval_msg:
+                                    if disbursement_type == msg.get('disbursement_type'):
+                                        amount += int(msg.get('amount',0))
+
+                                print('is Travel Advance')
                                 advance = models.AdvanceSalaryRequests.objects.get(traveler=traveler)
                                 travel_cost = advance.amount
+                                print(amount)
+                                print(travel_cost)
                                 if amount == travel_cost:
                                     advance.status = "CLOSED"
                                     advance.save()
-                                elif amount < travel_cost:
-                                    update_approval()
                                 elif amount > travel_cost:
                                     return Response({"details": "Disbursement cannot be more than requested amount!"}, 
                                                     status=status.HTTP_400_BAD_REQUEST)
+                                update_approval()
                         else:
                             if disbursement_type == 'Travel Cost':
+
                                 if amount == travel_cost:
                                     close_cash_office()
+
                                 elif amount > travel_cost:
                                     createdInstance.approval_msg = []
                                     createdInstance.save()
