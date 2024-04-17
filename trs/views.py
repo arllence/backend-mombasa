@@ -583,8 +583,6 @@ class TrsViewSet(viewsets.ViewSet):
                         elif traveler.mode_of_transport == 'HOSPITAL VEHICLE':
                             traveler.requires_transport_approval = True
 
-                            
-
 
                     elif travel_status == "TRANSPORT":
                         is_transport_office = True
@@ -593,6 +591,7 @@ class TrsViewSet(viewsets.ViewSet):
                         approval_msg = payload.get('text')
                         if not approval_msg:
                             return Response({"details": "Number Plate / Date of Travel !"}, status=status.HTTP_400_BAD_REQUEST)
+                        
                         approval_msg.update({"date_created": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))})
 
                     elif travel_status == "CASH_OFFICE":
@@ -600,12 +599,12 @@ class TrsViewSet(viewsets.ViewSet):
                         approval_for = "CASH_OFFICE"
 
                         approval_msg = payload.get('text')
+                        disbursement_type =  approval_msg.get('disbursement_type')
+
                         if not approval_msg:
                             return Response({"details": "Amount / Transaction Code / Message Required !"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         approval_msg.update({"date_created": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))})
-
-                        
 
 
                     is_existing = models.Approval.objects.filter(Q(traveler=traveler) & 
@@ -625,19 +624,17 @@ class TrsViewSet(viewsets.ViewSet):
 
                     if is_existing:
                         is_update = True
-                        # models.Approval.objects.filter(Q(traveler=traveler) & 
-                        #                                Q(approval_for=approval_for)).update(**raw)
-                        previous_approval_msg = is_existing.approval_msg
-                        previous_approval_msg.append(approval_msg)
+                        # previous_approval_msg = is_existing.approval_msg
+                        # previous_approval_msg.append(approval_msg)
 
-                        # update existing instance
-                        is_existing.approval_msg = previous_approval_msg
-                        is_existing.approved_by = authenticated_user
-                        is_existing.save()
+                        # # update existing instance
+                        # is_existing.approval_msg = previous_approval_msg
+                        # is_existing.approved_by = authenticated_user
+                        # is_existing.save()
 
                     else:
                         is_update = False
-                        models.Approval.objects.create(
+                        createdInstance = models.Approval.objects.create(
                             **raw
                         )
 
@@ -658,12 +655,22 @@ class TrsViewSet(viewsets.ViewSet):
                         traveler.is_hof_approved = is_hof
 
                     if is_cash_office:
+                        def update_approval():
+                            previous_approval_msg = is_existing.approval_msg
+                            previous_approval_msg.append(approval_msg)
+
+                            # update existing instance
+                            is_existing.approval_msg = previous_approval_msg
+                            is_existing.approved_by = authenticated_user
+                            is_existing.save()
+
                         def close_cash_office():
                             traveler_status = "CLOSED"
                             traveler.status = traveler_status
                             traveler.closed_by = authenticated_user
                             traveler.date_closed = datetime.datetime.now()
                             traveler.is_cash_office_approved = is_cash_office
+
 
                         amount = int(approval_msg.get('amount',0))
                         travel_cost = int(traveler.travel_cost)
@@ -672,22 +679,50 @@ class TrsViewSet(viewsets.ViewSet):
                             amount = 0
                             approval_msg = is_existing.approval_msg
 
-
                             for msg in approval_msg:
-                                amount += int(msg.get('amount',0))
+                                if disbursement_type == msg.get('disbursement_type'):
+                                    amount += int(msg.get('amount',0))
 
-                            if amount == travel_cost:
-                                close_cash_office()
-                            elif amount > travel_cost:
-                                return Response({"details": "Disbursement cannot be more than requested amount!"}, 
-                                                status=status.HTTP_400_BAD_REQUEST)
+                            if disbursement_type == 'Travel Cost':
+                                if amount == travel_cost:
+                                    close_cash_office()
+                                    update_approval()
+                                elif amount < travel_cost:
+                                    update_approval()
+                                elif amount > travel_cost:
+                                    return Response({"details": "Disbursement cannot be more than requested amount!"}, 
+                                                    status=status.HTTP_400_BAD_REQUEST)
+                            elif disbursement_type == 'Travel Advance':
+                                advance = models.AdvanceSalaryRequests.objects.get(traveler=traveler)
+                                travel_cost = advance.amount
+                                if amount == travel_cost:
+                                    advance.status = "CLOSED"
+                                    advance.save()
+                                elif amount < travel_cost:
+                                    update_approval()
+                                elif amount > travel_cost:
+                                    return Response({"details": "Disbursement cannot be more than requested amount!"}, 
+                                                    status=status.HTTP_400_BAD_REQUEST)
                         else:
-                            if amount == travel_cost:
-                                close_cash_office()
-                            elif amount > travel_cost:
-                                return Response({"details": "Disbursement cannot be more than requested amount!"}, 
-                                                status=status.HTTP_400_BAD_REQUEST)
-
+                            if disbursement_type == 'Travel Cost':
+                                if amount == travel_cost:
+                                    close_cash_office()
+                                elif amount > travel_cost:
+                                    createdInstance.approval_msg = []
+                                    createdInstance.save()
+                                    return Response({"details": "Disbursement cannot be more than requested amount!"}, 
+                                                    status=status.HTTP_400_BAD_REQUEST)
+                            elif disbursement_type == 'Travel Advance':
+                                advance = models.AdvanceSalaryRequests.objects.get(traveler=traveler)
+                                travel_cost = advance.amount
+                                if amount == travel_cost:
+                                    advance.status = "CLOSED"
+                                    advance.save()
+                                elif amount > travel_cost:
+                                    createdInstance.approval_msg = []
+                                    createdInstance.save()
+                                    return Response({"details": "Disbursement cannot be more than requested amount!"}, 
+                                                    status=status.HTTP_400_BAD_REQUEST)
 
                     if is_transport_office:
                         traveler_status = "CLOSED"

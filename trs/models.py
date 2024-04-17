@@ -172,7 +172,7 @@ class AdvanceSalaryRequests(models.Model):
        null=True, blank=True
     )
     status = models.CharField(max_length=255, default='REQUESTED')
-    amount = models.CharField(max_length=255)
+    amount = models.BigIntegerField(default=0)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
