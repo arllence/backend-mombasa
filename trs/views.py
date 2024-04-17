@@ -98,8 +98,14 @@ class TrsViewSet(viewsets.ViewSet):
                 else:
                     if requesting_for == 'OTHERS':
                         advance_requests = list(payload.get('advance_requests'))
+
                         if not advance_requests:
                             return Response({"details": "Target Employees Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        salary_amount_required = 0
+                        for item in advance_requests:
+                            salary_amount_required += int(item['amount'])
+
                     else:
                         if int(salary_amount_required) < 1:
                             return Response({"details": "Advance Amount Required !"}, status=status.HTTP_400_BAD_REQUEST)
