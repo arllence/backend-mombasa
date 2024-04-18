@@ -1189,7 +1189,6 @@ class TRSReportsViewSet(viewsets.ViewSet):
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
         quote_status = request.query_params.get('status')
-        assigned = request.query_params.get('assigned')
         date = False
 
         if date_to and date_from:
@@ -1218,43 +1217,74 @@ class TRSReportsViewSet(viewsets.ViewSet):
         if quote_status:
             q_filters &= Q(status=quote_status)
 
-        if not q_filters:
+
+        if q_filters:
+
+            resp = models.Traveler.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            
+        else:
             roles = user_util.fetchusergroups(request.user.id)  
 
-            if assigned:
-                quote_ids = models.QuoteAssignee.objects.filter(Q(assigned=request.user) & Q(is_deleted=False)).values_list('quote__id', flat=True)
-                resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(id__in=quote_ids)).order_by('-date_created')[:50]
+            if "HOD" in roles:
+                resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(created_by=request.user)).order_by('-date_created')[:50]
 
+            else:
+                resp = models.Traveler.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
 
-            if "MMD" in roles or "USER_MANAGER" in roles:
-                resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+        resp = serializers.FetchTravelerSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
-            elif "USER" in roles:
-                resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')[:50]
-
-            
-
-
-        # if department and date and status:
-        #     q_filters &= Q(create_date_range())
-        # elif department and date:
-        #     q_filters &= Q(create_date_range())
-        # elif status and menu_type:
-        #     q_filters &= Q(patient__menu=menu_type)
-        # elif meal_type and menu_type:
-        #     q_filters &= Q(patient__menu=menu_type)
-        #     q_filters &= Q(meal_type=meal_type)
-        
-
-        resp = models.Quote.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-        resp = serializers.FetchQuoteSerializer(resp, many=True, context={"user_id":request.user.id}).data
         return Response(resp, status=status.HTTP_200_OK)
         
-        # except (ValidationError, ObjectDoesNotExist):
-        #     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-        # except Exception as e:
-        #     print(e)
-        #     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+    @action(methods=["GET",],
+            detail=False,
+            url_path="transport",
+            url_name="transport")
+    def transport(self, request):
+                    
+        department = request.query_params.get('department')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        # quote_status = request.query_params.get('status')
+        date = False
+
+        if date_to and date_from:
+            date = True
+
+        def create_date_range(date_from,date_to):
+            # Convert the string dates to datetime objects
+            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+
+            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+
+            return q_filters
+
+        q_filters = Q(approval_for='TRANSPORT')
+
+        if department:
+            q_filters &= Q(department=department)
+
+        if date_from or date_to:
+            if not date:
+                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
+            q_filters &= create_date_range(date_from,date_to)
+            
+        # if quote_status:
+        #     q_filters &= Q(status=quote_status)
+
+
+        if q_filters:
+
+            resp = models.Approval.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            
+        else:
+            roles = user_util.fetchusergroups(request.user.id)  
+
+            resp = models.Approval.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+
+        resp = serializers.FullFetchApprovalSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+        return Response(resp, status=status.HTTP_200_OK)
         
 class TRSAnalyticsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)

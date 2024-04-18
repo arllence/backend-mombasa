@@ -13,6 +13,10 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 class GeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
 
+class SlimFetchTravelerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Traveler
+        fields = '__all__'
 
 class FetchTravelerSerializer(serializers.ModelSerializer):
     traveler = UsersSerializer()
@@ -216,6 +220,14 @@ class PatchAdvanceSalaryRequestsSerializer(serializers.Serializer):
 
 class FetchApprovalSerializer(serializers.ModelSerializer):
     approved_by = UsersSerializer()
+
+    class Meta:
+        model = models.Approval
+        fields = '__all__'
+
+class FullFetchApprovalSerializer(serializers.ModelSerializer):
+    approved_by = UsersSerializer()
+    traveler = SlimFetchTravelerSerializer()
 
     class Meta:
         model = models.Approval
