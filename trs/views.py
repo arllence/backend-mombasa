@@ -993,8 +993,8 @@ class TrsViewSet(viewsets.ViewSet):
                         return Response({"details": "Not Permitted !"}, status=status.HTTP_400_BAD_REQUEST)
 
                     # Notify the requestor
-                    subject = f"Salary Advance Request {update_status.capitalize()}  [TRS-AKHK]"
-                    message = f"Hello, \nYour Advance Salary Request for travel:{salaryRequest.traveler.tid} has been {update_status.capitalize()} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
+                    subject = f"Travel Advance Request {update_status.capitalize()}  [TRS-AKHK]"
+                    message = f"Hello, \nYour Advance Travel Request for travel:{salaryRequest.traveler.tid} has been {update_status.capitalize()} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
 
                     try:
                         send_mail(subject, message, 'notification@akhskenya.org', [salaryRequest.traveler.traveler.email])
@@ -1002,7 +1002,7 @@ class TrsViewSet(viewsets.ViewSet):
                         pass
 
                 user_util.log_account_activity(
-                    authenticated_user, salaryRequest.traveler.traveler, "Salary Request approval", f"Approval Executed instance ID: {str(salaryRequest.id)}")
+                    authenticated_user, salaryRequest.traveler.created_by, "Travel Request approval", f"Approval Executed instance ID: {str(salaryRequest.id)}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -1173,7 +1173,7 @@ class TrsViewSet(viewsets.ViewSet):
     #         else:
     #             return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-class MMQSReportsViewSet(viewsets.ViewSet):
+class TRSReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]
 
     def get_queryset(self):
@@ -1181,9 +1181,9 @@ class MMQSReportsViewSet(viewsets.ViewSet):
 
     @action(methods=["GET",],
             detail=False,
-            url_path="quotation",
-            url_name="quotation")
-    def quotation_reports(self, request):
+            url_path="requests",
+            url_name="requests")
+    def requests(self, request):
                     
         department = request.query_params.get('department')
         date_from = request.query_params.get('date_from')
