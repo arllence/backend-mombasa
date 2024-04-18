@@ -251,8 +251,10 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify selected send to
                     subject = f"Travel Request {tid} Received [TRS-AKHK]"
                     message = f"Hello, \nA new travel request: {tid} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
-
-                    send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                    try:
+                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                    except Exception as e:
+                        pass
 
                     # Notify the hof
                     if salary_advance_required:
@@ -261,7 +263,10 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Advance Request {tid} Received [TRS-AKHK]"
                         message = f"Hello, \nSalary Travel Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
 
-                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        try:
+                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        except Exception as e:
+                            pass
 
    
                 user_util.log_account_activity(
@@ -358,7 +363,10 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request: {traveler.tid} Has Been Resubmitted [TRS-AKHK]"
                         message = f"Hello, \nTravel Request: {traveler.tid} has been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
 
-                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        try:
+                            send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        except Exception as e:
+                            pass
 
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Travel Request updated", f"TID: {traveler_id}")
@@ -407,7 +415,10 @@ class TrsViewSet(viewsets.ViewSet):
                     subject = f"Travel Request: {traveler.tid} Progress Update [TRS-AKHK]"
                     message = f"Hello, \nThe Request:{traveler.tid} has been marked as {traveler_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
 
-                    send_mail(subject, message, 'notification@akhskenya.org', emails)
+                    try:
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+                    except Exception as e:
+                        pass
                                                 
 
                 user_util.log_account_activity(
@@ -452,20 +463,18 @@ class TrsViewSet(viewsets.ViewSet):
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
 
                     elif "SLT" in roles:
-                        if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
-                            resp = [
-                                    x.traveler 
-                                    for x in targets 
-                                    if x.department.slt.lead == authenticated_user
-                                ]
-                        else:
-                            resp = []
-                            pass
-                            if "HOF" in roles:
-                                resp = models.Traveler.objects.filter((Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)) | Q(requires_hof_approval=True), is_deleted=False).order_by('-date_created')
+                        resp = []
+                        if "HOF" in roles:
+
+                            if query == 'salary-advance':
+                                # targets = models.AdvanceSalaryRequests.objects.filter(Q(status='REQUESTED')).order_by('-date_created')
+                                targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
+                                resp = [x.traveler for x in targets]
                             else:
-                                resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)).order_by('-date_created')
+                                resp = models.Traveler.objects.filter((Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)) | Q(requires_hof_approval=True), is_deleted=False).order_by('-date_created')
+
+                        else:
+                            resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)).order_by('-date_created')
 
                     elif "HOF" in roles:
                         if not query:
@@ -475,6 +484,7 @@ class TrsViewSet(viewsets.ViewSet):
                             # targets = models.AdvanceSalaryRequests.objects.filter(Q(status='REQUESTED')).order_by('-date_created')
                             targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
                             resp = [x.traveler for x in targets]
+                            print(resp)
                     
                     elif "CEO" in roles:
                         if not query:
@@ -691,7 +701,6 @@ class TrsViewSet(viewsets.ViewSet):
                         travel_cost = int(traveler.travel_cost)
                         
                         if is_update:
-                            print("is update")
                             amount = int(payload.get('text').get('amount'))
                             approval_msg = is_existing.approval_msg
 
@@ -788,7 +797,10 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
                         message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by Transport Office.\n\nRegards\nTRS-AKHK"
 
-                    send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
+                    try:
+                        send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
+                    except Exception as e:
+                        pass
 
                     # # Notify HOF
                     # if is_slt and traveler_status == 'APPROVED':
@@ -812,7 +824,10 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by both HOD/SLT and HOF/CEO, and is now pending administration and costing\n\nRegards\nTRS-AKHK"
 
-                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        try:
+                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        except Exception as e:
+                            pass
 
                     # Notify CASH OFFICE
                     if is_ceo:
@@ -820,7 +835,10 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been forwarded to you,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
-                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        try:
+                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        except Exception as e:
+                            pass
 
                     # # Notify TRANSPORT
                     if is_ceo and traveler.mode_of_transport == 'HOSPITAL VEHICLE':
@@ -828,7 +846,10 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been forwarded to you,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
-                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        try:
+                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        except Exception as e:
+                            pass
 
                 user_util.log_account_activity(
                     authenticated_user, traveler.created_by, "Travel Request approval", 
@@ -922,7 +943,10 @@ class TrsViewSet(viewsets.ViewSet):
                     subject = f"Travel Request Received [{traveler.tid}]"
                     message = f"Hello. \n\nTravel Request: of ID {traveler.tid}\nhas been forwarded to you by {authenticated_user.first_name} {authenticated_user.last_name},\npending your action.\n\nRegards\nTRS-AKHK"
 
-                    send_mail(subject, message, 'notification@akhskenya.org', emails)
+                    try:
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+                    except Exception as e:
+                        pass
 
 
                 user_util.log_account_activity(
@@ -972,7 +996,10 @@ class TrsViewSet(viewsets.ViewSet):
                     subject = f"Salary Advance Request {update_status.capitalize()}  [TRS-AKHK]"
                     message = f"Hello, \nYour Advance Salary Request for travel:{salaryRequest.traveler.tid} has been {update_status.capitalize()} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
 
-                    send_mail(subject, message, 'notification@akhskenya.org', [salaryRequest.traveler.traveler.email])
+                    try:
+                        send_mail(subject, message, 'notification@akhskenya.org', [salaryRequest.traveler.traveler.email])
+                    except Exception as e:
+                        pass
 
                 user_util.log_account_activity(
                     authenticated_user, salaryRequest.traveler.traveler, "Salary Request approval", f"Approval Executed instance ID: {str(salaryRequest.id)}")
@@ -1046,7 +1073,10 @@ class TrsViewSet(viewsets.ViewSet):
                     subject = f"Travel Request {traveler.tid} Closed  [TRS-AKHK]"
                     message = f"Dear {traveler.created_by.first_name}, \nYour Transport Request: {traveler.tid},  has been fully processed and closed.\nThank you for your patience.\n\nRegards\nTRS-AKHK"
 
-                    send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
+                    try:
+                        send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
+                    except Exception as e:
+                        pass
 
                 user_util.log_account_activity(
                     authenticated_user, traveler.created_by, "Travel Request closed", f"TID: {str(traveler.id)}")
