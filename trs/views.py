@@ -447,7 +447,8 @@ class TrsViewSet(viewsets.ViewSet):
                     if "HOD" in roles:
 
                         if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
+                            targets = models.AdvanceSalaryRequests.objects.filter(
+                                Q(is_deleted=False) & Q(traveler__department=request.user.department)).order_by('-date_created')
                             resp = [x.traveler for x in targets]
 
                         elif query == 'pending':
@@ -518,6 +519,10 @@ class TrsViewSet(viewsets.ViewSet):
 
                         if query == 'pending':
                             resp = models.Traveler.objects.filter(Q(requires_administrator_approval=True) & Q(is_administrator_approved=False), is_deleted=False).order_by('-date_created')
+
+                        elif query == 'salary-advance':
+                            resp = []
+
                         else:
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(requires_administrator_approval=True) & Q(status__in=allowed_statuses)).order_by('-date_created')
 
@@ -528,6 +533,11 @@ class TrsViewSet(viewsets.ViewSet):
                         if query == 'pending':
                             print("is pending")
                             resp = models.Traveler.objects.filter(Q(requires_cash_office_approval=True) & Q(is_cash_office_approved=False), is_deleted=False).order_by('-date_created')
+
+                        if query == 'salary-advance':
+                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False), status='APPROVED').order_by('-date_created')
+                            resp = [x.traveler for x in targets]
+
                         else:
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(requires_cash_office_approval=True) & Q(status__in=allowed_statuses)).order_by('-date_created')
 
@@ -536,6 +546,8 @@ class TrsViewSet(viewsets.ViewSet):
                         
                         if query == 'pending':
                             resp = models.Traveler.objects.filter(Q(requires_transport_approval=True) & Q(is_administrator_approved=False), is_deleted=False).order_by('-date_created')
+                        elif query == 'salary-advance':
+                            resp = []
                         else:
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(requires_transport_approval=True) & Q(status__in=allowed_statuses) ).order_by('-date_created')
 
