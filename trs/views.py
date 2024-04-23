@@ -652,7 +652,7 @@ class TrsViewSet(viewsets.ViewSet):
                         disbursement_type =  approval_msg.get('disbursement_type')
 
                         if not approval_msg:
-                            return Response({"details": "Amount / Transaction Code / Message Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"details": "Amount / Transaction Code / Remarks Required !"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         approval_msg.update({"date_created": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))})
                         original_approval_msg = approval_msg
@@ -716,10 +716,11 @@ class TrsViewSet(viewsets.ViewSet):
                             is_existing.save()
 
                         def close_cash_office():
-                            traveler_status = "CLOSED"
-                            traveler.status = traveler_status
-                            traveler.closed_by = authenticated_user
-                            traveler.date_closed = datetime.datetime.now()
+                            if traveler.mode_of_transport != 'FLIGHT' and traveler.is_ceo_approved and traveler.is_hof_approved and traveler.is_transport_dpt_approved:
+                                traveler_status = "CLOSED"
+                                traveler.status = traveler_status
+                                traveler.closed_by = authenticated_user
+                                traveler.date_closed = datetime.datetime.now()
                             traveler.is_cash_office_approved = is_cash_office
 
 
@@ -784,11 +785,12 @@ class TrsViewSet(viewsets.ViewSet):
                                                     status=status.HTTP_400_BAD_REQUEST)
 
                     if is_transport_office:
-                        traveler_status = "CLOSED"
-                        if traveler.status != "CLOSED":
-                            traveler.status = "CLOSED"
+                        if traveler.is_ceo_approved and traveler.is_hof_approved and traveler.is_cash_office_approved:
+                            traveler_status = "CLOSED"
+                            traveler.status = traveler_status
                             traveler.closed_by = authenticated_user
                             traveler.date_closed = datetime.datetime.now()
+
                         traveler.is_transport_dpt_approved = is_transport_office
 
                     traveler.save()
@@ -1064,6 +1066,8 @@ class TrsViewSet(viewsets.ViewSet):
                 accommodation = payload.get('accommodation')
                 cost = payload.get('cost')
 
+                traveler_status = 'APPROVED'
+
                 try:
                     traveler = models.Traveler.objects.get(Q(id=traveler))
                 except (ValidationError, ObjectDoesNotExist):
@@ -1089,15 +1093,40 @@ class TrsViewSet(viewsets.ViewSet):
                             **raw
                         )
 
-                    traveler.status = "CLOSED"
-                    traveler.closed_by = authenticated_user
+                    if traveler.is_ceo_approved and traveler.is_hof_approved and traveler.is_cash_office_approved:
+                        traveler_status = 'CLOSED'
+                        traveler.status = traveler_status
+                        traveler.closed_by = authenticated_user
+                        traveler.date_closed = datetime.datetime.now()
+
                     traveler.is_administrator_approved = True
-                    traveler.date_closed = datetime.datetime.now()
                     traveler.save()
+
+                    is_existing = models.Approval.objects.filter(Q(traveler=traveler) & 
+                                                                 Q(approval_for='ADMINISTRATOR')).first()
+
+                    raw = {
+                        "traveler": traveler,
+                        "approval_for": 'ADMINISTRATOR',
+                        "approved_by": authenticated_user,
+                    }  
+
+                    models.Approval.objects.create(
+                            **raw
+                        )
+                    
+                    raw = {
+                        "traveler": traveler,
+                        "status": traveler_status,
+                        "status_for": 'ADMINISTRATOR',
+                        "action_by": authenticated_user
+                    }
+
+                    models.StatusChange.objects.create(**raw)
 
                     # Notify the requestor
                     subject = f"Travel Request {traveler.tid} Closed  [TRS-AKHK]"
-                    message = f"Dear {traveler.created_by.first_name}, \nYour Transport Request: {traveler.tid},  has been fully processed and closed.\nThank you for your patience.\n\nRegards\nTRS-AKHK"
+                    message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request: {traveler.tid}, \nhas been fully processed by administrator.\nThank you for your patience.\n\nRegards\nTRS-AKHK"
 
                     try:
                         send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
