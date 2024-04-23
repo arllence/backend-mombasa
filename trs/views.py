@@ -59,6 +59,7 @@ class TrsViewSet(viewsets.ViewSet):
                 departure_date = payload['departure_date']
                 return_date = payload['return_date']
                 mode_of_transport = payload['mode_of_transport']
+                type_of_travel = payload['type_of_travel']
                 department = payload['department']
                 visa_required_date = payload.get('visa_required_date')
                 accommodation = bool(payload.get('accommodation'))
@@ -135,6 +136,7 @@ class TrsViewSet(viewsets.ViewSet):
                         "description": description,
                         "department": department,
                         "mode_of_transport": mode_of_transport,
+                        "type_of_travel": type_of_travel,
                         "requesting_for": requesting_for,
                         "salary_advance_required": salary_advance_required,
                         "tid": tid,

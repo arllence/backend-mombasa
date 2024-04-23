@@ -36,6 +36,7 @@ class Traveler(models.Model):
     employees = models.JSONField(null=True, blank=True)
     requesting_for = models.JSONField(null=True, blank=True)
     status = models.CharField(max_length=255, default='REQUESTED')
+    type_of_travel = models.CharField(max_length=255, null=True, blank=True)
     mode_of_transport = models.CharField(max_length=255, null=True, blank=True)
     position = models.CharField(max_length=255, null=True, blank=True)
     tid = models.CharField(max_length=50, unique=True)
