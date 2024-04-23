@@ -600,6 +600,7 @@ class TrsViewSet(viewsets.ViewSet):
                         is_ceo = True
                         approval_for = "CEO"
                         traveler.requires_cash_office_approval = True
+                        traveler.requires_hof_approval = True
 
                         if traveler.mode_of_transport == 'FLIGHT':
                             traveler.requires_administrator_approval = True
@@ -821,18 +822,18 @@ class TrsViewSet(viewsets.ViewSet):
                     if is_ceo and traveler.mode_of_transport == 'FLIGHT':
                         emails = list(get_user_model().objects.filter(Q(groups__name='ADMINISTRATOR')).values_list('email', flat=True))
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
-                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by both HOD/SLT and HOF/CEO, and is now pending administration and costing\n\nRegards\nTRS-AKHK"
+                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO, and is now pending administration and costing\n\nRegards\nTRS-AKHK"
 
                         try:
                             send_mail(subject, message, 'notification@akhskenya.org', emails)
                         except Exception as e:
                             pass
 
-                    # Notify CASH OFFICE
+                    # Notify CASH OFFICE, HOF, MMD
                     if is_ceo:
-                        emails = list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE')).values_list('email', flat=True))
+                        emails = list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE') | Q(groups__name='HOF') | Q(groups__name='MMD')).values_list('email', flat=True))
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
-                        message = f"Hello. \nTravel Request: {traveler.tid} has been forwarded to you,\n currently pending your action\n\nRegards\nTRS-AKHK"
+                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
                         try:
                             send_mail(subject, message, 'notification@akhskenya.org', emails)
@@ -843,7 +844,7 @@ class TrsViewSet(viewsets.ViewSet):
                     if is_ceo and traveler.mode_of_transport == 'HOSPITAL VEHICLE':
                         emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
-                        message = f"Hello. \nTravel Request: {traveler.tid} has been forwarded to you,\n currently pending your action\n\nRegards\nTRS-AKHK"
+                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
                         try:
                             send_mail(subject, message, 'notification@akhskenya.org', emails)
