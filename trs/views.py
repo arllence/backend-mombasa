@@ -445,7 +445,7 @@ class TrsViewSet(viewsets.ViewSet):
                 try:
 
                     if "HOD" in roles:
-                        
+
                         if query == 'salary-advance':
                             targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
                             resp = [x.traveler for x in targets]
@@ -1114,91 +1114,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                 
     
-    # @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
-    #         detail=False,
-    #         url_path="close-quote",
-    #         url_name="close-quote")
-    # def close_quote(self, request):
-    #     authenticated_user = request.user
-    #     if request.method == "POST":
-    #         formfiles = request.FILES
-    #         if not formfiles:
-    #             return Response({"details": "Please upload attachments"}, status=status.HTTP_400_BAD_REQUEST)
-
-    #         payload = json.loads(request.data['payload'])
-    #         serializer = serializers.CloseQuoteSerializer(
-    #                 data=payload, many=False)
-            
-    #         if serializer.is_valid():
-    #             quote = payload['quote']
-
-    #             try:
-    #                 quote = models.Quote.objects.get(Q(id=quote))
-    #             except (ValidationError, ObjectDoesNotExist):
-    #                 return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-    #             if formfiles:
-    #                 exts = ['jpeg','jpg','png','tiff','pdf','doc','docx']
-
-    #                 for f in request.FILES.getlist('quote'):
-    #                     original_file_name = f.name
-    #                     ext = original_file_name.split('.')[1].strip().lower()
-    #                     if ext not in exts:
-    #                         return Response({"details": "Only Images, Word and PDF files allowed for upload !"}, status=status.HTTP_400_BAD_REQUEST)
-
-    #             with transaction.atomic():
-    
-    #                 try:
-    #                     quoteFile = request.FILES.getlist('quote')[0]
-    #                     file_type1 = shared_fxns.identify_file_type(quoteFile.name.split('.')[1].strip().lower())
-    #                     title1 = "CLOSE_QUOTE_FILE"
-    #                 except Exception as e:
-    #                     return Response({"details": "Upload Quote File !"}, status=status.HTTP_400_BAD_REQUEST)
-                    
-    #                 try:                         
-    #                     quote_file = models.Document.objects.create(
-    #                                 document=quoteFile, 
-    #                                 original_file_name=quoteFile.name, 
-    #                                 uploader=authenticated_user, 
-    #                                 file_type=file_type1,
-    #                                 title=title1,
-    #                                 )
-                        
-    #                     attachments = {
-    #                         "quote_file": str(quote_file.id),
-    #                     }
-
-    #                     # update quote instance
-    #                     quote.close_attachments = attachments
-    #                     quote.status = "CLOSED"
-    #                     quote.date_closed = datetime.datetime.now()
-    #                     quote.save()
-
-    #                     emails = list(get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True))
-    #                     emails.append(quote.uploader.email)
-
-    #                     # Notify the manager and users
-    #                     subject = f"Quote: {quote.qid} Request Uploaded [TRS-AKHK]"
-    #                     message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\n TRS-AKHK"
-    #                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
-    #                     send_mail(subject, message, 'notification@akhskenya.org', emails)
-
-    #                     user_util.log_account_activity(
-    #                         authenticated_user, authenticated_user, "Quote Closed", f"Quote Closure Executed QID: {quote.id}")
-
-    #                 except Exception as e:
-    #                     logger.error(e)
-    #                     print(e)
-    #                     return Response({"details": "Unable to save File(s)"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-                    
-                
-    #             return Response('success', status=status.HTTP_200_OK)
-            
-    #         else:
-    #             return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
+   
 class TRSReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]
 
@@ -1297,6 +1213,58 @@ class TRSReportsViewSet(viewsets.ViewSet):
             
         # if quote_status:
         #     q_filters &= Q(status=quote_status)
+
+
+        if q_filters:
+
+            resp = models.Approval.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            
+        else:
+            roles = user_util.fetchusergroups(request.user.id)  
+
+            resp = models.Approval.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+
+        resp = serializers.FullFetchApprovalSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+        return Response(resp, status=status.HTTP_200_OK)
+        
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="flights",
+            url_name="flights")
+    def flight(self, request):
+                    
+        department = request.query_params.get('department')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        type = request.query_params.get('type')
+        date = False
+
+        if date_to and date_from:
+            date = True
+
+        def create_date_range(date_from,date_to):
+            # Convert the string dates to datetime objects
+            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+
+            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+
+            return q_filters
+
+        q_filters = Q(approval_for='ADMINISTRATOR')
+
+        if department:
+            q_filters &= Q(department=department)
+
+        if date_from or date_to:
+            if not date:
+                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
+            q_filters &= create_date_range(date_from,date_to)
+            
+        if type:
+            q_filters &= Q(traveler__type_of_travel=type)
 
 
         if q_filters:
