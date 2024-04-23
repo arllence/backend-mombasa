@@ -68,14 +68,11 @@ class TrsViewSet(viewsets.ViewSet):
                 requesting_for = payload.get('requesting_for')
                 travel_cost = payload.get('travel_cost')
                 travel_cost_items = payload.get('travel_cost_items')
-                send_to = payload.get('send_to')
+                send_to = payload.get('send_to', None)
                 tid = shared_fxns.generate_unique_identifier()
 
                 if not send_to:
-                    if 'USER' in roles:
-                        send_to = 'HOD'
-                    else:
-                        return Response({"details": "Please select Send To!"}, status=status.HTTP_400_BAD_REQUEST)
+                    send_to = 'CEO'
 
                 if requesting_for == 'OTHERS':
                     employees = list(payload.get('employees'))
