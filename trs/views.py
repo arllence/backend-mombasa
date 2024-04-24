@@ -1349,7 +1349,7 @@ class TRSReportsViewSet(viewsets.ViewSet):
         q_filters = Q()
 
         if employee_no:
-            q_filters &= (Q(employee_no=employee_no) | Q(requesting_for__contains=[{"employee_no": employee_no}]))
+            q_filters &= (Q(employee_no=employee_no) | Q(employees__contains=[{"employee_no": employee_no}]))
 
         if date_from or date_to:
             if not date:
@@ -1357,7 +1357,7 @@ class TRSReportsViewSet(viewsets.ViewSet):
             q_filters &= create_date_range(date_from,date_to)
             
         if type:
-            q_filters &= Q(traveler__type_of_travel=type)
+            q_filters &= Q(type_of_travel=type)
 
 
         if q_filters:
