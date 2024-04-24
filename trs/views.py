@@ -1320,6 +1320,61 @@ class TRSReportsViewSet(viewsets.ViewSet):
         resp = serializers.FullFetchApprovalSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
+    
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="journeys",
+            url_name="journeys")
+    def journeys(self, request):
+                    
+        employee_no = request.query_params.get('employee_no')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        type = request.query_params.get('type')
+        date = False
+
+        if date_to and date_from:
+            date = True
+
+        def create_date_range(date_from,date_to):
+            # Convert the string dates to datetime objects
+            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+
+            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+
+            return q_filters
+
+        q_filters = Q()
+
+        if employee_no:
+            q_filters &= (Q(employee_no=employee_no) | Q(requesting_for__contains=[{"employee_no": employee_no}]))
+
+        if date_from or date_to:
+            if not date:
+                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
+            q_filters &= create_date_range(date_from,date_to)
+            
+        if type:
+            q_filters &= Q(traveler__type_of_travel=type)
+
+
+        if q_filters:
+
+            resp = models.Traveler.objects.filter(Q(is_deleted=False) & q_filters).order_by('date_created')
+            
+        else:
+            roles = user_util.fetchusergroups(request.user.id)  
+
+            resp = []
+
+        resp = serializers.FetchTravelerSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+        return Response(resp, status=status.HTTP_200_OK)
+    
+
+
         
 class TRSAnalyticsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
