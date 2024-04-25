@@ -448,14 +448,14 @@ class TrsViewSet(viewsets.ViewSet):
 
                         if query == 'salary-advance':
                             targets = models.AdvanceSalaryRequests.objects.filter(
-                                Q(is_deleted=False) & Q(traveler__department=request.user.department)).order_by('-date_created')
+                                Q(traveler__created_by=authenticated_user) & Q(traveler__department=request.user.department),is_deleted=False).order_by('-date_created')
                             resp = [x.traveler for x in targets]
 
                         elif query == 'pending':
                             resp = models.Traveler.objects.filter(Q(traveler__department=request.user.department) | Q(department=request.user.department) | Q(created_by=request.user) | Q(requires_hod_approval=True) , is_hod_approved=False, is_deleted=False).order_by('-date_created')
 
                         else:
-                            resp = models.Traveler.objects.filter(Q(traveler__department=request.user.department) | Q(department=request.user.department) | Q(created_by=request.user) | Q(requires_hod_approval=True) , is_deleted=False).order_by('-date_created')
+                            resp = models.Traveler.objects.filter(Q(traveler__department=request.user.department) | Q(department=request.user.department) | Q(created_by=request.user) | Q(requires_hod_approval=True) |  Q(created_by=authenticated_user), is_deleted=False).order_by('-date_created')
 
                     elif "USER_MANAGER" in roles:
                         if query == 'salary-advance':
