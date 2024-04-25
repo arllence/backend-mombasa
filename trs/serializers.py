@@ -165,7 +165,7 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
         try:
             user_id = str(self.context["user_id"])
 
-            if str(obj.created_by.id) == "user_id":
+            if str(obj.created_by.id) == user_id:
                 return True
             return False
         except Exception as e:
