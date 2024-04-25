@@ -32,6 +32,7 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
     is_slt_and_hof = serializers.SerializerMethodField()
     forwardings = serializers.SerializerMethodField()
     is_department_slt = serializers.SerializerMethodField()
+    is_creator = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Traveler
@@ -154,6 +155,18 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
                         return True
                 except Exception as e:
                     pass
+            return False
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False
+        
+    def get_is_creator(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+
+            if str(obj.created_by.id) == "user_id":
+                return True
             return False
         except Exception as e:
             print(e)
