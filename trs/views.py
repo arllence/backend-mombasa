@@ -614,7 +614,8 @@ class TrsViewSet(viewsets.ViewSet):
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
                     result_page = paginator.paginate_queryset(resp, request)
-                    serializer = serializers.FetchTravelerSerializer(result_page, many=True, context={"user_id":request.user.id})
+                    serializer = serializers.FetchTravelerSerializer(
+                        result_page, many=True, context={"user_id":request.user.id})
                     return paginator.get_paginated_response(serializer.data)
                 
                 
