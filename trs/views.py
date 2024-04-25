@@ -419,8 +419,8 @@ class TrsViewSet(viewsets.ViewSet):
                         managers_emails + list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
 
                     # Notify selected send to
-                    subject = f"Travel Request {tid} Resubmitted [TRS-AKHK]"
-                    message = f"Hello, \nTravel request: {tid} has been resubmitted by\n{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
+                    subject = f"Travel Request {traveler.tid} Resubmitted [TRS-AKHK]"
+                    message = f"Hello, \nTravel request: {traveler.tid} has been resubmitted by\n{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
                     try:
                         send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
                     except Exception as e:
