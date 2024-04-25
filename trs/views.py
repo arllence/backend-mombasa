@@ -387,7 +387,7 @@ class TrsViewSet(viewsets.ViewSet):
                         traveler_raw.update({"advance_requests": advance_requests})
 
 
-                    models.Traveler.objects.filter(Q(id=record_id)).update(**raw)
+                    models.Traveler.objects.filter(Q(id=record_id)).update(**traveler_raw)
 
                     # update trip instance
                     trip_raw = {
@@ -401,11 +401,8 @@ class TrsViewSet(viewsets.ViewSet):
                     if visa_required_date:
                         traveler_raw.update({"visa_required_date": visa_required_date})
 
-                    models.Trip.objects.create(
-                        **trip_raw
-                    )
 
-                    models.Trip.objects.filter(Q(traveler=traveler)).update(**raw)
+                    models.Trip.objects.filter(Q(traveler=traveler)).update(**trip_raw)
 
                     raw = {
                         "traveler": traveler,
