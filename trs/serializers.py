@@ -189,7 +189,7 @@ class TravelerSerializer(serializers.Serializer):
     requesting_for = serializers.CharField(max_length=255)
 
 class PutTravelerSerializer(serializers.Serializer):
-    id = serializers.CharField(max_length=500)
+    record_id = serializers.CharField(max_length=500)
     employee_no = serializers.CharField(max_length=500)
     position = serializers.CharField(max_length=500)
     purpose = serializers.CharField(max_length=500)

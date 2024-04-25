@@ -282,93 +282,155 @@ class TrsViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
-                traveler_id = payload['id']
+                is_individual = True
+                record_id = payload['record_id']
                 description = payload['description']
                 purpose = payload['purpose']
-                position = payload['position']
-                employee_no = payload['employee_no']
                 route = payload['route']
                 departure_date = payload['departure_date']
                 return_date = payload['return_date']
+                mode_of_transport = payload['mode_of_transport']
+                type_of_travel = payload['type_of_travel']
+                department = payload['department']
                 visa_required_date = payload.get('visa_required_date')
                 accommodation = bool(payload.get('accommodation'))
                 salary_advance_required = bool(payload.get('salary_advance_required'))
                 salary_amount_required = payload.get('salary_amount_required')
+                requesting_for = payload.get('requesting_for')
+                travel_cost = payload.get('travel_cost')
+                travel_cost_items = payload.get('travel_cost_items')
+
+
+                if requesting_for == 'OTHERS':
+                    employees = list(payload.get('employees'))
+
+                    if not employees:
+                        return Response({"details": "Target Employees Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    is_individual = False
+                else:
+                    try:
+                        position = payload['position']
+                        employee_no = payload['employee_no']
+                    except Exception as e:
+                        return Response({"details": "Employee No / Position Title Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if travel_cost and not travel_cost_items:
+                    return Response({"details": "Travel Cost Breakdown Required !"}, status=status.HTTP_400_BAD_REQUEST)
 
                 if not salary_advance_required:
                     salary_amount_required = 0
                 else:
-                    if int(salary_amount_required) < 1:
-                        return Response({"details": "Advance Amount Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                    if requesting_for == 'OTHERS':
+                        advance_requests = list(payload.get('advance_requests'))
+
+                        if not advance_requests:
+                            return Response({"details": "Target Employees Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        salary_amount_required = 0
+                        for item in advance_requests:
+                            salary_amount_required += int(item['amount'])
+
+                    else:
+                        if int(salary_amount_required) < 1:
+                            return Response({"details": "Advance Amount Required !"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                # update employee no
+                try:
+                    empno = authenticated_user.employee_no
+                    if not empno:
+                        authenticated_user.employee_no = employee_no
+                        authenticated_user.save()
+                    else:
+                        employee_no = authenticated_user.employee_no
+                except Exception as e:
+                    pass
 
                 try:
-                    traveler = models.Traveler.objects.get(id=traveler_id)
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Trip !"}, status=status.HTTP_400_BAD_REQUEST)
+                    department = Department.objects.get(id=department)
+                except Exception as e:
+                    return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    travel = models.Traveler.objects.get(id=record_id)
+                except Exception as e:
+                    return Response({"details": "Unknown Travel !"}, status=status.HTTP_400_BAD_REQUEST)
 
                 
                 with transaction.atomic():
-
                     traveler_raw = {
-                        "employee_no": employee_no,
-                        "position": position,
                         "purpose": purpose,
-                        "traveler": authenticated_user,
+                        "created_by": authenticated_user,
                         "description": description,
+                        "department": department,
+                        "mode_of_transport": mode_of_transport,
+                        "type_of_travel": type_of_travel,
+                        "requesting_for": requesting_for,
                         "salary_advance_required": salary_advance_required,
+                        "status": 'RESUBMITTED',
+                        "travel_cost": travel_cost,
+                        "travel_cost_items": travel_cost_items
                     }  
-                    models.Traveler.objects.filter(Q(id=traveler_id)).update(**traveler_raw)
 
+                    if is_individual:
+                        traveler_raw.update({
+                                                "traveler": authenticated_user,
+                                                "employee_no": employee_no,
+                                                "position": position,
+                                            })
+
+                    if not is_individual:
+                        traveler_raw.update({"employees": employees})
+
+                    if salary_advance_required and not is_individual:
+                        traveler_raw.update({"advance_requests": advance_requests})
+
+
+                    models.Traveler.objects.filter(Q(id=record_id)).update(**raw)
+
+                    # update trip instance
                     trip_raw = {
+                        "traveler": traveler,
                         "route": route,
                         "departure_date": departure_date,
                         "return_date": return_date,
-                        "visa_required_date": visa_required_date,
                         "accommodation": accommodation,
                     }  
-                    models.Trip.objects.filter(Q(traveler=traveler_id)).update(**trip_raw)
 
-                    if salary_advance_required:
-                        # save salary advances
-                        salary_raw = {
-                            "traveler": traveler,
-                            "amount": salary_amount_required,
-                        }  
-                        # models.AdvanceSalaryRequests.objects.filter(Q(traveler=traveler_id)).update(**salary_raw)
-                        advance = models.AdvanceSalaryRequests.objects.filter(Q(traveler=traveler_id))
-                        if advance:
-                            advance = advance[0]
-                            current_status = advance.status
-                            if current_status != 'REJECTED':
-                                advance.amount = salary_amount_required
-                                advance.save()
-                        else:
-                            models.AdvanceSalaryRequests.objects.create(
-                                **salary_raw
-                            )
+                    if visa_required_date:
+                        traveler_raw.update({"visa_required_date": visa_required_date})
 
+                    models.Trip.objects.create(
+                        **trip_raw
+                    )
 
-                    if traveler.status == "INCOMPLETE":
-                        targets = ['HOD','SLT']
-                        managers_emails = get_user_model().objects.filter(Q(groups__name__in=targets) & Q(department=authenticated_user.department)).values_list('email', flat=True)
+                    models.Trip.objects.filter(Q(traveler=traveler)).update(**raw)
 
-                        # assignee = models.QuoteAssignee.objects.get(Q(quote=quote))
-                        # managers_emails.append(assignee.assigned.email)
+                    raw = {
+                        "traveler": traveler,
+                        "status": 'RESUBMITTED',
+                        "status_for": 'Requestor',
+                        "action_by": authenticated_user,
+                    }
 
-                        raw = {"status" : "RESUBMITTED"}
-                        models.Traveler.objects.filter(Q(id=traveler_id)).update(**raw)
+                    models.StatusChange.objects.create(**raw)
 
-                        # Notify the manager
-                        subject = f"Travel Request: {traveler.tid} Has Been Resubmitted [TRS-AKHK]"
-                        message = f"Hello, \nTravel Request: {traveler.tid} has been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
+                    # Notify CEO / FINANCE
+                    managers_emails = get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True)
+                    if traveler.requires_hof_approval:
+                        managers_emails + list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
 
-                        try:
-                            send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
-                        except Exception as e:
-                            pass
-
+                    # Notify selected send to
+                    subject = f"Travel Request {tid} Resubmitted [TRS-AKHK]"
+                    message = f"Hello, \nTravel request: {tid} has been resubmitted by\n{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
+                    try:
+                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                    except Exception as e:
+                        pass
+   
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Travel Request updated", f"TID: {traveler_id}")
+                    authenticated_user, authenticated_user, "Travel Request resubmitted", f"Travel Request Id: {traveler.id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
