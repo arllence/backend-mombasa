@@ -353,7 +353,7 @@ class TrsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
-                    travel = models.Traveler.objects.get(id=record_id)
+                    traveler = models.Traveler.objects.get(id=record_id)
                 except Exception as e:
                     return Response({"details": "Unknown Travel !"}, status=status.HTTP_400_BAD_REQUEST)
 
