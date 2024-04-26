@@ -49,8 +49,8 @@ def identify_file_type(ext):
 
 def generate_unique_identifier():
     characters = string.ascii_uppercase + string.digits
-    identifier = ''.join(random.choices(characters, k=6))
-    qid =  "QS#" + identifier
+    qid = ''.join(random.choices(characters, k=6))
+    # qid =  "QS#" + identifier
 
     is_existing = Quote.objects.filter(qid=qid).exists()
     if is_existing:
