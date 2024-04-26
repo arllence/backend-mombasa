@@ -416,7 +416,7 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify CEO / FINANCE
                     managers_emails = get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True)
                     if traveler.requires_hof_approval:
-                        managers_emails + list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
+                        list(managers_emails) + list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
 
                     # Notify selected send to
                     subject = f"Travel Request {traveler.tid} Resubmitted [TRS-AKHK]"
