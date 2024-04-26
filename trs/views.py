@@ -706,6 +706,16 @@ class TrsViewSet(viewsets.ViewSet):
                             traveler.requires_transport_approval = True
 
 
+                        try:
+                            salaryRequest = models.AdvanceSalaryRequests.objects.get(
+                                traveler=traveler)
+                            salaryRequest.status = 'APPROVED'
+                            salaryRequest.approved_by = authenticated_user
+                            salaryRequest.save()
+                        except (ValidationError, ObjectDoesNotExist):
+                            pass
+
+
                     elif travel_status == "TRANSPORT":
                         is_transport_office = True
                         approval_for = "TRANSPORT"
