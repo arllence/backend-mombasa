@@ -458,6 +458,16 @@ class TrsViewSet(viewsets.ViewSet):
                     traveler.status = traveler_status
                     traveler.save()
 
+                    # update advance travel request
+                    try:
+                        salaryRequest = models.AdvanceSalaryRequests.objects.get(
+                            traveler=traveler)
+                        salaryRequest.status = traveler_status
+                        salaryRequest.approved_by = authenticated_user
+                        salaryRequest.save()
+                    except (ValidationError, ObjectDoesNotExist):
+                        pass
+
                     raw = {
                         "traveler": traveler,
                         "status": traveler_status,
