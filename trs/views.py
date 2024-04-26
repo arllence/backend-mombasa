@@ -16,7 +16,7 @@ from trs import models
 from trs import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
-from acl.models import User, Department
+from acl.models import User, Department, Sendmail
 from trs.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
@@ -250,10 +250,18 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify selected send to
                     subject = f"Travel Request {tid} Received [TRS-AKHK]"
                     message = f"Hello, \nA new travel request: {tid} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
+
                     try:
-                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        mail = {
+                            "email" : managers_emails, 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+
+                        Sendmail.objects.create(**mail)
+
                     except Exception as e:
-                        pass
+                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
                     # Notify the hof
                     if salary_advance_required:
@@ -262,10 +270,20 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Advance Request {tid} Received [TRS-AKHK]"
                         message = f"Hello, \nSalary Travel Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
 
+                        # try:
+                        #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        # except Exception as e:
+                        #     pass
+
                         try:
-                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                            mail = {
+                                "email" : emails, 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            Sendmail.objects.create(**mail)
                         except Exception as e:
-                            pass
+                            send_mail(subject, message, 'notification@akhskenya.org', emails)
 
    
                 user_util.log_account_activity(
@@ -421,10 +439,19 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify selected send to
                     subject = f"Travel Request {traveler.tid} Resubmitted [TRS-AKHK]"
                     message = f"Hello, \nTravel request: {traveler.tid} has been resubmitted by\n{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
+                    # try:
+                    #     send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                    # except Exception as e:
+                    #     pass
                     try:
-                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        mail = {
+                            "email" : managers_emails, 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
-                        pass
+                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
    
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Travel Request resubmitted", f"Travel Request Id: {traveler.id}")
@@ -483,10 +510,19 @@ class TrsViewSet(viewsets.ViewSet):
                     subject = f"Travel Request: {traveler.tid} Progress Update [TRS-AKHK]"
                     message = f"Hello, \nThe Request:{traveler.tid} has been marked as {traveler_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
 
+                    # try:
+                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                    # except Exception as e:
+                    #     pass
                     try:
-                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        mail = {
+                            "email" : emails, 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
-                        pass
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
                                                 
 
                 user_util.log_account_activity(
@@ -919,10 +955,19 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
                         message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by Transport Office.\n\nRegards\nTRS-AKHK"
 
+                    # try:
+                    #     send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
+                    # except Exception as e:
+                    #     pass
                     try:
-                        send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
+                        mail = {
+                            "email" : [traveler.created_by.email], 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
-                        pass
+                        send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
 
                     # # Notify HOF
                     # if is_slt and traveler_status == 'APPROVED':
@@ -946,10 +991,20 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO, and is now pending administration and costing\n\nRegards\nTRS-AKHK"
 
+                        # try:
+                        #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        # except Exception as e:
+                        #     pass
+
                         try:
-                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                            mail = {
+                                "email" : emails, 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            Sendmail.objects.create(**mail)
                         except Exception as e:
-                            pass
+                            send_mail(subject, message, 'notification@akhskenya.org', emails)
 
                     # Notify CASH OFFICE, HOF, MMD
                     if is_ceo:
@@ -957,10 +1012,20 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
+                        # try:
+                        #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        # except Exception as e:
+                        #     pass
+
                         try:
-                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                            mail = {
+                                "email" : emails, 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            Sendmail.objects.create(**mail)
                         except Exception as e:
-                            pass
+                            send_mail(subject, message, 'notification@akhskenya.org', emails)
 
                     # # Notify TRANSPORT
                     if is_ceo and traveler.mode_of_transport == 'HOSPITAL VEHICLE':
@@ -968,10 +1033,20 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
+                        # try:
+                        #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        # except Exception as e:
+                        #     pass
+
                         try:
-                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                            mail = {
+                                "email" : emails, 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            Sendmail.objects.create(**mail)
                         except Exception as e:
-                            pass
+                            send_mail(subject, message, 'notification@akhskenya.org', emails)
 
                 user_util.log_account_activity(
                     authenticated_user, traveler.created_by, "Travel Request approval", 
@@ -1065,10 +1140,20 @@ class TrsViewSet(viewsets.ViewSet):
                     subject = f"Travel Request Received [{traveler.tid}]"
                     message = f"Hello. \n\nTravel Request: of ID {traveler.tid}\nhas been forwarded to you by {authenticated_user.first_name} {authenticated_user.last_name},\npending your action.\n\nRegards\nTRS-AKHK"
 
+                    # try:
+                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                    # except Exception as e:
+                    #     pass
+
                     try:
-                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        mail = {
+                            "email" : emails, 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
-                        pass
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
 
 
                 user_util.log_account_activity(
@@ -1118,10 +1203,20 @@ class TrsViewSet(viewsets.ViewSet):
                     subject = f"Travel Advance Request {update_status.capitalize()}  [TRS-AKHK]"
                     message = f"Hello, \nYour Advance Travel Request for travel:{salaryRequest.traveler.tid} has been {update_status.capitalize()} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
 
+                    # try:
+                    #     send_mail(subject, message, 'notification@akhskenya.org', [salaryRequest.traveler.traveler.email])
+                    # except Exception as e:
+                    #     pass
+
                     try:
-                        send_mail(subject, message, 'notification@akhskenya.org', [salaryRequest.traveler.traveler.email])
+                        mail = {
+                            "email" : [salaryRequest.traveler.traveler.email], 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
-                        pass
+                        send_mail(subject, message, 'notification@akhskenya.org', [salaryRequest.traveler.traveler.email])
 
                 user_util.log_account_activity(
                     authenticated_user, salaryRequest.traveler.created_by, "Travel Request approval", f"Approval Executed instance ID: {str(salaryRequest.id)}")
@@ -1222,10 +1317,20 @@ class TrsViewSet(viewsets.ViewSet):
                     subject = f"Travel Request {traveler.tid} Closed  [TRS-AKHK]"
                     message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request: {traveler.tid}, \nhas been fully processed by administrator.\nThank you for your patience.\n\nRegards\nTRS-AKHK"
 
+                    # try:
+                    #     send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
+                    # except Exception as e:
+                    #     pass
+
                     try:
-                        send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
+                        mail = {
+                            "email" : [traveler.created_by.email], 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
-                        pass
+                        send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
 
                 user_util.log_account_activity(
                     authenticated_user, traveler.created_by, "Travel Request closed", f"TID: {str(traveler.id)}")
