@@ -703,10 +703,12 @@ class TrsViewSet(viewsets.ViewSet):
                     elif travel_status == "HOF" :
                         is_hof = True
                         approval_for = "HOF"
+                        traveler.status = 'APPROVED'
                         
                     elif travel_status == "CEO":
                         is_ceo = True
                         approval_for = "CEO"
+                        traveler.status = 'APPROVED'
                         traveler.requires_cash_office_approval = True
                         traveler.requires_hof_approval = True
 
