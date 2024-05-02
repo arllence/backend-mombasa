@@ -232,7 +232,7 @@ class TrsViewSet(viewsets.ViewSet):
                         )
 
                     if send_to == 'HOD':
-                        managers_emails = get_user_model().objects.filter(Q(groups__name='HOD') & Q(department=department) ).values_list('email', flat=True)
+                        managers_emails = list(get_user_model().objects.filter(Q(groups__name='HOD') & Q(department=department) ).values_list('email', flat=True))
 
                     elif send_to == 'SLT':
                         if department.slt:
@@ -241,10 +241,10 @@ class TrsViewSet(viewsets.ViewSet):
                             return Response({"details": "Selected Department has no SLT assigned !"}, status=status.HTTP_400_BAD_REQUEST)
                         
                     elif send_to == 'HOF':
-                        managers_emails = get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True)
+                        managers_emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
 
                     elif send_to == 'CEO':
-                        managers_emails = get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True)
+                        managers_emails = list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
                         
 
                     # Notify selected send to
@@ -265,7 +265,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     # Notify the hof
                     if salary_advance_required:
-                        emails = get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True)
+                        emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
 
                         subject = f"Travel Advance Request {tid} Received [TRS-AKHK]"
                         message = f"Hello, \nSalary Travel Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
@@ -432,7 +432,7 @@ class TrsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                     # Notify CEO / FINANCE
-                    managers_emails = get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True)
+                    managers_emails = list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
                     if traveler.requires_hof_approval:
                         list(managers_emails) + list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
 
