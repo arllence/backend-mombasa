@@ -183,7 +183,7 @@ class TrsViewSet(viewsets.ViewSet):
                     }  
 
                     if visa_required_date:
-                        traveler_raw.update({"visa_required_date": visa_required_date})
+                        trip_raw.update({"visa_required_date": visa_required_date})
 
                     models.Trip.objects.create(
                         **trip_raw
@@ -417,7 +417,7 @@ class TrsViewSet(viewsets.ViewSet):
                     }  
 
                     if visa_required_date:
-                        traveler_raw.update({"visa_required_date": visa_required_date})
+                        trip_raw.update({"visa_required_date": visa_required_date})
 
 
                     models.Trip.objects.filter(Q(traveler=traveler)).update(**trip_raw)
