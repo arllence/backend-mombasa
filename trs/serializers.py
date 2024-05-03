@@ -230,6 +230,10 @@ class PatchAdvanceSalaryRequestsSerializer(serializers.Serializer):
     status = serializers.CharField(max_length=500)
     request_id = serializers.CharField(max_length=500)
 
+class PatchBudgetCodeSerializer(serializers.Serializer):
+    budget_code = serializers.CharField(max_length=500)
+    request_id = serializers.CharField(max_length=500)
+
 class FetchApprovalSerializer(serializers.ModelSerializer):
     approved_by = UsersSerializer()
 

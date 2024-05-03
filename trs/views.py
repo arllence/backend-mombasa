@@ -822,6 +822,29 @@ class TrsViewSet(viewsets.ViewSet):
                     
                     traveler.budget_code = budget_code
 
+                    def update_approval():
+                        previous_approval_msg = is_existing.approval_msg
+                        previous_approval_msg.append(original_approval_msg)
+
+                        # update existing instance
+                        is_existing.approval_msg = previous_approval_msg
+                        is_existing.approved_by = authenticated_user
+                        is_existing.save()
+
+                    def close_request():
+                        if traveler.mode_of_transport != 'FLIGHT' and traveler.is_ceo_approved and traveler.is_hof_approved and traveler.is_transport_dpt_approved:
+                            traveler_status = "CLOSED"
+                            traveler.status = traveler_status
+                            traveler.closed_by = authenticated_user
+                            traveler.date_closed = datetime.datetime.now()
+
+                        if traveler.mode_of_transport == 'FLIGHT' and traveler.is_ceo_approved and traveler.is_hof_approved and traveler.is_administrator_approved:
+                            traveler_status = "CLOSED"
+                            traveler.status = traveler_status
+                            traveler.closed_by = authenticated_user
+                            traveler.date_closed = datetime.datetime.now()
+
+
                     if is_hod:
                         traveler.status = traveler_status
                         traveler.is_hod_approved = is_hod
@@ -834,32 +857,9 @@ class TrsViewSet(viewsets.ViewSet):
 
                     if is_hof:
                         traveler.is_hof_approved = is_hof
+                        close_request()
 
                     if is_cash_office:
-                        def update_approval():
-                            previous_approval_msg = is_existing.approval_msg
-                            previous_approval_msg.append(original_approval_msg)
-
-                            # update existing instance
-                            is_existing.approval_msg = previous_approval_msg
-                            is_existing.approved_by = authenticated_user
-                            is_existing.save()
-
-                        def close_cash_office():
-                            if traveler.mode_of_transport != 'FLIGHT' and traveler.is_ceo_approved and traveler.is_hof_approved and traveler.is_transport_dpt_approved:
-                                traveler_status = "CLOSED"
-                                traveler.status = traveler_status
-                                traveler.closed_by = authenticated_user
-                                traveler.date_closed = datetime.datetime.now()
-
-                            if traveler.mode_of_transport == 'FLIGHT' and traveler.is_ceo_approved and traveler.is_hof_approved and traveler.is_administrator_approved:
-                                traveler_status = "CLOSED"
-                                traveler.status = traveler_status
-                                traveler.closed_by = authenticated_user
-                                traveler.date_closed = datetime.datetime.now()
-
-                            traveler.is_cash_office_approved = is_cash_office
-
 
                         amount = int(approval_msg.get('amount',0))
                         travel_cost = int(traveler.travel_cost)
@@ -874,13 +874,13 @@ class TrsViewSet(viewsets.ViewSet):
 
                             if disbursement_type == 'Travel Cost':
                                 if amount == travel_cost:
-                                    close_cash_office()
+                                    traveler.is_cash_office_approved = is_cash_office
+                                    close_request()
                                     update_approval()
                                 elif amount < travel_cost:
                                     update_approval()
                                 elif amount > travel_cost:
-                                    return Response({"details": "Disbursement cannot be more than requested amount!"}, 
-                                                    status=status.HTTP_400_BAD_REQUEST)
+                                    return Response({"details": "Disbursement cannot be more than requested amount!"},status=status.HTTP_400_BAD_REQUEST)
                                 
                             elif disbursement_type == 'Travel Advance':
                                 amount = int(payload.get('text').get('amount'))
@@ -902,7 +902,7 @@ class TrsViewSet(viewsets.ViewSet):
                             if disbursement_type == 'Travel Cost':
 
                                 if amount == travel_cost:
-                                    close_cash_office()
+                                    close_request()
 
                                 elif amount > travel_cost:
                                     createdInstance.approval_msg = []
@@ -1172,7 +1172,7 @@ class TrsViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
 
-    @action(methods=["POST", "GET", "PUT", "DELETE"],
+    @action(methods=["POST",],
             detail=False,
             url_path="update-salary-request",
             url_name="update-salary-request")
@@ -1234,6 +1234,51 @@ class TrsViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
 
+    @action(methods=["POST",],
+            detail=False,
+            url_path="update-budget-code",
+            url_name="update-budget-code")
+    def budget_code(self, request):
+
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        allowed = ["HOF","CEO", "FINANCE"]
+
+        if not any(item in allowed for item in roles):
+            return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == "POST":
+
+            payload = request.data
+            roles = user_util.fetchusergroups(request.user.id) 
+
+            serializer = serializers.PatchBudgetCodeSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                code = payload['budget_code']
+                request_id = payload.get('request_id')
+
+                try:
+                    traveler = models.Traveler.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Travel Request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+
+                    traveler.budget_code = code
+                    traveler.save()
+
+                user_util.log_account_activity(
+                    authenticated_user, traveler.created_by, "Budget Code", f"Travel Budget Code Updated. ID : {str(traveler.id)}")
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+            
     @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
             url_path="process-travel-request",
