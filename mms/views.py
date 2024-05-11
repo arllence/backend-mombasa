@@ -260,6 +260,7 @@ class MmsViewSet(viewsets.ViewSet):
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             assigned = request.query_params.get('assigned')
+            query = request.query_params.get('q')
             roles = user_util.fetchusergroups(request.user.id)  
 
             if request_id:
@@ -277,6 +278,10 @@ class MmsViewSet(viewsets.ViewSet):
                     if assigned:
                         quote_ids = models.QuoteAssignee.objects.filter(Q(assigned=request.user) & Q(is_deleted=False)).values_list('quote__id', flat=True)
                         resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(id__in=quote_ids)).order_by('-date_created')
+
+                    elif query == 'pending':
+                        resp = models.Quote.objects.filter(
+                            Q(is_deleted=False)).exclude(Q(status__in=['REJECTED','CLOSED'])).order_by('date_created')
                     else:
                         if "MMD" in roles:
                             resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')
@@ -286,6 +291,9 @@ class MmsViewSet(viewsets.ViewSet):
 
                         elif "USER" in roles:
                             resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')
+
+                        else:
+                            resp = []
 
 
                     paginator = PageNumberPagination()
