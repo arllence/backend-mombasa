@@ -245,7 +245,8 @@ class MmsViewSet(viewsets.ViewSet):
                             current_reason.append(
                                 {
                                     "status": quote_status,
-                                    "reason": reason
+                                    "reason": reason,
+                                    "date": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
                                 }
                             )
                             quote.reasons = current_reason
@@ -253,7 +254,8 @@ class MmsViewSet(viewsets.ViewSet):
                             quote.reasons =  [
                                 {
                                     "status": quote_status,
-                                    "reason": reason
+                                    "reason": reason,
+                                    "date": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
                                 }
                             ]
 
