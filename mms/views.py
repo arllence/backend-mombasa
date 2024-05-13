@@ -46,8 +46,7 @@ class MmsViewSet(viewsets.ViewSet):
         authenticated_user = request.user
         if request.method == "POST":
             formfiles = request.FILES
-            # if not formfiles:
-            #     return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
+
 
             payload = json.loads(request.data['payload'])
             serializer = serializers.QuoteSerializer(
@@ -110,7 +109,7 @@ class MmsViewSet(viewsets.ViewSet):
                     # Notify the manager
                     subject = f"A New Quote {qid} Received [PSMDQS-AKHK]"
                     message = f"Hello, \nA new quote: {qid} of subject: {quote.subject} from department:  {department.name}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name}\non {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\n PSMDQS-AKHK"
-                    # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
+
                     try:
                         mail = {
                             "email" : managers_emails, 
@@ -133,8 +132,7 @@ class MmsViewSet(viewsets.ViewSet):
 
         if request.method == "PUT":
             formfiles = request.FILES
-            # if not formfiles:
-            #     return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
+
 
             payload = json.loads(request.data['payload'])
             serializer = serializers.PutQuoteSerializer(
