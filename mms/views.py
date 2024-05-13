@@ -16,7 +16,7 @@ from mms import models
 from mms import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
-from acl.models import User, Department
+from acl.models import Sendmail, User, Department
 from mms.utils import shared_fxns
 from django.db.models import Sum
 from acl.utils import mailgun_general
@@ -105,13 +105,23 @@ class MmsViewSet(viewsets.ViewSet):
                         **raw
                     )
 
-                    managers_emails = get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True)
+                    managers_emails = list(get_user_model().objects.filter(groups__name='MMD').values_list('email', flat=True))
 
                     # Notify the manager
                     subject = f"A New Quote {qid} Received [PSMDQS-AKHK]"
                     message = f"Hello, \nA new quote: {qid} of subject: {quote.subject} from department:  {department.name}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name}\non {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\n PSMDQS-AKHK"
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
-                    send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                    try:
+                        mail = {
+                            "email" : managers_emails, 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        
+                    
 
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Quote created", "Quote Creation Executed")
@@ -205,7 +215,16 @@ class MmsViewSet(viewsets.ViewSet):
                         subject = f"A Quote: {quote.qid} Has Been Resubmitted [PSMDQS-AKHK]"
                         message = f"Hello, \nQuote:{quote.qid} of subject: {quote.subject} from department:  {department.name} \nhas been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} \non {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nPSMDQS-AKHK"
 
-                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        try:
+                            mail = {
+                                "email" : managers_emails, 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            Sendmail.objects.create(**mail)
+                        except Exception as e:
+                            send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+     
 
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Quote updated", f"QID: {quote_id}")
@@ -271,8 +290,15 @@ class MmsViewSet(viewsets.ViewSet):
                     else:
                         message = f"Hello, \nThe Quote:{quote.qid} of subject {quote.subject}, from department: {quote.department.name} has been marked as {quote_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nPSMDQS-AKHK"
 
-                    # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
-                    send_mail(subject, message, 'notification@akhskenya.org', emails)
+                    try:
+                        mail = {
+                            "email" : emails, 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        send_mail(subject, message, 'notification@akhskenya.org', emails)
 
                     # update quote assignee status
                     raw = {"status" : 'REVIEWED'}
@@ -396,13 +422,29 @@ class MmsViewSet(viewsets.ViewSet):
                     subject = "Quote Received [PSMDQS-AKHK]"
                     message = f"Dear {quote.uploader.first_name}, \nYour quote has been received successfully\nand assigned to {staff.first_name} {staff.last_name} for processing.\nWe will update you on the progress.\n\nRegards\nPSMDQS-AKHK"
 
-                    send_mail(subject, message, 'notification@akhskenya.org', [quote.uploader.email])
+                    try:
+                        mail = {
+                            "email" : [quote.uploader.email], 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        send_mail(subject, message, 'notification@akhskenya.org', [quote.uploader.email])
 
                     # Notify the staff
                     subject = "Quote Assigned To You [PSMDQS-AKHK]"
                     message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to PSMDQS to review.\n\nRegards\nPSMDQS-AKHK"
 
-                    send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
+                    try:
+                        mail = {
+                            "email" : [staff.email], 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
 
                 user_util.log_account_activity(
                     authenticated_user, staff, "Quote Assigned created", f"Quote Assignation Executed QID: {quote.id}")
@@ -443,8 +485,15 @@ class MmsViewSet(viewsets.ViewSet):
                     subject = "Quote Assigned To You [PSMDQS-AKHK]"
                     message = f"Dear {staff.first_name}, \nA quote has been assigned to you for review and processing.\nPlease log in to PSMDQS to review.\n\nRegards\nPSMDQS-AKHK"
 
-                    # mailgun_general.send_mail(staff.first_name, staff.email,subject,message)
-                    send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
+                    try:
+                        mail = {
+                            "email" : [staff.email], 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        send_mail(subject, message, 'notification@akhskenya.org', [staff.email])
 
                 user_util.log_account_activity(
                     authenticated_user, staff, "Quote Assigned created", f"Quote Assignation Executed QID: {quote.id}")
@@ -572,7 +621,15 @@ class MmsViewSet(viewsets.ViewSet):
                         subject = f"Quote: {quote.qid} Request Uploaded [PSMDQS-AKHK]"
                         message = f"Hello. \nQuote: {quote.qid} of subject {quote.subject} from department:  {quote.department.name} has been UPLOADED by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPlease log in to PSMDQS to download.\n\nRegards\n PSMDQS-AKHK"
 
-                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        try:
+                            mail = {
+                                "email" : emails, 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            Sendmail.objects.create(**mail)
+                        except Exception as e:
+                            send_mail(subject, message, 'notification@akhskenya.org', emails)
 
                         user_util.log_account_activity(
                             authenticated_user, authenticated_user, "Quote Closed", f"Quote Closure Executed QID: {quote.id}")
