@@ -265,7 +265,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                     subject = f"Quote: {quote.qid} Progress Update [PSMDQS-AKHK]"
                     if reason:
-                        message = f"Hello, \n\nThe Quote:{quote.qid} of subject {quote.subject},\nfrom department: {quote.department.name} has been marked as {quote_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nreason being:\n`{reason}`\n\nRegards\nPSMDQS-AKHK"
+                        message = f"Hello, \n\nThe Quote of Id: {quote.qid}\nfrom department: {quote.department.name} has been marked as {quote_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nreason being:\n`{reason}`\n\nRegards\nPSMDQS-AKHK"
                     else:
                         message = f"Hello, \nThe Quote:{quote.qid} of subject {quote.subject}, from department: {quote.department.name} has been marked as {quote_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nPSMDQS-AKHK"
 
