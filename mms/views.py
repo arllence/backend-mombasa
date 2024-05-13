@@ -239,7 +239,7 @@ class MmsViewSet(viewsets.ViewSet):
 
                     quote.status = quote_status
                     if reason:
-                        current_reason = quote.reason
+                        current_reason = quote.reasons
 
                         if current_reason:
                             current_reason.append(
@@ -248,9 +248,9 @@ class MmsViewSet(viewsets.ViewSet):
                                     "reason": reason
                                 }
                             )
-                            quote.reason = current_reason
+                            quote.reasons = current_reason
                         else:
-                            quote.reason =  [
+                            quote.reasons =  [
                                 {
                                     "status": quote_status,
                                     "reason": reason
