@@ -234,12 +234,29 @@ class MmsViewSet(viewsets.ViewSet):
                     if not reason:
                         return Response({"details": "Reason for status update required !"}, status=status.HTTP_400_BAD_REQUEST)
 
-
-
                 
                 with transaction.atomic():
 
                     quote.status = quote_status
+                    if reason:
+                        current_reason = quote.reason
+
+                        if current_reason:
+                            current_reason.append(
+                                {
+                                    "status": quote_status,
+                                    "reason": reason
+                                }
+                            )
+                            quote.reason = current_reason
+                        else:
+                            quote.reason =  [
+                                {
+                                    "status": quote_status,
+                                    "reason": reason
+                                }
+                            ]
+
                     quote.save()
 
                     # Notify the manager
@@ -247,7 +264,10 @@ class MmsViewSet(viewsets.ViewSet):
                     emails = [quote.uploader.email] + managers_emails
 
                     subject = f"Quote: {quote.qid} Progress Update [PSMDQS-AKHK]"
-                    message = f"Hello, \nThe Quote:{quote.qid} of subject {quote.subject}, from department: {quote.department.name} has been marked as {quote_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nPSMDQS-AKHK"
+                    if reason:
+                        message = f"Hello, \n\nThe Quote:{quote.qid} of subject {quote.subject},\nfrom department: {quote.department.name} has been marked as {quote_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nreason being: {reason}\n\nRegards\nPSMDQS-AKHK"
+                    else:
+                        message = f"Hello, \nThe Quote:{quote.qid} of subject {quote.subject}, from department: {quote.department.name} has been marked as {quote_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nPSMDQS-AKHK"
 
                     # mailgun_general.send_mail(quote.uploader.first_name, quote.uploader.email,subject,message)
                     send_mail(subject, message, 'notification@akhskenya.org', emails)
