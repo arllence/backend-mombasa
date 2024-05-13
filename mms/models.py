@@ -44,6 +44,7 @@ class Quote(models.Model):
     qid = models.CharField(max_length=50, null=True, blank=True, unique=True)
     description = models.TextField()
     content = models.JSONField(null=True, blank=True)
+    reasons = models.JSONField(null=True, blank=True)
     close_attachments = models.JSONField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)

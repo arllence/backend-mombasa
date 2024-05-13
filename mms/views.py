@@ -223,13 +223,18 @@ class MmsViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 quote_id = payload['quote_id']
                 quote_status = payload['status'].upper()
+                reason = payload.get('reason', None)
 
                 try:
                     quote = models.Quote.objects.get(id=quote_id)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Quote !"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                
+                if quote_status in ['REJECTED', 'INCOMPLETE']:
+                    if not reason:
+                        return Response({"details": "Reason for status update required !"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
                 
                 with transaction.atomic():
