@@ -112,6 +112,7 @@ DATABASES = {
 
 # App Schema Configurations
 TRAVEL_REQUEST_SYSTEM = 'trs'
+STAFF_REQUISITION_SYSTEM = 'srrs'
 
 
 
