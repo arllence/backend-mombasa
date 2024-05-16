@@ -111,7 +111,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     # Notify SLT
                     subject = f"New Recruitment Request {uid} Received [SRRS-AKHK]"
-                    message = f"Hello, \n\nA new recruit request of id: {uid}, from department: {department.name}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name}on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\SRRS-AKHK"
+                    message = f"Hello, \n\nA new recruit request of id: {uid}, from department: {department.name}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\SRRS-AKHK"
 
                     try:
                         mail = {
@@ -208,7 +208,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     # Notify creator
                     subject = f"Recruitment Request {recruit.uid} Edited [SRRS-AKHK]"
-                    message = f"Hello, \n\nYour recruit request of id: {recruit.uid},\nhas been edited by {authenticated_user.first_name} {authenticated_user.last_name}on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nVisit SRRS to review.\n\nRegards\SRRS-AKHK"
+                    message = f"Hello, \n\nYour recruit request of id: {recruit.uid},\nhas been edited by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nVisit SRRS to review.\n\nRegards\SRRS-AKHK"
 
                     try:
                         mail = {
@@ -303,16 +303,16 @@ class TrsViewSet(viewsets.ViewSet):
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             query = request.query_params.get('q')
-            # roles = user_util.fetchusergroups(request.user.id)  
 
             if request_id:
                 try:
-                    resp = models.Traveler.objects.get(Q(id=request_id))
-                    resp = serializers.FetchTravelerSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    resp = models.Recruit.objects.get(Q(id=request_id))
+                    resp = serializers.FetchRecruitSerializer(resp, many=False, context={"user_id":request.user.id}).data
                     return Response(resp, status=status.HTTP_200_OK)
                 
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Quote!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
+                
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
@@ -321,116 +321,50 @@ class TrsViewSet(viewsets.ViewSet):
 
                     if "HOD" in roles:
 
-                        if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(
-                                Q(traveler__created_by=authenticated_user) & Q(traveler__department=request.user.department),is_deleted=False).order_by('-date_created')
-                            resp = [x.traveler for x in targets]
-
-                        elif query == 'pending':
-                            resp = models.Traveler.objects.filter(Q(traveler__department=request.user.department) | Q(department=request.user.department) | Q(created_by=request.user) | Q(requires_hod_approval=True) , is_hod_approved=False, is_deleted=False).order_by('-date_created')
+                        if query == 'pending':
+                            resp = models.Recruit.objects.filter(Q(department=request.user.department) | Q(created_by=request.user), is_ceo_approved=False, is_deleted=False).order_by('-date_created')
 
                         else:
-                            resp = models.Traveler.objects.filter(Q(traveler__department=request.user.department) | Q(department=request.user.department) | Q(created_by=request.user) | Q(requires_hod_approval=True) |  Q(created_by=authenticated_user), is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(Q(department=request.user.department) | Q(created_by=request.user), is_deleted=False).order_by('-date_created')
 
                     elif "USER_MANAGER" in roles:
-                        if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
-                            resp = [
-                                    x.traveler 
-                                    for x in targets 
-                                ]
-                        else:
-                            resp = models.Traveler.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
+                        resp = models.Recruit.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
 
                     elif "SLT" in roles:
                         resp = []
                         if "HOF" in roles:
 
-                            if query == 'salary-advance':
-                                targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
-                                resp = [x.traveler for x in targets]
-
-                            elif query == 'pending':
-                                resp = models.Traveler.objects.filter((Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)) | Q(requires_hof_approval=True), is_deleted=False,is_hof_approved=False).order_by('-date_created')
+                            if query == 'pending':
+                                resp = models.Recruit.objects.filter((Q(department__slt__lead=authenticated_user) & Q(is_slt_approved=False)) |(Q(is_hof_approved=False) & Q(is_hhr_approved=True)), is_deleted=False).order_by('-date_created')
 
                             else:
-                                resp = models.Traveler.objects.filter((Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)) | Q(requires_hof_approval=True), is_deleted=False).order_by('-date_created')
+                                resp = models.Recruit.objects.filter((Q(department__slt__lead=authenticated_user) & Q(is_slt_approved=False)) |(Q(is_hof_approved=False) & Q(is_hhr_approved=True)), is_deleted=False).order_by('-date_created')
 
                         else:
-                            resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) & Q(is_slt_approved=False)).order_by('-date_created')
 
                     elif "HOF" in roles:
                         if not query:
-                            resp = models.Traveler.objects.filter(Q(requires_hof_approval=True),is_deleted=False).order_by('-date_created')
-
-                        if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
-                            resp = [x.traveler for x in targets]
+                            resp = models.Recruit.objects.filter((Q(is_hof_approved=False) & Q(is_hhr_approved=True)),is_deleted=False).order_by('-date_created')
 
                         elif query == 'pending':
-                            resp = models.Traveler.objects.filter(Q(requires_hof_approval=True) & Q(is_hof_approved=False), is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter((Q(is_hof_approved=False) & Q(is_hhr_approved=True)),is_deleted=False).order_by('-date_created')
                     
                     elif "CEO" in roles:
                         if not query:
-                            resp = models.Traveler.objects.filter(Q(requires_ceo_approval=True), is_deleted=False).order_by('-date_created')
-
-                        if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
-                            resp = [x.traveler for x in targets]
+                            resp = models.Recruit.objects.filter((Q(is_hof_approved=True) & Q(is_hhr_approved=True) & Q(is_ceo_approved=False)),is_deleted=False).order_by('-date_created')
 
                         elif query == 'pending':
-                            resp = models.Traveler.objects.filter(Q(requires_ceo_approval=True) & Q(is_ceo_approved=False), is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter((Q(is_hof_approved=True) & Q(is_hhr_approved=True) & Q(is_ceo_approved=False)),is_deleted=False).order_by('-date_created')
 
                     elif "USER" in roles:
-                        if not query:
-                            resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(traveler=request.user)).order_by('-date_created')
-
-                        if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False) & Q(traveler__traveler=request.user)).order_by('-date_created')
-                            resp = [x.traveler for x in targets]
-
-                    elif "ADMINISTRATOR" in roles :
-                        allowed_statuses = ['APPROVED', 'CLOSED']
-
-                        if query == 'pending':
-                            resp = models.Traveler.objects.filter(Q(requires_administrator_approval=True) & Q(is_administrator_approved=False), is_deleted=False).order_by('-date_created')
-
-                        elif query == 'salary-advance':
-                            resp = []
-
-                        else:
-                            resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(requires_administrator_approval=True) & Q(status__in=allowed_statuses)).order_by('-date_created')
-
-                    
-                    elif "CASH_OFFICE" in roles :
-                        allowed_statuses = ['APPROVED', 'CLOSED']
-                        
-                        if query == 'pending':
-                            print("is pending")
-                            resp = models.Traveler.objects.filter(Q(requires_cash_office_approval=True) & Q(is_cash_office_approved=False), is_deleted=False).order_by('-date_created')
-
-                        if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False), status='APPROVED').order_by('-date_created')
-                            resp = [x.traveler for x in targets]
-
-                        else:
-                            resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(requires_cash_office_approval=True) & Q(status__in=allowed_statuses)).order_by('-date_created')
-
-                    elif "TRANSPORT" in roles :
-                        allowed_statuses = ['APPROVED', 'CLOSED']
-                        
-                        if query == 'pending':
-                            resp = models.Traveler.objects.filter(Q(requires_transport_approval=True) & Q(is_administrator_approved=False), is_deleted=False).order_by('-date_created')
-                        elif query == 'salary-advance':
-                            resp = []
-                        else:
-                            resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(requires_transport_approval=True) & Q(status__in=allowed_statuses) ).order_by('-date_created')
+                        resp = []
 
 
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
                     result_page = paginator.paginate_queryset(resp, request)
-                    serializer = serializers.FetchTravelerSerializer(
+                    serializer = serializers.SlimFetchRecruitSerializer(
                         result_page, many=True, context={"user_id":request.user.id})
                     return paginator.get_paginated_response(serializer.data)
                 
@@ -447,13 +381,14 @@ class TrsViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             if not request_id:
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            
             with transaction.atomic():
                 try:
+
                     raw = {"is_deleted" : True}
-                    models.Traveler.objects.filter(Q(id=request_id)).update(**raw)
-                    models.Trip.objects.filter(Q(traveler=request_id)).update(**raw)
-                    models.Approval.objects.filter(Q(traveler=request_id)).update(**raw)
-                    return Response('200', status=status.HTTP_200_OK)     
+                    models.Recruit.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)    
+                 
                 except Exception as e:
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)    
 
@@ -475,365 +410,101 @@ class TrsViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
-                traveler = payload['traveler']
-                travel_status = payload['status']
+                recruit_id = payload['recruit_id']
+                recruit_status = payload['status']
                 budget_code = payload.get('budget_code')
 
                 try:
-                    traveler = models.Traveler.objects.get(Q(id=traveler))
+                    recruit = models.Recruit.objects.get(Q(id=recruit_id))
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Trip !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Recruit !"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
 
-                    is_hod = False
-                    is_ceo = False
-                    is_slt = False
-                    is_hof = False
-                    is_cash_office = False
-                    is_transport_office = False
-                    is_administrator_office = False
+                    new_status = "APPROVED"
+                    forward_to = ""
 
-                    traveler_status = "APPROVED"
+                    if 'SLT' in roles:
+                        if recruit.department.slt.lead == authenticated_user:
+                            recruit.is_slt_approved = True
+                            new_status = "SLT APPROVED"
+                            forward_to = ["HR","HHR"]
 
-                    if travel_status == 'HOD':
-                        is_hod = True
-                        approval_for = "HOD"
-                        traveler_status = "APPROVED"
-                        
-                    elif travel_status == "SLT":
-                        is_slt = True
-                        approval_for = "SLT"
-                        traveler_status = "APPROVED"
+                    if 'HHR' in roles:
+                        if recruit.is_slt_approved:
+                            recruit.is_hhr_approved = True
+                            new_status = "HR APPROVED"
+                            forward_to = ["HOF","FINANCE"]
 
-                    elif travel_status == "HOF" :
-                        is_hof = True
-                        approval_for = "HOF"
-                        traveler.status = 'APPROVED'
-                        
-                    elif travel_status == "CEO":
-                        is_ceo = True
-                        approval_for = "CEO"
-                        traveler.status = 'APPROVED'
-                        traveler.requires_cash_office_approval = True
-                        traveler.requires_hof_approval = True
+                    if 'HOF' in roles:
+                        if recruit.is_hhr_approved:
+                            recruit.is_hof_approved = True
+                            new_status = "FINANCE APPROVED"
+                            forward_to = ["CEO"]
 
-                        if traveler.mode_of_transport == 'FLIGHT':
-                            traveler.requires_administrator_approval = True
-                        elif traveler.mode_of_transport == 'HOSPITAL VEHICLE':
-                            traveler.requires_transport_approval = True
-
-
-                        try:
-                            salaryRequest = models.AdvanceSalaryRequests.objects.get(
-                                traveler=traveler)
-                            salaryRequest.status = 'APPROVED'
-                            salaryRequest.approved_by = authenticated_user
-                            salaryRequest.save()
-                        except (ValidationError, ObjectDoesNotExist):
-                            pass
-
-
-                    elif travel_status == "TRANSPORT":
-                        is_transport_office = True
-                        approval_for = "TRANSPORT"
-
-                        approval_msg = payload.get('text')
-                        if not approval_msg:
-                            return Response({"details": "Number Plate / Date of Travel !"}, status=status.HTTP_400_BAD_REQUEST)
-                        
-                        approval_msg.update({"date_created": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))})
-
-                    elif travel_status == "CASH_OFFICE":
-                        is_cash_office = True
-                        approval_for = "CASH_OFFICE"
-
-                        approval_msg = payload.get('text')
-                        disbursement_type =  approval_msg.get('disbursement_type')
-
-                        if not approval_msg:
-                            return Response({"details": "Amount / Transaction Code / Remarks Required !"}, status=status.HTTP_400_BAD_REQUEST)
-                        
-                        approval_msg.update({"date_created": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))})
-                        original_approval_msg = approval_msg
-
-
-                    is_existing = models.Approval.objects.filter(Q(traveler=traveler) & 
-                                                                 Q(approval_for=approval_for)).first()
-
-                    raw = {
-                        "traveler": traveler,
-                        "approval_for": approval_for,
-                        "approved_by": authenticated_user,
-                    }  
-
-                    if is_cash_office:
-                        raw.update({"approval_msg": [approval_msg]})
-
-                    if is_transport_office:
-                        raw.update({"approval_msg": approval_msg})
-
-                    if is_existing:
-                        is_update = True
-                        # previous_approval_msg = is_existing.approval_msg
-                        # previous_approval_msg.append(approval_msg)
-
-                        # # update existing instance
-                        # is_existing.approval_msg = previous_approval_msg
-                        # is_existing.approved_by = authenticated_user
-                        # is_existing.save()
-
-                    else:
-                        is_update = False
-                        createdInstance = models.Approval.objects.create(
-                            **raw
-                        )
+                    if 'CEO' in roles:
+                        if recruit.is_hof_approved:
+                            recruit.is_ceo_approved = True
+                            new_status = "CEO APPROVED"
+                            forward_to = []
 
                     
-                    traveler.budget_code = budget_code
+                    recruit.status = new_status
+                    recruit.save()
 
-                    def update_approval():
-                        previous_approval_msg = is_existing.approval_msg
-                        previous_approval_msg.append(original_approval_msg)
-
-                        # update existing instance
-                        is_existing.approval_msg = previous_approval_msg
-                        is_existing.approved_by = authenticated_user
-                        is_existing.save()
-
-                    def close_request():
-                        if traveler.mode_of_transport != 'FLIGHT' and traveler.is_ceo_approved and traveler.is_hof_approved and traveler.is_transport_dpt_approved:
-                            traveler_status = "CLOSED"
-                            traveler.status = traveler_status
-                            traveler.closed_by = authenticated_user
-                            traveler.date_closed = datetime.datetime.now()
-
-                        if traveler.mode_of_transport == 'FLIGHT' and traveler.is_ceo_approved and traveler.is_hof_approved and traveler.is_administrator_approved:
-                            traveler_status = "CLOSED"
-                            traveler.status = traveler_status
-                            traveler.closed_by = authenticated_user
-                            traveler.date_closed = datetime.datetime.now()
-
-
-                    if is_hod:
-                        traveler.status = traveler_status
-                        traveler.is_hod_approved = is_hod
-
-                    if is_ceo:
-                        traveler.is_ceo_approved = is_ceo
-
-                    if is_slt:
-                        traveler.is_slt_approved = is_slt
-
-                    if is_hof:
-                        traveler.is_hof_approved = is_hof
-                        close_request()
-
-                    if is_cash_office:
-
-                        amount = int(approval_msg.get('amount',0))
-                        travel_cost = int(traveler.travel_cost)
-                        
-                        if is_update:
-                            amount = int(payload.get('text').get('amount'))
-                            approval_msg = is_existing.approval_msg
-
-                            for msg in approval_msg:
-                                if disbursement_type == msg.get('disbursement_type'):
-                                    amount += int(msg.get('amount',0))
-
-                            if disbursement_type == 'Travel Cost':
-                                if amount == travel_cost:
-                                    traveler.is_cash_office_approved = is_cash_office
-                                    close_request()
-                                    update_approval()
-                                elif amount < travel_cost:
-                                    update_approval()
-                                elif amount > travel_cost:
-                                    return Response({"details": "Disbursement cannot be more than requested amount!"},status=status.HTTP_400_BAD_REQUEST)
-                                
-                            elif disbursement_type == 'Travel Advance':
-                                amount = int(payload.get('text').get('amount'))
-                                for msg in approval_msg:
-                                    if disbursement_type == msg.get('disbursement_type'):
-                                        amount += int(msg.get('amount',0))
-
-                                advance = models.AdvanceSalaryRequests.objects.get(traveler=traveler)
-                                travel_cost = advance.amount
-                                
-                                if amount == travel_cost:
-                                    advance.status = "CLOSED"
-                                    advance.save()
-                                elif amount > travel_cost:
-                                    return Response({"details": "Disbursement cannot be more than requested amount!"}, 
-                                                    status=status.HTTP_400_BAD_REQUEST)
-                                update_approval()
-                        else:
-                            if disbursement_type == 'Travel Cost':
-
-                                if amount == travel_cost:
-                                    close_request()
-
-                                elif amount > travel_cost:
-                                    createdInstance.approval_msg = []
-                                    createdInstance.save()
-                                    return Response({"details": "Disbursement cannot be more than requested amount!"}, 
-                                                    status=status.HTTP_400_BAD_REQUEST)
-                            elif disbursement_type == 'Travel Advance':
-                                advance = models.AdvanceSalaryRequests.objects.get(traveler=traveler)
-                                travel_cost = advance.amount
-                                if amount == travel_cost:
-                                    advance.status = "CLOSED"
-                                    advance.save()
-                                elif amount > travel_cost:
-                                    createdInstance.approval_msg = []
-                                    createdInstance.save()
-                                    return Response({"details": "Disbursement cannot be more than requested amount!"}, 
-                                                    status=status.HTTP_400_BAD_REQUEST)
-
-                    if is_transport_office:
-                        if traveler.is_ceo_approved and traveler.is_hof_approved and traveler.is_cash_office_approved:
-                            traveler_status = "CLOSED"
-                            traveler.status = traveler_status
-                            traveler.closed_by = authenticated_user
-                            traveler.date_closed = datetime.datetime.now()
-
-                        traveler.is_transport_dpt_approved = is_transport_office
-
-                    traveler.save()
-
+                    # track status change
                     raw = {
-                        "traveler": traveler,
-                        "status": traveler_status,
-                        "status_for": travel_status,
+                        "recruit": recruit,
+                        "status": new_status,
+                        "status_for": '/'.join(roles),
                         "action_by": authenticated_user
                     }
 
-                    if not is_update:
-                        models.StatusChange.objects.create(**raw)
+                    models.StatusChange.objects.create(**raw)
 
                     # Notify the requestor
-                    if is_hod:
-                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
-                        message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by HOD.\nPending SLT Approval.\n\nRegards\nTRS-AKHK"
-                    elif is_slt:
-                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
-                        message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been Approved by SLT.\nPending Finance Approval.\n\nRegards\nTRS-AKHK"
-                    elif is_hof:
-                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
-                        message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by Finance.\n\nRegards\nTRS-AKHK"
-                    elif is_ceo:
-                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
-                        message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by CEO.\n\nRegards\nTRS-AKHK"
-                    elif is_cash_office:
-                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
-                        message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by Cash Office.\n\nRegards\nTRS-AKHK"
-                    elif is_transport_office:
-                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
-                        message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by Transport Office.\n\nRegards\nTRS-AKHK"
-
-                    # try:
-                    #     send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
-                    # except Exception as e:
-                    #     pass
+                    subject = f"Recruitment Request: {recruit.uid} Status  [SRRS-AKHK]"
+                    message = f"Dear {recruit.created_by.first_name}, \n\nYour Recruitment Request has been {new_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nSRRS-AKHK"
+                    
                     try:
                         mail = {
-                            "email" : [traveler.created_by.email], 
+                            "email" : [recruit.created_by.email], 
                             "subject" : subject,
                             "message" : message,
                         }
                         Sendmail.objects.create(**mail)
                     except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
+                        logger.error(e)
 
-                    # # Notify HOF
-                    # if is_slt and traveler_status == 'APPROVED':
-                    #     emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
-                    #     subject = f"Request for Travel Budget Approval: {traveler.tid}.  [TRS-AKHK]"
-                    #     message = f"Hello. \n\nTravel Request: {traveler.tid} \nis pending budget approval by HOF.\n\nRegards\nTRS-AKHK"
+                    # Notify next office
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=forward_to)).values_list('email', flat=True))
+                    subject = f"Recruitment Request: {recruit.uid} Pending Your Action.  [SRRS-AKHK]"
+                    message = f"Hello. \n\Recruitment Request: {recruit.uid} from department: {recruit.department.name} has been is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\SRRS-AKHK"
 
-                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
-
-                    # # Notify CEO
-                    # if is_hof and traveler.mode_of_transport == 'FLIGHT':
-                    #     emails = list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
-                    #     subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
-                    #     message = f"Hello. \n\nTravel Request: {traveler.tid} has been\n approved by Finance\nand is now pending your approval.\n\nRegards\nTRS-AKHK"
-
-                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
-
-                    # Notify ADMINISTRATOR
-                    if is_ceo and traveler.mode_of_transport == 'FLIGHT':
-                        emails = list(get_user_model().objects.filter(Q(groups__name='ADMINISTRATOR')).values_list('email', flat=True))
-                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
-                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO, and is now pending administration and costing\n\nRegards\nTRS-AKHK"
-
-                        # try:
-                        #     send_mail(subject, message, 'notification@akhskenya.org', emails)
-                        # except Exception as e:
-                        #     pass
-
-                        try:
+                    try:
+                        if emails:
                             mail = {
                                 "email" : emails, 
                                 "subject" : subject,
                                 "message" : message,
                             }
+                            
                             Sendmail.objects.create(**mail)
-                        except Exception as e:
-                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                    except Exception as e:
+                        logger.error(e)
 
-                    # Notify CASH OFFICE, HOF, MMD
-                    if is_ceo:
-                        emails = list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE') | Q(groups__name='HOF') | Q(groups__name='MMD')).values_list('email', flat=True))
-                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
-                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
-
-                        # try:
-                        #     send_mail(subject, message, 'notification@akhskenya.org', emails)
-                        # except Exception as e:
-                        #     pass
-
-                        try:
-                            mail = {
-                                "email" : emails, 
-                                "subject" : subject,
-                                "message" : message,
-                            }
-                            Sendmail.objects.create(**mail)
-                        except Exception as e:
-                            send_mail(subject, message, 'notification@akhskenya.org', emails)
-
-                    # # Notify TRANSPORT
-                    if is_ceo and traveler.mode_of_transport == 'HOSPITAL VEHICLE':
-                        emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
-                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
-                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
-
-                        # try:
-                        #     send_mail(subject, message, 'notification@akhskenya.org', emails)
-                        # except Exception as e:
-                        #     pass
-
-                        try:
-                            mail = {
-                                "email" : emails, 
-                                "subject" : subject,
-                                "message" : message,
-                            }
-                            Sendmail.objects.create(**mail)
-                        except Exception as e:
-                            send_mail(subject, message, 'notification@akhskenya.org', emails)
 
                 user_util.log_account_activity(
-                    authenticated_user, traveler.created_by, "Travel Request approval", 
-                    f"Approval Executed TID: {str(traveler.id)}")
+                    authenticated_user, recruit.created_by, "Recruitment Request approval", 
+                    f"Approval Executed UID: {str(recruit.id)}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
             else:
                 return Response({"details": serializer.errors}, 
                                 status=status.HTTP_400_BAD_REQUEST)
+            
             
     @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,

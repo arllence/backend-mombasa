@@ -46,6 +46,7 @@ class Recruit(models.Model):
     hof_comments = models.TextField(null=True, blank=True)
     ceo_comments = models.TextField(null=True, blank=True)
     is_slt_approved = models.BooleanField(default=False)
+    is_hhr_approved = models.BooleanField(default=False)
     is_hof_approved = models.BooleanField(default=False)
     is_ceo_approved = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
