@@ -233,57 +233,59 @@ class TrsViewSet(viewsets.ViewSet):
             
         elif request.method == "PATCH":
             payload = request.data
-            serializer = serializers.PatchTravelerSerializer(
+            serializer = serializers.PatchRecruitSerializer(
                 data=payload, many=False)
             
             if serializer.is_valid():
-                traveler_id = payload['traveler_id']
-                traveler_status = payload['status'].upper()
+                recruit_id = payload['recruit_id']
+                recruit_status = payload['status'].upper()
                 # roles = user_util.fetchusergroups(request.user.id)  
 
                 try:
-                    traveler = models.Traveler.objects.get(id=traveler_id)
+                    recruit = models.Recruit.objects.get(id=recruit_id)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Travel !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Recruit !"}, status=status.HTTP_400_BAD_REQUEST)
             
                 
                 with transaction.atomic():
 
-                    if traveler_status == 'REJECTED':
-                        traveler.rejected_by = authenticated_user
+                    if recruit_status in  ['DECLINED','CANCELED']:
+                        recruit.rejected_by = authenticated_user
 
-                    traveler.status = traveler_status
-                    traveler.save()
-
-                    # update advance travel request
-                    try:
-                        salaryRequest = models.AdvanceSalaryRequests.objects.get(
-                            traveler=traveler)
-                        salaryRequest.status = traveler_status
-                        salaryRequest.approved_by = authenticated_user
-                        salaryRequest.save()
-                    except (ValidationError, ObjectDoesNotExist):
-                        pass
+                    recruit.status = recruit_status
+                    recruit.save()
 
                     raw = {
-                        "traveler": traveler,
-                        "status": traveler_status,
+                        "recruit": recruit,
+                        "status": recruit_status,
                         "status_for": '/'.join(roles),
                         "action_by": authenticated_user,
                     }
 
                     models.StatusChange.objects.create(**raw)
 
+                    emails = []
+                    target = []
+
+                    if recruit.is_slt_approved:
+                        emails.append(recruit.department.slt.lead.email)
+                    if recruit.is_hhr_approved:
+                       target += ["HR","HHR"]
+                    if recruit.is_hof_approved:
+                       target += ["HOF","FINANCE"]
+
+                    # Notify targets
+                    targets_emails = list(get_user_model().objects.filter(Q(groups__name__in=target)).values_list('email', flat=True))
+                    
                     # Notify requestor
-                    emails = [traveler.created_by.email]
+                    emails.append(recruit.created_by.email)
 
-                    subject = f"Travel Request: {traveler.tid} Progress Update [TRS-AKHK]"
-                    message = f"Hello, \nThe Request:{traveler.tid} has been marked as {traveler_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
+                    # combine emails
+                    emails += targets_emails
 
-                    # try:
-                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
-                    # except Exception as e:
-                    #     pass
+                    subject = f"Staff Recruitment Request: {recruit.uid} Progress Update [SRRS-AKHK]"
+                    message = f"Hello. \n\nThe requisition request of id:{recruit.uid} has been marked as {recruit_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
+
                     try:
                         mail = {
                             "email" : emails, 
@@ -292,11 +294,11 @@ class TrsViewSet(viewsets.ViewSet):
                         }
                         Sendmail.objects.create(**mail)
                     except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        logger.error(e)
                                                 
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, f"Travel Request Status: {traveler_status}", f"Travel Request: {traveler_id}")
+                    authenticated_user, authenticated_user, f"Recruitment Request Update Status: {recruit_status}", f"Recruitment Request: {recruit_id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -393,7 +395,7 @@ class TrsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)    
 
     
-    @action(methods=["POST", "GET", "PUT", "DELETE"],
+    @action(methods=["POST"],
             detail=False,
             url_path="approve-request",
             url_name="approve-request")
@@ -411,8 +413,7 @@ class TrsViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 recruit_id = payload['recruit_id']
-                recruit_status = payload['status']
-                budget_code = payload.get('budget_code')
+                # recruit_status = payload['status']
 
                 try:
                     recruit = models.Recruit.objects.get(Q(id=recruit_id))

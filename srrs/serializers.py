@@ -43,3 +43,10 @@ class PutRecruitSerializer(serializers.Serializer):
     filling_period_from = serializers.CharField(max_length=5000)
     filling_period_to = serializers.CharField(max_length=255)
     temporary_task_assignment_to = serializers.CharField(max_length=255)
+
+class PatchRecruitSerializer(serializers.Serializer):
+    recruit_id = serializers.CharField(max_length=500)
+    status = serializers.CharField(max_length=500)
+
+class ApprovalSerializer(serializers.Serializer):
+    recruit_id = serializers.CharField(max_length=500)
