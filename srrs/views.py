@@ -26,7 +26,7 @@ from rest_framework.pagination import PageNumberPagination
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
-class TrsViewSet(viewsets.ViewSet):
+class SrrsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     search_fields = ['id', ]
     
@@ -667,11 +667,6 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify the requestor
                     subject = f"Travel Request {traveler.tid} Closed  [TRS-AKHK]"
                     message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request: {traveler.tid}, \nhas been fully processed by administrator.\nThank you for your patience.\n\nRegards\nTRS-AKHK"
-
-                    # try:
-                    #     send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
-                    # except Exception as e:
-                    #     pass
 
                     try:
                         mail = {
