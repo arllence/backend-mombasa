@@ -513,186 +513,17 @@ class TrsViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
-            
-    @action(methods=["POST", "GET", "PUT", "DELETE"],
+
+    @action(methods=["POST","PUT"],
             detail=False,
-            url_path="forward-request",
-            url_name="forward-request")
-    def forward(self, request):
-
-        authenticated_user = request.user
-
-        if request.method == "POST":
-
-            payload = request.data
-            roles = user_util.fetchusergroups(request.user.id) 
-
-            serializer = serializers.TravelForwardingSerializer(
-                    data=payload, many=False)
-            
-            if serializer.is_valid():
-                traveler = payload['traveler']
-                send_to = payload['send_to']
-
-                try:
-                    traveler = models.Traveler.objects.get(Q(id=traveler))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Travel Request !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                with transaction.atomic():
-
-                    if send_to == 'HOD':
-                        traveler.requires_hod_approval = True
-                        emails = list(get_user_model().objects.filter(Q(groups__name='HOD') & Q(department=traveler.department)).values_list('email', flat=True))
-                        
-                    elif send_to == "SLT":
-                        traveler.requires_slt_approval = True
-                        if traveler.department.slt:
-                            emails = [traveler.department.slt.lead.email]
-                        else:
-                            return Response({"details": "Department has no SLT assigned !"}, status=status.HTTP_400_BAD_REQUEST)
-
-                    elif send_to == "HOF" :
-                        traveler.requires_hof_approval = True
-                        emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
-                        
-                    elif send_to == "CEO":
-                        traveler.requires_ceo_approval = True
-                        emails = list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
-
-                    elif send_to == "TRANSPORT":
-                        traveler.requires_transport_approval = True
-                        emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
-
-                    elif send_to == "CASH_OFFICE":
-                        traveler.requires_cash_office_approval = True
-                        emails = list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE')).values_list('email', flat=True))
-
-                    elif send_to == "ADMINISTRATOR":
-                        traveler.requires_administrator_approval = True
-                        emails = list(get_user_model().objects.filter(Q(groups__name='ADMINISTRATOR')).values_list('email', flat=True))
-
-                    # update travel
-                    traveler.save()
-
-
-                    # create forwarding instance
-                    previous_forwarder = models.TravelForwarding.objects.filter(
-                        Q(traveler=traveler)).order_by('-date_created').first()
-                    if previous_forwarder:
-                        previous_forwarder = previous_forwarder.forward_to
-                    else:
-                        previous_forwarder = "CREATOR"
-
-                    raw = {
-                        "traveler": traveler,
-                        "forward_to": send_to,
-                        "forward_from": previous_forwarder,
-                        "forward_by": authenticated_user,
-                    }
-                    models.TravelForwarding.objects.create(**raw)
-
-                    # Notify recipient
-                    subject = f"Travel Request Received [{traveler.tid}]"
-                    message = f"Hello. \n\nTravel Request: of ID {traveler.tid}\nhas been forwarded to you by {authenticated_user.first_name} {authenticated_user.last_name},\npending your action.\n\nRegards\nTRS-AKHK"
-
-                    # try:
-                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
-                    # except Exception as e:
-                    #     pass
-
-                    try:
-                        mail = {
-                            "email" : emails, 
-                            "subject" : subject,
-                            "message" : message,
-                        }
-                        Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', emails)
-
-
-                user_util.log_account_activity(
-                    authenticated_user, traveler.created_by, f"Travel Request forwarded to {send_to}", f"Approval Executed TID: {str(traveler.id)}")
-                
-                return Response('success', status=status.HTTP_200_OK)
-            
-            else:
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-            
-
-    @action(methods=["POST",],
-            detail=False,
-            url_path="update-salary-request",
-            url_name="update-salary-request")
-    def salary_request(self, request):
-
-        authenticated_user = request.user
-
-        if request.method == "POST":
-
-            payload = request.data
-            roles = user_util.fetchusergroups(request.user.id) 
-
-            serializer = serializers.PatchAdvanceSalaryRequestsSerializer(
-                    data=payload, many=False)
-            
-            if serializer.is_valid():
-                update_status = payload['status'].upper()
-                request_id = payload.get('request_id')
-
-                try:
-                    salaryRequest = models.AdvanceSalaryRequests.objects.get(Q(id=request_id))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Salary Request !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                with transaction.atomic():
-
-                    if "CEO" in roles or "HOF" in roles:
-                        salaryRequest.status = update_status
-                        salaryRequest.approved_by = authenticated_user
-                        salaryRequest.save()
-                    else:
-                        return Response({"details": "Not Permitted !"}, status=status.HTTP_400_BAD_REQUEST)
-
-                    # Notify the requestor
-                    subject = f"Travel Advance Request {update_status.capitalize()}  [TRS-AKHK]"
-                    message = f"Hello, \nYour Advance Travel Request for travel:{salaryRequest.traveler.tid} has been {update_status.capitalize()} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
-
-                    # try:
-                    #     send_mail(subject, message, 'notification@akhskenya.org', [salaryRequest.traveler.traveler.email])
-                    # except Exception as e:
-                    #     pass
-
-                    try:
-                        mail = {
-                            "email" : [salaryRequest.traveler.traveler.email], 
-                            "subject" : subject,
-                            "message" : message,
-                        }
-                        Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', [salaryRequest.traveler.traveler.email])
-
-                user_util.log_account_activity(
-                    authenticated_user, salaryRequest.traveler.created_by, "Travel Request approval", f"Approval Executed instance ID: {str(salaryRequest.id)}")
-                
-                return Response('success', status=status.HTTP_200_OK)
-            
-            else:
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-            
-
-    @action(methods=["POST",],
-            detail=False,
-            url_path="update-budget-code",
-            url_name="update-budget-code")
-    def budget_code(self, request):
+            url_path="hr-details-update",
+            url_name="hr-details-update")
+    def hr_details_update(self, request):
 
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
 
-        allowed = ["HOF","CEO", "FINANCE"]
+        allowed = ["HOF","HR","HHR","FINANCE"]
 
         if not any(item in allowed for item in roles):
             return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
@@ -700,32 +531,51 @@ class TrsViewSet(viewsets.ViewSet):
         if request.method == "POST":
 
             payload = request.data
-            roles = user_util.fetchusergroups(request.user.id) 
 
-            serializer = serializers.PatchBudgetCodeSerializer(
+            serializer = serializers.PatchHRDetailsSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
-                code = payload['budget_code']
-                request_id = payload.get('request_id')
+                recruit_id = payload['recruit_id']
+                proposed_salary = payload['proposed_salary']
+                replacement_details = payload.get('replacement_details', None)
+                comments = payload.get('comments', None)
 
                 try:
-                    traveler = models.Traveler.objects.get(Q(id=request_id))
+                    recruit = models.Recruit.objects.get(id=recruit_id)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Travel Request !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Recruitment Request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if recruit.nature_of_hiring == 'Replacement' and not replacement_details:
+                    return Response({"details": "Replacement details required !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # keep history before editing
+                try:
+                    history = serializers.SlimFetchRecruitSerializer(recruit, many=False).data
+                    raw = {
+                        "uid" : recruit.uid,
+                        "data" : history,
+                        "triggered_by": authenticated_user
+                    }
+                    models.RecruitHistory.objects.create(**raw)
+                except Exception as e:
+                    print(e)
                 
                 with transaction.atomic():
 
-                    traveler.budget_code = code
-                    traveler.save()
+                    recruit.proposed_salary = proposed_salary
+                    recruit.replacement_details = replacement_details
+                    recruit.hhr_comments = comments
+                    recruit.save()
 
                 user_util.log_account_activity(
-                    authenticated_user, traveler.created_by, "Budget Code", f"Travel Budget Code Updated. ID : {str(traveler.id)}")
+                    authenticated_user, recruit.created_by, "HR Details Added", f"Recruitment ID : {str(recruit.id)}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+        
             
             
     @action(methods=["POST", "GET", "PUT", "DELETE"],

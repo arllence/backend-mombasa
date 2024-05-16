@@ -50,3 +50,7 @@ class PatchRecruitSerializer(serializers.Serializer):
 
 class ApprovalSerializer(serializers.Serializer):
     recruit_id = serializers.CharField(max_length=500)
+
+class PostHRDetailsSerializer(serializers.Serializer):
+    recruit_id = serializers.CharField(max_length=500)
+    proposed_salary = serializers.ImageField(max_length=500)
