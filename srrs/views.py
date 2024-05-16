@@ -157,7 +157,7 @@ class TrsViewSet(viewsets.ViewSet):
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Recruit Request !"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                # keep history
+                # keep history before editing
                 try:
                     history = serializers.SlimFetchRecruitSerializer(recruit, many=False).data
                     raw = {
@@ -206,13 +206,13 @@ class TrsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
 
-                    # Notify SLT
-                    subject = f"New Recruitment Request {uid} Received [SRRS-AKHK]"
-                    message = f"Hello, \n\nA new recruit request of id: {uid}, from department: {department.name}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name}on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\SRRS-AKHK"
+                    # Notify creator
+                    subject = f"Recruitment Request {recruit.uid} Edited [SRRS-AKHK]"
+                    message = f"Hello, \n\nYour recruit request of id: {recruit.uid},\nhas been edited by {authenticated_user.first_name} {authenticated_user.last_name}on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nVisit SRRS to review.\n\nRegards\SRRS-AKHK"
 
                     try:
                         mail = {
-                            "email" : managers_emails, 
+                            "email" : [recruit.created_by.email], 
                             "subject" : subject,
                             "message" : message,
                         }
@@ -220,10 +220,10 @@ class TrsViewSet(viewsets.ViewSet):
                         Sendmail.objects.create(**mail)
 
                     except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        print(e)
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Recruitment Request created", f"Recruitment Request Id: {recruit.id}")
+                    authenticated_user, authenticated_user, "Recruitment Request edited", f"Recruitment Request Id: {recruit.id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
