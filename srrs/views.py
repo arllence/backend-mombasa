@@ -423,31 +423,36 @@ class TrsViewSet(viewsets.ViewSet):
                 with transaction.atomic():
 
                     new_status = "APPROVED"
-                    forward_to = ""
+                    forward_to = []
+                    previous_office = []
 
                     if 'SLT' in roles:
                         if recruit.department.slt.lead == authenticated_user:
                             recruit.is_slt_approved = True
                             new_status = "SLT APPROVED"
                             forward_to = ["HR","HHR"]
+                            previous_office = []
 
                     if 'HHR' in roles:
                         if recruit.is_slt_approved:
                             recruit.is_hhr_approved = True
                             new_status = "HR APPROVED"
                             forward_to = ["HOF","FINANCE"]
+                            previous_office = ["SLT"]
 
                     if 'HOF' in roles:
                         if recruit.is_hhr_approved:
                             recruit.is_hof_approved = True
                             new_status = "FINANCE APPROVED"
                             forward_to = ["CEO"]
+                            previous_office = ["SLT","HR","HHR"]
 
                     if 'CEO' in roles:
                         if recruit.is_hof_approved:
                             recruit.is_ceo_approved = True
                             new_status = "CEO APPROVED"
                             forward_to = []
+                            previous_office = ["SLT","HR","HHR","HOF","FINANCE"]
 
                     
                     recruit.status = new_status
@@ -463,9 +468,11 @@ class TrsViewSet(viewsets.ViewSet):
 
                     models.StatusChange.objects.create(**raw)
 
-                    # Notify the requestor
+                    # Notify the requestor & previous offices
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=previous_office)).values_list('email', flat=True))
+                    emails.append(recruit.created_by.email)
                     subject = f"Recruitment Request: {recruit.uid} Status  [SRRS-AKHK]"
-                    message = f"Dear {recruit.created_by.first_name}, \n\nYour Recruitment Request has been {new_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nSRRS-AKHK"
+                    message = f"Hello, \n\Staff Recruitment Request of id: {recruit.uid} has been {new_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nSRRS-AKHK"
                     
                     try:
                         mail = {
@@ -480,7 +487,7 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify next office
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=forward_to)).values_list('email', flat=True))
                     subject = f"Recruitment Request: {recruit.uid} Pending Your Action.  [SRRS-AKHK]"
-                    message = f"Hello. \n\Recruitment Request: {recruit.uid} from department: {recruit.department.name} has been is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\SRRS-AKHK"
+                    message = f"Hello. \n\Recruitment Request: {recruit.uid} from department: {recruit.department.name} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\SRRS-AKHK"
 
                     try:
                         if emails:
