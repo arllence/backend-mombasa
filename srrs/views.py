@@ -239,8 +239,7 @@ class SrrsViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 recruit_id = payload['recruit_id']
                 recruit_status = payload['status'].upper()
-                reason = payload.get('reason', None)
-                # roles = user_util.fetchusergroups(request.user.id)  
+                reason = payload.get('reason', None) 
 
                 try:
                     recruit = models.Recruit.objects.get(id=recruit_id)
