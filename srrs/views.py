@@ -437,7 +437,7 @@ class SrrsViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 recruit_id = payload['recruit_id']
-                # recruit_status = payload['status']
+                comments = payload['comments']
 
                 try:
                     recruit = models.Recruit.objects.get(Q(id=recruit_id))
@@ -464,6 +464,8 @@ class SrrsViewSet(viewsets.ViewSet):
                             new_status = "HR APPROVED"
                             forward_to = ["HOF","FINANCE"]
                             previous_office = ["SLT"]
+                            if comments:
+                                recruit.hhr_comments = comments
 
                     if 'HOF' in roles:
                         if recruit.is_hhr_approved:
@@ -471,6 +473,8 @@ class SrrsViewSet(viewsets.ViewSet):
                             new_status = "FINANCE APPROVED"
                             forward_to = ["CEO"]
                             previous_office = ["SLT","HR","HHR"]
+                            if comments:
+                                recruit.hof_comments = comments
 
                     if 'CEO' in roles:
                         if recruit.is_hof_approved:
@@ -478,6 +482,8 @@ class SrrsViewSet(viewsets.ViewSet):
                             new_status = "CEO APPROVED"
                             forward_to = []
                             previous_office = ["SLT","HR","HHR","HOF","FINANCE"]
+                            if comments:
+                                recruit.ceo_comments = comments
 
                     
                     recruit.status = new_status
