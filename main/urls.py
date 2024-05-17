@@ -10,6 +10,7 @@ urlpatterns = [
     path(API_VERSION, include('acl.urls')),
     path(API_VERSION, include('mms.urls')),
     path(API_VERSION, include('trs.urls')),
+    path(API_VERSION, include('srrs.urls')),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
 

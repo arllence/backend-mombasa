@@ -436,7 +436,7 @@ class SrrsViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 recruit_id = payload['recruit_id']
-                comments = payload['comments']
+                comments = payload.get('comments')
 
                 try:
                     recruit = models.Recruit.objects.get(Q(id=recruit_id))
@@ -605,8 +605,7 @@ class SrrsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
-            
-            
+                 
     @action(methods=["POST"],
             detail=False,
             url_path="attach-budget-approval",

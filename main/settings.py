@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'acl',
     'mms',
     'trs',
+    'srrs',
 ]
 
 MIDDLEWARE = [

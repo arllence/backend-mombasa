@@ -9,22 +9,22 @@ class Recruit(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="created_by",
+       related_name="srrs_created_by",
        null=True, blank=True
     )
     closed_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="closed_by",
+       related_name="srrs_closed_by",
        null=True, blank=True
     )
     rejected_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="rejected_by",
+       related_name="srrs_rejected_by",
        null=True, blank=True
     )
     department = models.ForeignKey(
        Department, on_delete=models.DO_NOTHING, 
-       related_name="department",
+       related_name="srrs_department",
        null=True, blank=True
     )
     uid = models.CharField(max_length=50, unique=True)
@@ -90,7 +90,7 @@ class StatusChange(models.Model):
     status_for = models.CharField(max_length=255, null=True, blank=True)
     action_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="action_by",
+       related_name="srrs_action_by",
        null=True, blank=True
     )
     is_deleted = models.BooleanField(default=False)
