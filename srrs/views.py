@@ -50,6 +50,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
+                department = payload['department']
                 position_title = payload['position_title']
                 position_type = payload['position_type']
                 qualifications = payload['qualifications']
@@ -63,9 +64,11 @@ class SrrsViewSet(viewsets.ViewSet):
 
                 uid = shared_fxns.generate_unique_identifier()
 
-                department = authenticated_user.department
-                if not department:
-                    return Response({"details": "Department Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                try:
+                    department = Department.objects.get(id=department)
+                except Exception as e:
+                    return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
+
 
                 if not qualifications:
                     return Response({"details": "Qualifications Required !"}, status=status.HTTP_400_BAD_REQUEST)
@@ -141,6 +144,7 @@ class SrrsViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 request_id = payload['request_id']
+                department = payload['department']
                 position_title = payload['position_title']
                 position_type = payload['position_type']
                 qualifications = payload['qualifications']
@@ -170,9 +174,10 @@ class SrrsViewSet(viewsets.ViewSet):
                     print(e)
 
 
-                department = authenticated_user.department
-                if not department:
-                    return Response({"details": "Department Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                try:
+                    department = Department.objects.get(id=department)
+                except Exception as e:
+                    return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
 
                 if not qualifications:
                     return Response({"details": "Qualifications Required !"}, status=status.HTTP_400_BAD_REQUEST)
