@@ -239,6 +239,7 @@ class SrrsViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 recruit_id = payload['recruit_id']
                 recruit_status = payload['status'].upper()
+                reason = payload.get('reason', None)
                 # roles = user_util.fetchusergroups(request.user.id)  
 
                 try:
@@ -251,17 +252,40 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     if recruit_status in  ['DECLINED','CANCELED']:
                         recruit.rejected_by = authenticated_user
+                        if not reason:
+                            return Response({"details": f"Reason for {recruit_status} status required !"}, status=status.HTTP_400_BAD_REQUEST)
 
                     recruit.status = recruit_status
+                    if reason:
+                        current_reason = recruit.reasons
+
+                        if current_reason:
+                            current_reason.append(
+                                {
+                                    "status": recruit_status,
+                                    "reason": reason,
+                                    "date": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
+                                }
+                            )
+                            recruit.reasons = current_reason
+                        else:
+                            recruit.reasons =  [
+                                {
+                                    "status": recruit_status,
+                                    "reason": reason,
+                                    "date": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
+                                }
+                            ]
+
                     recruit.save()
 
+                    # track status change
                     raw = {
                         "recruit": recruit,
                         "status": recruit_status,
                         "status_for": '/'.join(roles),
                         "action_by": authenticated_user,
                     }
-
                     models.StatusChange.objects.create(**raw)
 
                     emails = []

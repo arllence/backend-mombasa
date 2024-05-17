@@ -636,7 +636,6 @@ class TrsViewSet(viewsets.ViewSet):
                         allowed_statuses = ['APPROVED', 'CLOSED']
                         
                         if query == 'pending':
-                            print("is pending")
                             resp = models.Traveler.objects.filter(Q(requires_cash_office_approval=True) & Q(is_cash_office_approved=False), is_deleted=False).order_by('-date_created')
 
                         if query == 'salary-advance':
