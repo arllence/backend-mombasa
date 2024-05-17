@@ -40,7 +40,7 @@ class Recruit(models.Model):
     filling_period_to = models.DateField()
     temporary_task_assignment_to = models.CharField(max_length=255)
     replacement_details = models.JSONField(null=True, blank=True)
-    reasons = models.JSONField(null=True, blank=True)
+    rejection_reasons = models.JSONField(null=True, blank=True)
     proposed_salary = models.BigIntegerField(default=0)
     budget_approval_file = models.FileField(upload_to='documents/srrs/budget_approval/', null=True, blank=True)
     hhr_comments = models.TextField(null=True, blank=True)

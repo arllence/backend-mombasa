@@ -111,7 +111,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     # Notify SLT
                     subject = f"New Recruitment Request {uid} Received [SRRS-AKHK]"
-                    message = f"Hello, \n\nA new recruit request of id: {uid}, from department: {department.name}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\SRRS-AKHK"
+                    message = f"Hello, \n\nA new recruit request of id: {uid}, from department: {department.name}, for position:{recruit.position_title}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\SRRS-AKHK"
 
                     try:
                         mail = {
@@ -208,7 +208,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     # Notify creator
                     subject = f"Recruitment Request {recruit.uid} Edited [SRRS-AKHK]"
-                    message = f"Hello, \n\nYour recruit request of id: {recruit.uid},\nhas been edited by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nVisit SRRS to review.\n\nRegards\SRRS-AKHK"
+                    message = f"Hello, \n\nYour recruit request of id: {recruit.uid} for position:{recruit.position_title},\nhas been edited by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nVisit SRRS to review.\n\nRegards\SRRS-AKHK"
 
                     try:
                         mail = {
@@ -257,7 +257,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     recruit.status = recruit_status
                     if reason:
-                        current_reason = recruit.reasons
+                        current_reason = recruit.rejection_reasons
 
                         if current_reason:
                             current_reason.append(
@@ -267,9 +267,9 @@ class SrrsViewSet(viewsets.ViewSet):
                                     "date": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
                                 }
                             )
-                            recruit.reasons = current_reason
+                            recruit.rejection_reasons = current_reason
                         else:
-                            recruit.reasons =  [
+                            recruit.rejection_reasons =  [
                                 {
                                     "status": recruit_status,
                                     "reason": reason,
@@ -308,7 +308,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     emails += targets_emails
 
                     subject = f"Staff Recruitment Request: {recruit.uid} Progress Update [SRRS-AKHK]"
-                    message = f"Hello. \n\nThe requisition request of id:{recruit.uid} has been marked as {recruit_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
+                    message = f"Hello. \n\nThe requisition request of id:{recruit.uid} for position:{recruit.position_title} has been marked as {recruit_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
 
                     try:
                         mail = {
@@ -497,7 +497,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=previous_office)).values_list('email', flat=True))
                     emails.append(recruit.created_by.email)
                     subject = f"Recruitment Request: {recruit.uid} Status  [SRRS-AKHK]"
-                    message = f"Hello, \n\Staff Recruitment Request of id: {recruit.uid} has been {new_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nSRRS-AKHK"
+                    message = f"Hello, \n\Staff Recruitment Request of id: {recruit.uid} for position:{recruit.position_title} has been {new_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nSRRS-AKHK"
                     
                     try:
                         mail = {
@@ -512,7 +512,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     # Notify next office
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=forward_to)).values_list('email', flat=True))
                     subject = f"Recruitment Request: {recruit.uid} Pending Your Action.  [SRRS-AKHK]"
-                    message = f"Hello. \n\Recruitment Request: {recruit.uid} from department: {recruit.department.name} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\SRRS-AKHK"
+                    message = f"Hello. \n\Recruitment Request: {recruit.uid} from department: {recruit.department.name}, for position:{recruit.position_title} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\SRRS-AKHK"
 
                     try:
                         if emails:
