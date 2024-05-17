@@ -578,108 +578,72 @@ class SrrsViewSet(viewsets.ViewSet):
         
             
             
-    @action(methods=["POST", "GET", "PUT", "DELETE"],
+    @action(methods=["POST"],
             detail=False,
-            url_path="process-travel-request",
-            url_name="process-travel-request")
-    def process_travel_request(self, request):
+            url_path="attach-budget-approval",
+            url_name="attach-budget-approval")
+    def attach_budget_approval(self, request):
 
         authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        allowed = ["HOF","HR","HHR","FINANCE"]
+
+        if not any(item in allowed for item in roles):
+            return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == "POST":
 
-            # payload = request.data
-            roles = user_util.fetchusergroups(request.user.id) 
-
             payload = json.loads(request.data['payload'])
-            air_ticket_file = request.FILES.get('ticket', None)
+            budget_approval_file = request.FILES.get('budget_approval', None)
 
-            if "ADMINISTRATOR" not in roles:
-                return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
+            if not budget_approval_file:
+                return Response({"details": "Upload Budget Approval !"}, status=status.HTTP_400_BAD_REQUEST)
 
-            serializer = serializers.CostingSerializer(
+
+            serializer = serializers.ApprovalSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
-                traveler = payload['traveler']
-                bill_settlement_by = payload['bill_settlement_by']
-                accommodation = payload.get('accommodation')
-                cost = payload.get('cost')
-
-                traveler_status = 'APPROVED'
+                recruit_id = payload['recruit_id']
 
                 try:
-                    traveler = models.Traveler.objects.get(Q(id=traveler))
+                    recruit = models.Recruit.objects.get(id=recruit_id)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Trip !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Recruit !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
+                    recruit.budget_approval_file = budget_approval_file
+                    recruit.save()
 
+                    # update status
                     raw = {
-                        "traveler": traveler,
-                        "bill_settlement_by": bill_settlement_by,
-                        "accommodation": accommodation,
-                        "cost": cost,
-                        "air_ticket": air_ticket_file,
-                        "created_by": authenticated_user
-                    }  
-
-                    is_existing = models.Costing.objects.filter(Q(traveler=traveler)).exists()
-
-                    if is_existing:
-                        models.Costing.objects.filter(Q(traveler=traveler)).update(**raw)
-                    else:
-                        models.Costing.objects.create(
-                            **raw
-                        )
-
-                    if traveler.is_ceo_approved and traveler.is_hof_approved and traveler.is_cash_office_approved:
-                        traveler_status = 'CLOSED'
-                        traveler.status = traveler_status
-                        traveler.closed_by = authenticated_user
-                        traveler.date_closed = datetime.datetime.now()
-
-                    traveler.is_administrator_approved = True
-                    traveler.save()
-
-                    is_existing = models.Approval.objects.filter(Q(traveler=traveler) & 
-                                                                 Q(approval_for='ADMINISTRATOR')).first()
-
-                    raw = {
-                        "traveler": traveler,
-                        "approval_for": 'ADMINISTRATOR',
-                        "approved_by": authenticated_user,
-                    }  
-
-                    models.Approval.objects.create(
-                            **raw
-                        )
-                    
-                    raw = {
-                        "traveler": traveler,
-                        "status": traveler_status,
-                        "status_for": 'ADMINISTRATOR',
+                        "recruit": recruit,
+                        "status": "BUDGET APPROVAL UPLOADED",
+                        "status_for": '/'.join(roles),
                         "action_by": authenticated_user
                     }
 
                     models.StatusChange.objects.create(**raw)
 
-                    # Notify the requestor
-                    subject = f"Travel Request {traveler.tid} Closed  [TRS-AKHK]"
-                    message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request: {traveler.tid}, \nhas been fully processed by administrator.\nThank you for your patience.\n\nRegards\nTRS-AKHK"
+                    # Notify the HR / FINANCE
+                    recipients = list(get_user_model().objects.filter(
+                        Q(groups__name__in=['HR','HOF'])).values_list('email', flat=True))
+                    subject = f"Recruitment Request {recruit.uid} Budget  [SRRS-AKHK]"
+                    message = f"Hello. \n\nThe requisition request for position: {recruit.position_title},\nhas been uploaded by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
 
                     try:
                         mail = {
-                            "email" : [traveler.created_by.email], 
+                            "email" : recipients, 
                             "subject" : subject,
                             "message" : message,
                         }
                         Sendmail.objects.create(**mail)
                     except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
+                        logger.error(e)
 
                 user_util.log_account_activity(
-                    authenticated_user, traveler.created_by, "Travel Request closed", f"TID: {str(traveler.id)}")
+                    authenticated_user, recruit.created_by, "SRRS budget approval", f"UID: {str(recruit.id)}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
