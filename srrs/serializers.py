@@ -46,7 +46,7 @@ class FetchRecruitSerializer(serializers.ModelSerializer):
                 except Exception as e:
                     pass
 
-            if "HR" in  roles:
+            if "HHR" in  roles:
                 if obj.is_slt_approved:
                     if obj.is_hhr_approved:
                         approve = False

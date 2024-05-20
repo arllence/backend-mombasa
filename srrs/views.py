@@ -377,6 +377,13 @@ class SrrsViewSet(viewsets.ViewSet):
                         else:
                             resp = models.Recruit.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) & Q(is_slt_approved=False)).order_by('-date_created')
 
+                    elif "HR" in roles:
+                        if not query:
+                            resp = models.Recruit.objects.filter((Q(is_slt_approved=True)),is_deleted=False).order_by('-date_created')
+
+                        elif query == 'pending':
+                            resp = models.Recruit.objects.filter((Q(is_slt_approved=True) & Q(is_hhr_approved=False)),is_deleted=False).order_by('-date_created')
+
                     elif "HOF" in roles:
                         if not query:
                             resp = models.Recruit.objects.filter((Q(is_hof_approved=False) & Q(is_hhr_approved=True)),is_deleted=False).order_by('-date_created')
