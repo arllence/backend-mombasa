@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import datetime
 import json
 import logging
@@ -161,13 +162,14 @@ class SrrsViewSet(viewsets.ViewSet):
                 
                 # keep history before editing
                 try:
-                    history = serializers.SlimFetchRecruitSerializer(recruit, many=False).data
+                    history = serializers.SuperSlimFetchRecruitSerializer(recruit, many=False).data
                     for key, value in history.items():
                         try:
                             if isinstance(value, uuid.UUID):
                                 history[key] = str(value)
                         except Exception as e:
                             print(e)
+
                     raw = {
                         "uid" : recruit.uid,
                         "data" : dict(history),
@@ -177,11 +179,11 @@ class SrrsViewSet(viewsets.ViewSet):
                 except Exception as e:
                     print(e)
 
-
                 try:
                     department = Department.objects.get(id=department)
                 except Exception as e:
-                    return Response({"details": "Unknown Department r!"}, status=status.HTTP_400_BAD_REQUEST)
+                    print(e)
+                    return Response({"details": "Unknown Department!"}, status=status.HTTP_400_BAD_REQUEST)
 
                 if not qualifications:
                     return Response({"details": "Qualifications Required !"}, status=status.HTTP_400_BAD_REQUEST)
