@@ -160,6 +160,15 @@ class SrrsViewSet(viewsets.ViewSet):
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Recruit Request !"}, status=status.HTTP_400_BAD_REQUEST)
                 
+                try:
+                    department = Department.objects.get(id=department)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Unknown Department!"}, status=status.HTTP_400_BAD_REQUEST)
+
+                if not qualifications:
+                    return Response({"details": "Qualifications Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                
                 # keep history before editing
                 try:
                     history = serializers.SuperSlimFetchRecruitSerializer(recruit, many=False).data
@@ -176,16 +185,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     }
                     models.RecruitHistory.objects.create(**raw)
                 except Exception as e:
-                    print(e)
-
-                try:
-                    department = Department.objects.get(id=department)
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Unknown Department!"}, status=status.HTTP_400_BAD_REQUEST)
-
-                if not qualifications:
-                    return Response({"details": "Qualifications Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                    print(e)       
                 
                 with transaction.atomic():
                     raw = {
