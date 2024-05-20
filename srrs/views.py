@@ -73,6 +73,11 @@ class SrrsViewSet(viewsets.ViewSet):
                 if not qualifications:
                     return Response({"details": "Qualifications Required !"}, status=status.HTTP_400_BAD_REQUEST)
                 
+                if department.slt:
+                    managers_emails = [department.slt.lead.email]
+                else:
+                    return Response({"details": "Your Department has no SLT assigned !"}, status=status.HTTP_400_BAD_REQUEST)
+                
                 with transaction.atomic():
                     raw = {
                         "department": department,
@@ -105,13 +110,6 @@ class SrrsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
 
-                    if department.slt:
-                        managers_emails = [department.slt.lead.email]
-                    else:
-                        return Response({"details": "Your Department has no SLT assigned !"}, status=status.HTTP_400_BAD_REQUEST)
-                        
-                        
-
                     # Notify SLT
                     subject = f"New Recruitment Request {uid} Received [SRRS-AKHK]"
                     message = f"Hello, \n\nA new recruit request of id: {uid}, from department: {department.name}, for position:{recruit.position_title}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\SRRS-AKHK"
@@ -143,7 +141,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
-                request_id = payload['request_id']
+                request_id = payload['record_id']
                 department = payload['department']
                 position_title = payload['position_title']
                 position_type = payload['position_type']
@@ -164,9 +162,15 @@ class SrrsViewSet(viewsets.ViewSet):
                 # keep history before editing
                 try:
                     history = serializers.SlimFetchRecruitSerializer(recruit, many=False).data
+                    for key, value in history.items():
+                        try:
+                            if isinstance(value, uuid.UUID):
+                                history[key] = str(value)
+                        except Exception as e:
+                            print(e)
                     raw = {
                         "uid" : recruit.uid,
-                        "data" : history,
+                        "data" : dict(history),
                         "triggered_by": authenticated_user
                     }
                     models.RecruitHistory.objects.create(**raw)
@@ -177,7 +181,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 try:
                     department = Department.objects.get(id=department)
                 except Exception as e:
-                    return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Department r!"}, status=status.HTTP_400_BAD_REQUEST)
 
                 if not qualifications:
                     return Response({"details": "Qualifications Required !"}, status=status.HTTP_400_BAD_REQUEST)
@@ -234,8 +238,7 @@ class SrrsViewSet(viewsets.ViewSet):
             
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-            
+  
         elif request.method == "PATCH":
             payload = request.data
             serializer = serializers.PatchRecruitSerializer(

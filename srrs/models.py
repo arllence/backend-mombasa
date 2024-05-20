@@ -31,7 +31,7 @@ class Recruit(models.Model):
     status = models.CharField(max_length=255, default='REQUESTED')
     position_title = models.CharField(max_length=255)
     position_type = models.CharField(max_length=255)
-    qualifications = models.JSONField()
+    qualifications = models.TextField(null=True, blank=True)
     job_description = models.TextField()
     nature_of_hiring = models.CharField(max_length=255)
     existing_staff_same_title = models.JSONField(null=True, blank=True)
