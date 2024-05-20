@@ -642,7 +642,7 @@ class SrrsViewSet(viewsets.ViewSet):
             budget_approval_file = request.FILES.get('budget_approval', None)
 
             if not budget_approval_file:
-                return Response({"details": "No file attached !"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"details": "No file attached"}, status=status.HTTP_400_BAD_REQUEST)
 
 
             serializer = serializers.ApprovalSerializer(
