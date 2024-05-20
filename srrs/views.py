@@ -169,7 +169,6 @@ class SrrsViewSet(viewsets.ViewSet):
                                 history[key] = str(value)
                         except Exception as e:
                             print(e)
-
                     raw = {
                         "uid" : recruit.uid,
                         "data" : dict(history),
