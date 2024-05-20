@@ -23,10 +23,55 @@ class FetchRecruitSerializer(serializers.ModelSerializer):
     created_by = UsersSerializer()
     closed_by = UsersSerializer()
     department = FetchDepartmentSerializer()
+    can_approve = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Recruit
         fields = '__all__'
+
+    def get_can_approve(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            roles = get_user_roles(user_id)
+
+            approve = False
+
+            if "SLT" in  roles:
+                try:
+                    if obj.department.slt.lead.id == user_id:
+                        if obj.is_slt_approved:
+                            approve = False
+                        else: 
+                            approve = True
+                except Exception as e:
+                    pass
+
+            if "HR" in  roles:
+                if obj.is_slt_approved:
+                    if obj.is_hhr_approved:
+                        approve = False
+                    else: 
+                        approve = True
+
+            if "HOF" in  roles:
+                if obj.is_hhr_approved:
+                    if obj.is_hof_approved:
+                        approve = False
+                    else: 
+                        approve = True
+            
+            if "CEO" in  roles:
+                if obj.is_hof_approved:
+                    if obj.is_ceo_approved:
+                        approve = False
+                    else: 
+                        approve = True
+
+            return approve
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False
    
 class RecruitSerializer(serializers.Serializer):
     position_title = serializers.CharField(max_length=500)
