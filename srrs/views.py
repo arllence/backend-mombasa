@@ -453,6 +453,7 @@ class SrrsViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 recruit_id = payload['recruit_id']
                 comments = payload.get('comments')
+                replacement = payload.get('replacement', None)
 
                 try:
                     recruit = models.Recruit.objects.get(Q(id=recruit_id))
@@ -479,8 +480,16 @@ class SrrsViewSet(viewsets.ViewSet):
                             new_status = "HR APPROVED"
                             forward_to = ["HOF","FINANCE"]
                             previous_office = ["SLT"]
+
                             if comments:
                                 recruit.hhr_comments = comments
+                            
+                            if recruit.nature_of_hiring == 'Replacement':
+                                if not replacement:
+                                    return Response({"details": "Staff Replacement Details Required"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                                
+                                recruit.replacement_details = replacement
 
                     if 'HOF' in roles:
                         if recruit.is_hhr_approved:
