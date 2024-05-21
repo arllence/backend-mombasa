@@ -441,6 +441,7 @@ class SrrsViewSet(viewsets.ViewSet):
     def approval(self, request):
 
         authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
 
         allowed = ["HOF","SLT","HHR","CEO"]
 
