@@ -442,6 +442,11 @@ class SrrsViewSet(viewsets.ViewSet):
 
         authenticated_user = request.user
 
+        allowed = ["HOF","SLT","HHR","CEO"]
+
+        if not any(item in allowed for item in roles):
+            return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
+
         if request.method == "POST":
 
             payload = request.data
