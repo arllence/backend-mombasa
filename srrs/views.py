@@ -445,7 +445,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
         allowed = ["HOF","SLT","HHR","CEO"]
 
-        if not any(item in allowed for item in roles):
+        if not any(role in allowed for role in roles):
             return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == "POST":
