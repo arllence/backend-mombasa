@@ -474,7 +474,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     previous_office = []
 
                     if 'SLT' in roles:
-                        if recruit.department.slt.lead == authenticated_user:
+                        if recruit.department.slt.lead == authenticated_user and not recruit.is_slt_approved:
                             recruit.is_slt_approved = True
                             new_status = "SLT APPROVED"
                             forward_to = ["HR","HHR"]
