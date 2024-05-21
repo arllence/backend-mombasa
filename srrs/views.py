@@ -715,7 +715,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 
     
    
-class TRSReportsViewSet(viewsets.ViewSet):
+class SRRSReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]
 
     def get_queryset(self):
@@ -723,14 +723,16 @@ class TRSReportsViewSet(viewsets.ViewSet):
 
     @action(methods=["GET",],
             detail=False,
-            url_path="requests",
-            url_name="requests")
-    def requests(self, request):
+            url_path="requisitions",
+            url_name="requisitions")
+    def requisitions(self, request):
                     
         department = request.query_params.get('department')
+        position_type = request.query_params.get('position_type')
+        nature_of_hiring = request.query_params.get('nature_of_hiring')
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
-        quote_status = request.query_params.get('status')
+        r_status = request.query_params.get('status')
         date = False
 
         if date_to and date_from:
@@ -756,24 +758,30 @@ class TRSReportsViewSet(viewsets.ViewSet):
                 return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
             q_filters &= create_date_range(date_from,date_to)
             
-        if quote_status:
-            q_filters &= Q(status=quote_status)
+        if r_status:
+            q_filters &= Q(status=r_status)
+
+        if position_type:
+            q_filters &= Q(position_type=position_type)
+
+        if nature_of_hiring:
+            q_filters &= Q(nature_of_hiring=nature_of_hiring)
 
 
         if q_filters:
 
-            resp = models.Traveler.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
             
         else:
             roles = user_util.fetchusergroups(request.user.id)  
 
             if "HOD" in roles:
-                resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(created_by=request.user)).order_by('-date_created')[:50]
+                resp = models.Recruit.objects.filter(Q(is_deleted=False) & Q(created_by=request.user)).order_by('-date_created')[:50]
 
             else:
-                resp = models.Traveler.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+                resp = models.Recruit.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
 
-        resp = serializers.FetchTravelerSerializer(resp, many=True, context={"user_id":request.user.id}).data
+        resp = serializers.FetchRecruitSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
         

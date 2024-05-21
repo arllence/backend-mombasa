@@ -4,7 +4,7 @@ from srrs import views
 router = DefaultRouter(trailing_slash=False)
 
 router.register('srrs', views.SrrsViewSet, basename='srrs')
-router.register('trs-reports',views.TRSReportsViewSet, basename='trs-reports')
+router.register('srrs-reports',views.SRRSReportsViewSet, basename='srrs-reports')
 router.register('trs-analytics',views.TRSAnalyticsViewSet, basename='trs-analytics')
    
                          
