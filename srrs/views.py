@@ -474,6 +474,9 @@ class SrrsViewSet(viewsets.ViewSet):
                             forward_to = ["HR","HHR"]
                             previous_office = []
 
+                            if comments:
+                                recruit.slt_comments = comments
+
                     if 'HHR' in roles:
                         if recruit.is_slt_approved:
                             recruit.is_hhr_approved = True
