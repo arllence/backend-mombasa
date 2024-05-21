@@ -43,6 +43,7 @@ class Recruit(models.Model):
     rejection_reasons = models.JSONField(null=True, blank=True)
     proposed_salary = models.BigIntegerField(default=0)
     budget_approval_file = models.FileField(upload_to='documents/srrs/budget_approval/', null=True, blank=True)
+    slt_comments = models.TextField(null=True, blank=True)
     hhr_comments = models.TextField(null=True, blank=True)
     hof_comments = models.TextField(null=True, blank=True)
     ceo_comments = models.TextField(null=True, blank=True)
