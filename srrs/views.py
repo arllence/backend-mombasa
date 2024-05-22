@@ -943,7 +943,7 @@ class SRRSReportsViewSet(viewsets.ViewSet):
 
 
         
-class TRSAnalyticsViewSet(viewsets.ViewSet):
+class SRRSAnalyticsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
@@ -955,31 +955,24 @@ class TRSAnalyticsViewSet(viewsets.ViewSet):
             url_name="general")
     def general(self, request):
         roles = user_util.fetchusergroups(request.user.id)
+        active_status = ['REQUESTED','CEO APPROVED','HR APPROVED','SLT APPROVED','CLOSED']
 
-        if 'USER' in roles:
-            requests = models.Traveler.objects.filter(Q(is_deleted=False) & Q(traveler=request.user)).count()
-            # requested = models.Traveler.objects.filter(Q(status="REQUESTED") & Q(is_deleted=False) & Q(traveler=request.user)).count()
-            requested = models.Traveler.objects.filter(Q(status="REQUESTED") | Q(status="RESUBMITTED") & Q(traveler=request.user), is_deleted=False).count()
-
-            closed = models.Traveler.objects.filter(Q(status="CLOSED") & Q(is_deleted=False) & Q(traveler=request.user)).count()
-            # assigned = models.Traveler.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False) & Q(traveler=request.user)).count()
-            incomplete = models.Traveler.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False) & Q(traveler=request.user)).count()
+        if 'HOD' in roles:
+            requests = models.Recruit.objects.filter(Q(department=request.user.department) | Q(created_by=request.user), is_deleted=False).count()
+            canceled = models.Recruit.objects.filter(Q(department=request.user.department) |  Q(created_by=request.user), status="CANCELED", is_deleted=False).count()
+            declined = models.Recruit.objects.filter(Q(department=request.user.department) |  Q(created_by=request.user), status="DECLINED", is_deleted=False).count()
+            pending = models.Recruit.objects.filter(Q(department=request.user.department) |  Q(created_by=request.user), status__in=active_status, is_ceo_approved=False, is_deleted=False).count()
         else:
-            requests = models.Traveler.objects.filter(Q(is_deleted=False)).count()
-            requested = models.Traveler.objects.filter(Q(status="REQUESTED") | Q(status="RESUBMITTED"), is_deleted=False).count()
-            closed = models.Traveler.objects.filter(Q(status="CLOSED") & Q(is_deleted=False)).count()
-            assigned = models.Traveler.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False)).count()
-            incomplete = models.Traveler.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False)).count()
-
-        if 'CEO' in roles or 'HOF' in roles:
-            requested = models.Traveler.objects.filter(Q(status="APPROVED"), is_ceo_approved=False, is_deleted=False).count()
+            requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
+            canceled = models.Recruit.objects.filter(Q(status="CANCELED"), is_deleted=False).count()
+            declined = models.Recruit.objects.filter(Q(created_by=request.user), status="DECLINED", is_deleted=False).count()
+            pending = models.Recruit.objects.filter(Q(status__in=active_status), is_ceo_approved=False, is_deleted=False).count()
 
         resp = {
             "requests": requests,
-            "requested": requested,
-            "closed": closed,
-            # "assigned": assigned,
-            "incomplete": incomplete,
+            "canceled": canceled,
+            "declined": declined,
+            "pending": pending,
         }
 
         return Response(resp, status=status.HTTP_200_OK)

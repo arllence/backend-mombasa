@@ -5,7 +5,7 @@ router = DefaultRouter(trailing_slash=False)
 
 router.register('srrs', views.SrrsViewSet, basename='srrs')
 router.register('srrs-reports',views.SRRSReportsViewSet, basename='srrs-reports')
-router.register('trs-analytics',views.TRSAnalyticsViewSet, basename='trs-analytics')
+router.register('srrs-analytics',views.SRRSAnalyticsViewSet, basename='srrs-analytics')
    
                          
 urlpatterns = router.urls
