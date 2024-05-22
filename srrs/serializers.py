@@ -1,5 +1,5 @@
 from django.db.models import  Q
-from acl.serializers import UsersSerializer, FetchDepartmentSerializer
+from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchDepartmentSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
 from srrs import models
 from rest_framework import serializers
@@ -24,10 +24,23 @@ class FetchRecruitSerializer(serializers.ModelSerializer):
     closed_by = UsersSerializer()
     department = FetchDepartmentSerializer()
     can_approve = serializers.SerializerMethodField()
+    approvals = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Recruit
         fields = '__all__'
+
+    def get_approvals(self, obj):
+        try:
+            request = models.StatusChange.objects.filter(recruit=obj)
+            serializer = FetchStatusChangeSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
 
     def get_can_approve(self, obj):
         try:
@@ -104,3 +117,9 @@ class ApprovalSerializer(serializers.Serializer):
 class PostHRDetailsSerializer(serializers.Serializer):
     recruit_id = serializers.CharField(max_length=500)
     proposed_salary = serializers.ImageField(max_length=500)
+
+class FetchStatusChangeSerializer(serializers.ModelSerializer):
+    action_by = SlimUsersSerializer()
+    class Meta:
+        model = models.StatusChange
+        fields = '__all__'

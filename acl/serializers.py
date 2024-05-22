@@ -82,6 +82,16 @@ class UsersSerializer(serializers.ModelSerializer):
         serializer = GroupSerializer(allgroups, many=True)
         return serializer.data
     
+class SlimUsersSerializer(serializers.ModelSerializer):
+    id = serializers.CharField()
+    email = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    class Meta:
+        model = get_user_model()
+        fields = [
+            'id', 'email', 'first_name', 'last_name'
+        ]
 
 class CreateUserSerializer(serializers.Serializer):
     email = serializers.CharField()
