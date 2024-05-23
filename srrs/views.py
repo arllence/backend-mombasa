@@ -45,7 +45,14 @@ class SrrsViewSet(viewsets.ViewSet):
 
         if request.method == "POST":
 
-            payload = request.data
+            # payload = request.data
+
+            payload = json.loads(request.data['payload'])
+            job_description_file = request.FILES.get('job_description', None)
+
+            if not job_description_file:
+                return Response({"details": "No job description file attached"},
+                                status=status.HTTP_400_BAD_REQUEST)
 
             serializer = serializers.RecruitSerializer(
                     data=payload, many=False)
@@ -55,12 +62,11 @@ class SrrsViewSet(viewsets.ViewSet):
                 position_title = payload['position_title']
                 position_type = payload['position_type']
                 qualifications = payload['qualifications']
-                job_description = payload['job_description']
                 nature_of_hiring = payload['nature_of_hiring']
                 existing_staff_same_title = payload['existing_staff_same_title']
                 reasons_for_not_sharing_tasks = payload['reasons_for_not_sharing_tasks']
-                filling_period_from = payload['filling_period_from']
-                filling_period_to = payload['filling_period_to']
+                period_from = payload['period_from']
+                period_to = payload['period_to']
                 temporary_task_assignment_to = payload['temporary_task_assignment_to']
 
                 uid = shared_fxns.generate_unique_identifier()
@@ -86,12 +92,12 @@ class SrrsViewSet(viewsets.ViewSet):
                         "position_title": position_title,
                         "position_type": position_type,
                         "qualifications": qualifications,
-                        "job_description": job_description,
+                        "job_description": job_description_file,
                         "nature_of_hiring": nature_of_hiring,
                         "existing_staff_same_title": existing_staff_same_title,
                         "reasons_for_not_sharing_tasks": reasons_for_not_sharing_tasks,
-                        "filling_period_from": filling_period_from,
-                        "filling_period_to": filling_period_to,
+                        "period_from": period_from,
+                        "period_to": period_to,
                         "temporary_task_assignment_to": temporary_task_assignment_to,
                         "uid": uid
                     }  
@@ -151,8 +157,8 @@ class SrrsViewSet(viewsets.ViewSet):
                 nature_of_hiring = payload['nature_of_hiring']
                 existing_staff_same_title = payload['existing_staff_same_title']
                 reasons_for_not_sharing_tasks = payload['reasons_for_not_sharing_tasks']
-                filling_period_from = payload['filling_period_from']
-                filling_period_to = payload['filling_period_to']
+                period_from = payload['period_from']
+                period_to = payload['period_to']
                 temporary_task_assignment_to = payload['temporary_task_assignment_to']
 
                 try:
@@ -198,8 +204,8 @@ class SrrsViewSet(viewsets.ViewSet):
                         "nature_of_hiring": nature_of_hiring,
                         "existing_staff_same_title": existing_staff_same_title,
                         "reasons_for_not_sharing_tasks": reasons_for_not_sharing_tasks,
-                        "filling_period_from": filling_period_from,
-                        "filling_period_to": filling_period_to,
+                        "period_from": period_from,
+                        "period_to": period_to,
                         "temporary_task_assignment_to": temporary_task_assignment_to,
                     }  
 
