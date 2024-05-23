@@ -67,6 +67,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 reasons_for_not_sharing_tasks = payload['reasons_for_not_sharing_tasks']
                 period_from = payload['period_from']
                 period_to = payload['period_to']
+                filling_date = payload['filling_date']
                 temporary_task_assignment_to = payload['temporary_task_assignment_to']
 
                 uid = shared_fxns.generate_unique_identifier()
@@ -98,6 +99,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         "reasons_for_not_sharing_tasks": reasons_for_not_sharing_tasks,
                         "period_from": period_from,
                         "period_to": period_to,
+                        "filling_date": filling_date,
                         "temporary_task_assignment_to": temporary_task_assignment_to,
                         "uid": uid
                     }  
@@ -144,6 +146,11 @@ class SrrsViewSet(viewsets.ViewSet):
         if request.method == "PUT":
             payload = request.data
 
+            payload = json.loads(request.data['payload'])
+            job_description_file = request.FILES.get('job_description', None)
+            print(job_description_file.name)
+
+
             serializer = serializers.PutRecruitSerializer(
                     data=payload, many=False)
             
@@ -153,12 +160,12 @@ class SrrsViewSet(viewsets.ViewSet):
                 position_title = payload['position_title']
                 position_type = payload['position_type']
                 qualifications = payload['qualifications']
-                job_description = payload['job_description']
                 nature_of_hiring = payload['nature_of_hiring']
                 existing_staff_same_title = payload['existing_staff_same_title']
                 reasons_for_not_sharing_tasks = payload['reasons_for_not_sharing_tasks']
                 period_from = payload['period_from']
                 period_to = payload['period_to']
+                filling_date = payload['filling_date']
                 temporary_task_assignment_to = payload['temporary_task_assignment_to']
 
                 try:
@@ -200,21 +207,25 @@ class SrrsViewSet(viewsets.ViewSet):
                         "position_title": position_title,
                         "position_type": position_type,
                         "qualifications": qualifications,
-                        "job_description": job_description,
                         "nature_of_hiring": nature_of_hiring,
                         "existing_staff_same_title": existing_staff_same_title,
                         "reasons_for_not_sharing_tasks": reasons_for_not_sharing_tasks,
                         "period_from": period_from,
                         "period_to": period_to,
+                        "filling_date": filling_date,
                         "temporary_task_assignment_to": temporary_task_assignment_to,
                     }  
 
                     models.Recruit.objects.filter(Q(id=request_id)).update(**raw)
 
+                    if job_description_file:
+                        recruit.job_description = job_description_file
+                        recruit.save()
+
                     # create track status change
                     raw = {
                         "recruit": recruit,
-                        "status": "UPDATED",
+                        "status": "EDITED",
                         "status_for": '/'.join(roles),
                         "action_by": authenticated_user
                     }

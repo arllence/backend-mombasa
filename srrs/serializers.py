@@ -93,6 +93,7 @@ class RecruitSerializer(serializers.Serializer):
     nature_of_hiring = serializers.CharField(max_length=500)
     period_from = serializers.DateField()
     period_to = serializers.DateField()
+    filling_date = serializers.DateField()
     temporary_task_assignment_to = serializers.CharField(max_length=255)
 
 class PutRecruitSerializer(serializers.Serializer):
@@ -100,10 +101,10 @@ class PutRecruitSerializer(serializers.Serializer):
     position_title = serializers.CharField(max_length=500)
     position_type = serializers.CharField(max_length=500)
     qualifications = serializers.JSONField()
-    job_description = serializers.CharField(max_length=5000)
     nature_of_hiring = serializers.CharField(max_length=500)
     period_from = serializers.CharField(max_length=5000)
     period_to = serializers.CharField(max_length=255)
+    filling_date = serializers.CharField(max_length=255)
     temporary_task_assignment_to = serializers.CharField(max_length=255)
 
 class PatchRecruitSerializer(serializers.Serializer):
