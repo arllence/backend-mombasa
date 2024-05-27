@@ -872,6 +872,7 @@ class TrsViewSet(viewsets.ViewSet):
                     if is_hod:
                         traveler.status = traveler_status
                         traveler.is_hod_approved = is_hod
+                        traveler.requires_ceo_approval = True
 
                     if is_ceo:
                         traveler.is_ceo_approved = is_ceo
