@@ -876,6 +876,7 @@ class DepartmentViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 name = payload['name']
                 slt = payload.get('slt')
+                hod = payload.get('hod')
 
                 with transaction.atomic():
                     raw = {
@@ -888,7 +889,29 @@ class DepartmentViewSet(viewsets.ViewSet):
                         except Exception as e:
                             return Response({"details": "Unknown SLT"}, status=status.HTTP_400_BAD_REQUEST)
                         
+                        roles = user_util.fetchusergroups(str(slt.lead.id))
+                        if 'SLT' not in roles:
+                            assign_role = user_util.award_role('SLT', str(slt.lead.id))
+
+                            if not assign_role:
+                                return Response({"details": "Unable to assign role SLT"}, status=status.HTTP_400_BAD_REQUEST)
+                        
                         raw.update({"slt": slt})
+
+                    if hod:
+                        try:
+                            hod = models.User.objects.get(id=hod)
+                        except Exception as e:
+                            return Response({"details": "Unknown HOD"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        roles = user_util.fetchusergroups(str(hod.id))
+                        if 'HOD' not in roles:
+                            assign_role = user_util.award_role('HOD', str(hod.id))
+
+                            if not assign_role:
+                                return Response({"details": "Unable to assign role HOD"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        raw.update({"hod": hod})
 
                     models.Department.objects.create(**raw)
 
@@ -898,12 +921,21 @@ class DepartmentViewSet(viewsets.ViewSet):
             
         elif request.method == "PUT":
             payload = request.data
+
             serializer = serializers.UpdateDepartmentSerializer(
                 data=payload, many=False)
+            
             if serializer.is_valid():
                 dept_id = payload['request_id']
                 name = payload['name']
                 slt = payload.get('slt')
+                hod = payload.get('hod')
+
+                try:
+                    dept = models.Department.objects.get(id=dept_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
 
                 if slt:
                     try:
@@ -911,12 +943,42 @@ class DepartmentViewSet(viewsets.ViewSet):
                     except Exception as e:
                         return Response({"details": "Unknown SLT"}, status=status.HTTP_400_BAD_REQUEST)
                     
+                    if dept.slt and dept.slt.id != slt.id:
+                        user_util.revoke_role('SLT', str(dept.slt.lead.id))
+
+                    roles = user_util.fetchusergroups(str(slt.lead.id))
+                    if 'SLT' not in roles:
+                        assign_role = user_util.award_role('SLT', str(slt.lead.id))
+
+                        if not assign_role:
+                            return Response({"details": "Unable to assign role SLT"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                if hod:
+                    try:
+                        hod = models.User.objects.get(id=hod)
+                    except Exception as e:
+                        return Response({"details": "Unknown HOD"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    if dept.hod and dept.hod.id != hod.id:
+                        user_util.revoke_role('HOD', str(dept.slt.lead.id))
+                    
+                    roles = user_util.fetchusergroups(str(hod.id))
+                    if 'HOD' not in roles:
+                        assign_role = user_util.award_role('HOD', str(hod.id))
+
+                        if not assign_role:
+                            return Response({"details": "Unable to assign role HOD"}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
                     try:
-                        dept = models.Department.objects.get(id=dept_id)
+                        
                         dept.name = name
-                        dept.slt = slt if slt else dept.slt
+                        
+                        if slt:
+                            dept.slt = slt 
+                        if hod:
+                            dept.hod = hod 
+
                         dept.save()
                         
                     except (ValidationError, ObjectDoesNotExist):

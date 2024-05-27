@@ -71,8 +71,13 @@ class TrsViewSet(viewsets.ViewSet):
                 send_to = payload.get('send_to', None)
                 tid = shared_fxns.generate_unique_identifier()
 
+                exempted = ['HOD','HOF','CEO']
+
                 if not send_to:
-                    send_to = 'CEO'
+                    if any(item in exempted for item in roles):
+                        send_to = 'CEO'
+                    else:
+                        send_to = 'HOD'
 
                 if requesting_for == 'OTHERS':
                     employees = list(payload.get('employees'))
