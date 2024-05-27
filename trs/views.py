@@ -71,6 +71,14 @@ class TrsViewSet(viewsets.ViewSet):
                 send_to = payload.get('send_to', None)
                 tid = shared_fxns.generate_unique_identifier()
 
+                # Get today's date
+                today_date = datetime.date.today()
+
+                # find difference in dates / validate dates
+                hours = shared_fxns.find_date_difference(str(today_date.strftime('%Y-%m-%d')),departure_date,'hours')
+                if hours < 48:
+                    return Response({"details": "Request to be made at least 48hrs before travel date"}, status=status.HTTP_400_BAD_REQUEST)
+
                 exempted = ['HOD','HOF','CEO']
 
                 if not send_to:
@@ -255,6 +263,23 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify selected send to
                     subject = f"Travel Request {tid} Received [TRS-AKHK]"
                     message = f"Hello, \nA new travel request: {tid} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
+                    emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
+
+                    try:
+                        mail = {
+                            "email" : emails, 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+
+                        Sendmail.objects.create(**mail)
+
+                    except Exception as e:
+                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+
+                    # Notify transport department
+                    subject = f"Travel Request {tid} Has Been Initiated [TRS-AKHK]"
+                    message = f"Hello, \nA new travel request: {tid} of mode {mode_of_transport.capitalize()}\nhas been initiated by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
 
                     try:
                         mail = {
@@ -274,11 +299,6 @@ class TrsViewSet(viewsets.ViewSet):
 
                         subject = f"Travel Advance Request {tid} Received [TRS-AKHK]"
                         message = f"Hello, \nSalary Travel Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
-
-                        # try:
-                        #     send_mail(subject, message, 'notification@akhskenya.org', emails)
-                        # except Exception as e:
-                        #     pass
 
                         try:
                             mail = {

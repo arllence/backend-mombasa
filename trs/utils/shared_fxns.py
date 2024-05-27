@@ -1,7 +1,6 @@
 from datetime import datetime
 import string
 import random
-from mms.models import Quote
 from trs.models import Traveler
 
 def find_date_difference(start_date,end_date,period):
@@ -25,7 +24,6 @@ def find_date_difference(start_date,end_date,period):
         elif period == 'minutes':
             difference = (end_date - start_date).total_seconds() // 60
 
-        # return difference
         return difference
         
     except Exception as e:

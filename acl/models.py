@@ -32,7 +32,7 @@ class Department(models.Model):
         Slt, related_name='departments', 
         null=True, blank=True,
         on_delete=models.DO_NOTHING
-    ),
+    )
     hod = models.ForeignKey(
         'User', related_name='department_hod', 
         null=True, blank=True,

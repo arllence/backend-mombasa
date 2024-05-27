@@ -12,6 +12,19 @@ class UpdateDepartmentSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
     name = serializers.CharField(max_length=255)
 
+class SlimUsersSerializer(serializers.ModelSerializer):
+    id = serializers.CharField()
+    email = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    employee_no = serializers.CharField()
+
+    class Meta:
+        model = get_user_model()
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'employee_no', 
+        ]
+
 class SlimFetchSltSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Slt
@@ -19,6 +32,7 @@ class SlimFetchSltSerializer(serializers.ModelSerializer):
     
 class FetchDepartmentSerializer(serializers.ModelSerializer):
     slt = SlimFetchSltSerializer()
+    hod = SlimUsersSerializer()
     class Meta:
         model = models.Department
         fields = '__all__'
