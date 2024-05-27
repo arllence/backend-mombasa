@@ -1044,11 +1044,6 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
-                        # try:
-                        #     send_mail(subject, message, 'notification@akhskenya.org', emails)
-                        # except Exception as e:
-                        #     pass
-
                         try:
                             mail = {
                                 "email" : emails, 
@@ -1065,10 +1060,21 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
-                        # try:
-                        #     send_mail(subject, message, 'notification@akhskenya.org', emails)
-                        # except Exception as e:
-                        #     pass
+                        try:
+                            mail = {
+                                "email" : emails, 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            Sendmail.objects.create(**mail)
+                        except Exception as e:
+                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+
+                    # Notify control office
+                    if is_transport_office:
+                        emails = list(get_user_model().objects.filter(Q(groups__name='CONTROL_ROOM')).values_list('email', flat=True))
+                        subject = f"Travel Request {traveler.tid} Approved  [TRS-AKHK]"
+                        message = f"Hello, \n\nTravel Request: {traveler.tid} has been approved by Transport Office.\nDetails include:\nDriver: {approval_msg.get('driver_name')}\nVehicle: {approval_msg.get('vehicle_number_plate')}\nDate of travel: {approval_msg.get('date_of_travel')}\nTime of travel: {approval_msg.get('time_of_travel')}\n\nRegards\nTRS-AKHK"
 
                         try:
                             mail = {
