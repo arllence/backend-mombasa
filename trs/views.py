@@ -261,7 +261,7 @@ class TrsViewSet(viewsets.ViewSet):
                         
 
                     # Notify selected send to
-                    subject = f"Travel Request {tid} Received [TRS-AKHK]"
+                    subject = f"Travel Request {tid} Received [TRF-AKHK]"
                     message = f"Hello, \nA new travel request: {tid} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
                     emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
 
@@ -278,7 +278,7 @@ class TrsViewSet(viewsets.ViewSet):
                         send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
                     # Notify transport department
-                    subject = f"Travel Request {tid} Has Been Initiated [TRS-AKHK]"
+                    subject = f"Travel Request {tid} Has Been Initiated [TRF-AKHK]"
                     message = f"Hello, \nA new travel request: {tid} of mode {mode_of_transport.capitalize()}\nhas been initiated by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
 
                     try:
@@ -297,7 +297,7 @@ class TrsViewSet(viewsets.ViewSet):
                     if salary_advance_required:
                         emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
 
-                        subject = f"Travel Advance Request {tid} Received [TRS-AKHK]"
+                        subject = f"Travel Advance Request {tid} Received [TRF-AKHK]"
                         message = f"Hello, \nSalary Travel Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
 
                         try:
@@ -462,7 +462,7 @@ class TrsViewSet(viewsets.ViewSet):
                         list(managers_emails) + list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
 
                     # Notify selected send to
-                    subject = f"Travel Request {traveler.tid} Resubmitted [TRS-AKHK]"
+                    subject = f"Travel Request {traveler.tid} Resubmitted [TRF-AKHK]"
                     message = f"Hello, \nTravel request: {traveler.tid} has been resubmitted by\n{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
                     # try:
                     #     send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
@@ -532,7 +532,7 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify requestor
                     emails = [traveler.created_by.email]
 
-                    subject = f"Travel Request: {traveler.tid} Progress Update [TRS-AKHK]"
+                    subject = f"Travel Request: {traveler.tid} Progress Update [TRF-AKHK]"
                     message = f"Hello, \nThe Request:{traveler.tid} has been marked as {traveler_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
 
                     # try:
@@ -969,22 +969,22 @@ class TrsViewSet(viewsets.ViewSet):
 
                     # Notify the requestor
                     if is_hod:
-                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
+                        subject = f"Travel Request {traveler.tid} Status  [TRF-AKHK]"
                         message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by HOD.\nPending SLT Approval.\n\nRegards\nTRS-AKHK"
                     elif is_slt:
-                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
+                        subject = f"Travel Request {traveler.tid} Status  [TRF-AKHK]"
                         message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been Approved by SLT.\nPending Finance Approval.\n\nRegards\nTRS-AKHK"
                     elif is_hof:
-                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
+                        subject = f"Travel Request {traveler.tid} Status  [TRF-AKHK]"
                         message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by Finance.\n\nRegards\nTRS-AKHK"
                     elif is_ceo:
-                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
+                        subject = f"Travel Request {traveler.tid} Status  [TRF-AKHK]"
                         message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by CEO.\n\nRegards\nTRS-AKHK"
                     elif is_cash_office:
-                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
+                        subject = f"Travel Request {traveler.tid} Status  [TRF-AKHK]"
                         message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by Cash Office.\n\nRegards\nTRS-AKHK"
                     elif is_transport_office:
-                        subject = f"Travel Request {traveler.tid} Status  [TRS-AKHK]"
+                        subject = f"Travel Request {traveler.tid} Status  [TRF-AKHK]"
                         message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by Transport Office.\n\nRegards\nTRS-AKHK"
 
                     # try:
@@ -1004,7 +1004,7 @@ class TrsViewSet(viewsets.ViewSet):
                     # # Notify HOF
                     # if is_slt and traveler_status == 'APPROVED':
                     #     emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
-                    #     subject = f"Request for Travel Budget Approval: {traveler.tid}.  [TRS-AKHK]"
+                    #     subject = f"Request for Travel Budget Approval: {traveler.tid}.  [TRF-AKHK]"
                     #     message = f"Hello. \n\nTravel Request: {traveler.tid} \nis pending budget approval by HOF.\n\nRegards\nTRS-AKHK"
 
                     #     send_mail(subject, message, 'notification@akhskenya.org', emails)
@@ -1012,7 +1012,7 @@ class TrsViewSet(viewsets.ViewSet):
                     # # Notify CEO
                     # if is_hof and traveler.mode_of_transport == 'FLIGHT':
                     #     emails = list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
-                    #     subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
+                    #     subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
                     #     message = f"Hello. \n\nTravel Request: {traveler.tid} has been\n approved by Finance\nand is now pending your approval.\n\nRegards\nTRS-AKHK"
 
                     #     send_mail(subject, message, 'notification@akhskenya.org', emails)
@@ -1020,7 +1020,7 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify ADMINISTRATOR
                     if is_ceo and traveler.mode_of_transport == 'FLIGHT':
                         emails = list(get_user_model().objects.filter(Q(groups__name='ADMINISTRATOR')).values_list('email', flat=True))
-                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
+                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO, and is now pending administration and costing\n\nRegards\nTRS-AKHK"
 
                         # try:
@@ -1041,7 +1041,7 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify CASH OFFICE, HOF, MMD
                     if is_ceo:
                         emails = list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE') | Q(groups__name='HOF') | Q(groups__name='MMD')).values_list('email', flat=True))
-                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
+                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
                         try:
@@ -1057,7 +1057,7 @@ class TrsViewSet(viewsets.ViewSet):
                     # # Notify TRANSPORT
                     if is_ceo and traveler.mode_of_transport == 'HOSPITAL VEHICLE':
                         emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
-                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRS-AKHK]"
+                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
                         try:
@@ -1073,7 +1073,7 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify control office
                     if is_transport_office:
                         emails = list(get_user_model().objects.filter(Q(groups__name='CONTROL_ROOM')).values_list('email', flat=True))
-                        subject = f"Travel Request {traveler.tid} Approved  [TRS-AKHK]"
+                        subject = f"Travel Request {traveler.tid} Approved  [TRF-AKHK]"
                         message = f"Hello, \n\nTravel Request: {traveler.tid} has been approved by Transport Office.\nDetails include:\nDriver: {approval_msg.get('driver_name')}\nVehicle: {approval_msg.get('vehicle_number_plate')}\nDate of travel: {approval_msg.get('date_of_travel')}\nTime of travel: {approval_msg.get('time_of_travel')}\n\nRegards\nTRS-AKHK"
 
                         try:
@@ -1238,7 +1238,7 @@ class TrsViewSet(viewsets.ViewSet):
                         return Response({"details": "Not Permitted !"}, status=status.HTTP_400_BAD_REQUEST)
 
                     # Notify the requestor
-                    subject = f"Travel Advance Request {update_status.capitalize()}  [TRS-AKHK]"
+                    subject = f"Travel Advance Request {update_status.capitalize()}  [TRF-AKHK]"
                     message = f"Hello, \nYour Advance Travel Request for travel:{salaryRequest.traveler.tid} has been {update_status.capitalize()} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
 
                     # try:
@@ -1397,7 +1397,7 @@ class TrsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                     # Notify the requestor
-                    subject = f"Travel Request {traveler.tid} Closed  [TRS-AKHK]"
+                    subject = f"Travel Request {traveler.tid} Closed  [TRF-AKHK]"
                     message = f"Dear {traveler.created_by.first_name}, \nYour Travel Request: {traveler.tid}, \nhas been fully processed by administrator.\nThank you for your patience.\n\nRegards\nTRS-AKHK"
 
                     # try:

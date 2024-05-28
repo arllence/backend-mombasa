@@ -49,7 +49,7 @@ def identify_file_type(ext):
 def generate_unique_identifier():
     characters = string.ascii_uppercase + string.digits
     tid = ''.join(random.choices(characters, k=6))
-    # tid =  "TRS#" + identifier
+    # tid =  "TRF#" + identifier
 
     is_existing = Traveler.objects.filter(tid=tid).exists()
     if is_existing:
