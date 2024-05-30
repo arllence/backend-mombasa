@@ -272,7 +272,7 @@ class TrsViewSet(viewsets.ViewSet):
                             "message" : message,
                         }
 
-                        Sendmail.objects.create(**mail)
+                        #Sendmail.objects.create(**mail)
 
                     except Exception as e:
                         send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
@@ -288,7 +288,7 @@ class TrsViewSet(viewsets.ViewSet):
                             "message" : message,
                         }
 
-                        Sendmail.objects.create(**mail)
+                        #Sendmail.objects.create(**mail)
 
                     except Exception as e:
                         send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
@@ -306,7 +306,7 @@ class TrsViewSet(viewsets.ViewSet):
                                 "subject" : subject,
                                 "message" : message,
                             }
-                            Sendmail.objects.create(**mail)
+                            #Sendmail.objects.create(**mail)
                         except Exception as e:
                             logger.error(e)
 
@@ -474,7 +474,7 @@ class TrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        Sendmail.objects.create(**mail)
+                        #Sendmail.objects.create(**mail)
                     except Exception as e:
                         send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
    
@@ -545,7 +545,7 @@ class TrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        Sendmail.objects.create(**mail)
+                        #Sendmail.objects.create(**mail)
                     except Exception as e:
                         logger.error(e)
                                                 
@@ -997,7 +997,7 @@ class TrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        Sendmail.objects.create(**mail)
+                        #Sendmail.objects.create(**mail)
                     except Exception as e:
                         send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
 
@@ -1034,7 +1034,7 @@ class TrsViewSet(viewsets.ViewSet):
                                 "subject" : subject,
                                 "message" : message,
                             }
-                            Sendmail.objects.create(**mail)
+                            #Sendmail.objects.create(**mail)
                         except Exception as e:
                             logger.error(e)
 
@@ -1050,7 +1050,7 @@ class TrsViewSet(viewsets.ViewSet):
                                 "subject" : subject,
                                 "message" : message,
                             }
-                            Sendmail.objects.create(**mail)
+                            #Sendmail.objects.create(**mail)
                         except Exception as e:
                             logger.error(e)
 
@@ -1066,7 +1066,7 @@ class TrsViewSet(viewsets.ViewSet):
                                 "subject" : subject,
                                 "message" : message,
                             }
-                            Sendmail.objects.create(**mail)
+                            #Sendmail.objects.create(**mail)
                         except Exception as e:
                             logger.error(e)
 
@@ -1082,7 +1082,7 @@ class TrsViewSet(viewsets.ViewSet):
                                 "subject" : subject,
                                 "message" : message,
                             }
-                            Sendmail.objects.create(**mail)
+                            #Sendmail.objects.create(**mail)
                         except Exception as e:
                             logger.error(e)
 
@@ -1189,7 +1189,7 @@ class TrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        Sendmail.objects.create(**mail)
+                        #Sendmail.objects.create(**mail)
                     except Exception as e:
                         logger.error(e)
 
@@ -1252,7 +1252,7 @@ class TrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        Sendmail.objects.create(**mail)
+                        #Sendmail.objects.create(**mail)
                     except Exception as e:
                         send_mail(subject, message, 'notification@akhskenya.org', [salaryRequest.traveler.traveler.email])
 
@@ -1411,7 +1411,7 @@ class TrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        Sendmail.objects.create(**mail)
+                        #Sendmail.objects.create(**mail)
                     except Exception as e:
                         send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
 
