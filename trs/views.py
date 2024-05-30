@@ -308,7 +308,7 @@ class TrsViewSet(viewsets.ViewSet):
                             }
                             Sendmail.objects.create(**mail)
                         except Exception as e:
-                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                            logger.error(e)
 
    
                 user_util.log_account_activity(
@@ -536,7 +536,7 @@ class TrsViewSet(viewsets.ViewSet):
                     message = f"Hello, \nThe Request:{traveler.tid} has been marked as {traveler_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
 
                     # try:
-                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                    #     logger.error(e)
                     # except Exception as e:
                     #     pass
                     try:
@@ -547,7 +547,7 @@ class TrsViewSet(viewsets.ViewSet):
                         }
                         Sendmail.objects.create(**mail)
                     except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        logger.error(e)
                                                 
 
                 user_util.log_account_activity(
@@ -1007,7 +1007,7 @@ class TrsViewSet(viewsets.ViewSet):
                     #     subject = f"Request for Travel Budget Approval: {traveler.tid}.  [TRF-AKHK]"
                     #     message = f"Hello. \n\nTravel Request: {traveler.tid} \nis pending budget approval by HOF.\n\nRegards\nTRS-AKHK"
 
-                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                    #     logger.error(e)
 
                     # # Notify CEO
                     # if is_hof and traveler.mode_of_transport == 'FLIGHT':
@@ -1015,7 +1015,7 @@ class TrsViewSet(viewsets.ViewSet):
                     #     subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
                     #     message = f"Hello. \n\nTravel Request: {traveler.tid} has been\n approved by Finance\nand is now pending your approval.\n\nRegards\nTRS-AKHK"
 
-                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                    #     logger.error(e)
 
                     # Notify ADMINISTRATOR
                     if is_ceo and traveler.mode_of_transport == 'FLIGHT':
@@ -1024,7 +1024,7 @@ class TrsViewSet(viewsets.ViewSet):
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO, and is now pending administration and costing\n\nRegards\nTRS-AKHK"
 
                         # try:
-                        #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        #     logger.error(e)
                         # except Exception as e:
                         #     pass
 
@@ -1036,7 +1036,7 @@ class TrsViewSet(viewsets.ViewSet):
                             }
                             Sendmail.objects.create(**mail)
                         except Exception as e:
-                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                            logger.error(e)
 
                     # Notify CASH OFFICE, HOF, MMD
                     if is_ceo:
@@ -1052,7 +1052,7 @@ class TrsViewSet(viewsets.ViewSet):
                             }
                             Sendmail.objects.create(**mail)
                         except Exception as e:
-                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                            logger.error(e)
 
                     # # Notify TRANSPORT
                     if is_ceo and traveler.mode_of_transport == 'HOSPITAL VEHICLE':
@@ -1068,7 +1068,7 @@ class TrsViewSet(viewsets.ViewSet):
                             }
                             Sendmail.objects.create(**mail)
                         except Exception as e:
-                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                            logger.error(e)
 
                     # Notify control office
                     if is_transport_office:
@@ -1084,7 +1084,7 @@ class TrsViewSet(viewsets.ViewSet):
                             }
                             Sendmail.objects.create(**mail)
                         except Exception as e:
-                            send_mail(subject, message, 'notification@akhskenya.org', emails)
+                            logger.error(e)
 
                 user_util.log_account_activity(
                     authenticated_user, traveler.created_by, "Travel Request approval", 
@@ -1179,7 +1179,7 @@ class TrsViewSet(viewsets.ViewSet):
                     message = f"Hello. \n\nTravel Request: of ID {traveler.tid}\nhas been forwarded to you by {authenticated_user.first_name} {authenticated_user.last_name},\npending your action.\n\nRegards\nTRS-AKHK"
 
                     # try:
-                    #     send_mail(subject, message, 'notification@akhskenya.org', emails)
+                    #     logger.error(e)
                     # except Exception as e:
                     #     pass
 
@@ -1191,7 +1191,7 @@ class TrsViewSet(viewsets.ViewSet):
                         }
                         Sendmail.objects.create(**mail)
                     except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', emails)
+                        logger.error(e)
 
 
                 user_util.log_account_activity(
