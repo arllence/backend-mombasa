@@ -148,7 +148,6 @@ class SrrsViewSet(viewsets.ViewSet):
 
             payload = json.loads(request.data['payload'])
             job_description_file = request.FILES.get('job_description', None)
-            print(job_description_file.name)
 
 
             serializer = serializers.PutRecruitSerializer(
@@ -316,12 +315,16 @@ class SrrsViewSet(viewsets.ViewSet):
                     emails = []
                     target = []
 
+                    if recruit.is_hod_approved:
+                       emails.append(recruit.department.hod.email)
                     if recruit.is_slt_approved:
                         emails.append(recruit.department.slt.lead.email)
                     if recruit.is_hhr_approved:
                        target += ["HR","HHR"]
                     if recruit.is_hof_approved:
                        target += ["HOF","FINANCE"]
+                    if recruit.is_ceo_approved:
+                       target += ["CEO"]
 
                     # Notify targets
                     targets_emails = list(get_user_model().objects.filter(Q(groups__name__in=target)).values_list('email', flat=True))
