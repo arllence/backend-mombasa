@@ -104,3 +104,26 @@ class StatusChange(models.Model):
 
     class Meta:
         db_table = u'"{}\".\"status_change"'.format(settings.STAFF_REQUISITION_SYSTEM)
+
+class LocumAttendance(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    recruit = models.ForeignKey(
+        Recruit, on_delete=models.DO_NOTHING,
+        related_name="attendance_recruit_instance"
+    )
+    month = models.IntegerField()
+    year = models.IntegerField()
+    data = models.JSONField()
+    action_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="attendance_action_by",
+       null=True, blank=True
+    )
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.recruit.uid)
+
+    class Meta:
+        db_table = u'"{}\".\"locum_attendance"'.format(settings.STAFF_REQUISITION_SYSTEM)
