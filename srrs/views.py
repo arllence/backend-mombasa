@@ -1,3 +1,4 @@
+import calendar
 from collections import OrderedDict
 import datetime
 import json
@@ -778,7 +779,120 @@ class SrrsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
-                
+
+class LocumViewSet(viewsets.ViewSet):
+
+    def get_queryset(self):
+        return []
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="locum",
+            url_name="locum")
+    def locums(self, request):
+                    
+        department = request.query_params.get('department')
+        position_type = request.query_params.get('position_type')
+        nature_of_hiring = request.query_params.get('nature_of_hiring')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        r_status = request.query_params.get('status')
+        date = False
+
+        if date_to and date_from:
+            date = True
+
+        def create_date_range(date_from,date_to):
+            # Convert the string dates to datetime objects
+            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+
+            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+
+            return q_filters
+
+        q_filters = Q()
+
+        if department:
+            q_filters &= Q(department=department)
+
+        if date_from or date_to:
+            if not date:
+                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
+            q_filters &= create_date_range(date_from,date_to)
+            
+        if r_status:
+            q_filters &= Q(status=r_status)
+
+        if position_type:
+            q_filters &= Q(position_type=position_type)
+
+        if nature_of_hiring:
+            q_filters &= Q(nature_of_hiring=nature_of_hiring)
+
+
+        if q_filters:
+
+            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            
+        else:
+            roles = user_util.fetchusergroups(request.user.id)  
+
+            if "HOD" in roles:
+                resp = models.Recruit.objects.filter(Q(recruit__department=request.user.department) | Q(created_by=request.user), position_type='Temporary', is_deleted=False).order_by('-date_created')
+
+            else:
+                resp = models.Recruit.objects.filter(Q(position_type='Temporary') & Q(status='HIRED') & Q(is_deleted=False)).order_by('-date_created')
+   
+        paginator = PageNumberPagination()
+        paginator.page_size = 50
+        result_page = paginator.paginate_queryset(resp, request)
+        serializer = serializers.SlimFetchRecruitSerializer(
+            result_page, many=True, context={"user_id":request.user.id})
+        return paginator.get_paginated_response(serializer.data)
+
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="attendance",
+            url_name="attendance")
+    def attendance(self, request):
+        request_id = request.query_params.get('request_id')
+
+        resp = models.Recruit.objects.get(Q(id=request_id))
+
+        reporting_date = resp.reporting_date
+
+        if reporting_date:
+            # Extract the month
+            month = reporting_date.month
+            # Extract day
+            start_day = reporting_date.day
+
+            # Determine the number of days in the month
+            year = reporting_date.year
+            _, num_days = calendar.monthrange(year, month)
+
+            # Print the month and the number of days
+            month_name = calendar.month_name[month]
+            print(f"Month: {month_name}, Number of days: {num_days}")
+            days = []
+            for i in range(start_day, num_days + 1):
+                days.append(i)
+
+            print(days)
+        else:
+            print("reporting_date is not set.")
+
+        resp = {
+            "days": days,
+            "month": month,
+            "month_name" : month_name
+        }
+
+        # resp = serializers.FetchRecruitSerializer(resp, many=False, context={"user_id":request.user.id}).data
+        return Response(resp, status=status.HTTP_200_OK)
+
     
    
 class SRRSReportsViewSet(viewsets.ViewSet):

@@ -4,6 +4,7 @@ from srrs import views
 router = DefaultRouter(trailing_slash=False)
 
 router.register('srrs', views.SrrsViewSet, basename='srrs')
+router.register('locums', views.LocumViewSet, basename='locums')
 router.register('srrs-reports',views.SRRSReportsViewSet, basename='srrs-reports')
 router.register('srrs-analytics',views.SRRSAnalyticsViewSet, basename='srrs-analytics')
    
