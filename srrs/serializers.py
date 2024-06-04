@@ -91,8 +91,6 @@ class RecruitSerializer(serializers.Serializer):
     position_type = serializers.CharField(max_length=500)
     qualifications = serializers.JSONField()
     nature_of_hiring = serializers.CharField(max_length=500)
-    period_from = serializers.DateField()
-    period_to = serializers.DateField()
     filling_date = serializers.DateField()
     temporary_task_assignment_to = serializers.CharField(max_length=255)
 
