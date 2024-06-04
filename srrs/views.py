@@ -121,7 +121,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     # Notify SLT
                     subject = f"New Recruitment Request {uid} Received [SRRS-AKHK]"
-                    message = f"Hello, \n\nA new recruit request of id: {uid}, from department: {department.name}, for position: {recruit.position_title}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\SRRS-AKHK"
+                    message = f"Hello, \n\nA new recruit request of id: {uid}, from department: {department.name}, for position: {recruit.position_title}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nSRRS-AKHK"
 
                     try:
                         mail = {
@@ -234,7 +234,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     # Notify creator
                     subject = f"Recruitment Request {recruit.uid} Edited [SRRS-AKHK]"
-                    message = f"Hello, \n\nYour recruit request of id: {recruit.uid} for position: {recruit.position_title},\nhas been edited by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nVisit SRRS to review.\n\nRegards\SRRS-AKHK"
+                    message = f"Hello, \n\nYour recruit request of id: {recruit.uid} for position: {recruit.position_title},\nhas been edited by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nVisit SRRS to review.\n\nRegards\nSRRS-AKHK"
 
                     try:
                         mail = {
@@ -295,9 +295,10 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     elif recruit_status == "HIRED":
                         if not reporting_date:
-                            return Response({"details": f"Reporting date required !"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"details": f"Reporting date required "}, status=status.HTTP_400_BAD_REQUEST)
                         
                         recruit.reporting_date = reporting_date
+                        recruit.status = recruit_status
 
                     else:
                         recruit.status = recruit_status
@@ -594,7 +595,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     # Notify next office
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=forward_to)).values_list('email', flat=True))
                     subject = f"Recruitment Request: {recruit.uid} Pending Your Action.  [SRRS-AKHK]"
-                    message = f"Hello. \n\Recruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\SRRS-AKHK"
+                    message = f"Hello. \n\Recruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\nSRRS-AKHK"
 
                     try:
                         if emails:
