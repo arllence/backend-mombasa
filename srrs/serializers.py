@@ -100,8 +100,6 @@ class PutRecruitSerializer(serializers.Serializer):
     position_type = serializers.CharField(max_length=500)
     qualifications = serializers.JSONField()
     nature_of_hiring = serializers.CharField(max_length=500)
-    period_from = serializers.CharField(max_length=5000)
-    period_to = serializers.CharField(max_length=255)
     filling_date = serializers.CharField(max_length=255)
     temporary_task_assignment_to = serializers.CharField(max_length=255)
 
