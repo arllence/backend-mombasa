@@ -57,7 +57,7 @@ class Recruit(models.Model):
     date_closed = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return self.tid
+        return self.uid
 
     class Meta:
         db_table = u'"{}\".\"recruits"'.format(settings.STAFF_REQUISITION_SYSTEM)
@@ -76,7 +76,7 @@ class RecruitHistory(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return str(self.traveler.tid)
+        return str(self.traveler.uid)
 
     class Meta:
         db_table = u'"{}\".\"recruit_history"'.format(settings.STAFF_REQUISITION_SYSTEM)
@@ -99,7 +99,7 @@ class StatusChange(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return str(self.traveler.tid)
+        return str(self.recruit.uid)
 
     class Meta:
         db_table = u'"{}\".\"status_change"'.format(settings.STAFF_REQUISITION_SYSTEM)

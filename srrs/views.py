@@ -274,12 +274,27 @@ class SrrsViewSet(viewsets.ViewSet):
                 
                 with transaction.atomic():
 
-                    if recruit_status in  ['DECLINED','CANCELED']:
+                    if recruit_status in  ['DECLINED','CANCELED', 'ONHOLD']:
                         recruit.rejected_by = authenticated_user
                         if not reason:
                             return Response({"details": f"Reason for {recruit_status} status required !"}, status=status.HTTP_400_BAD_REQUEST)
 
-                    recruit.status = recruit_status
+                    if recruit_status == "REACTIVATED":
+                        # find last status before on hold
+                        selected_status = ""
+                        unwanted = ['ONHOLD', 'REACTIVATED']
+                        recent_statuses = list(models.StatusChange.objects.filter(Q(recruit=recruit)).order_by('-date_created').values_list('status', flat=True))
+
+                        for recent_status in recent_statuses:
+                            if recent_status not in unwanted:
+                                selected_status = recent_status
+                                break
+
+                        recruit.status = selected_status
+
+                    else:
+                        recruit.status = recruit_status
+
                     if reason:
                         current_reason = recruit.rejection_reasons
 
@@ -315,14 +330,15 @@ class SrrsViewSet(viewsets.ViewSet):
                     emails = []
                     target = []
 
-                    if recruit.is_hod_approved:
-                       emails.append(recruit.department.hod.email)
                     if recruit.is_slt_approved:
                         emails.append(recruit.department.slt.lead.email)
+
                     if recruit.is_hhr_approved:
                        target += ["HR","HHR"]
+
                     if recruit.is_hof_approved:
                        target += ["HOF","FINANCE"]
+                       
                     if recruit.is_ceo_approved:
                        target += ["CEO"]
 
