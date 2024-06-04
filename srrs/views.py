@@ -265,6 +265,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 recruit_id = payload['recruit_id']
                 recruit_status = payload['status'].upper()
                 reason = payload.get('comments', None) 
+                reporting_date = payload.get('reporting_date', None) 
 
                 try:
                     recruit = models.Recruit.objects.get(id=recruit_id)
@@ -291,6 +292,12 @@ class SrrsViewSet(viewsets.ViewSet):
                                 break
 
                         recruit.status = selected_status
+
+                    elif recruit_status == "HIRED":
+                        if not reporting_date:
+                            return Response({"details": f"Reporting date required !"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        recruit.reporting_date = reporting_date
 
                     else:
                         recruit.status = recruit_status
@@ -338,7 +345,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     if recruit.is_hof_approved:
                        target += ["HOF","FINANCE"]
-                       
+
                     if recruit.is_ceo_approved:
                        target += ["CEO"]
 

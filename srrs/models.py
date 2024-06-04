@@ -39,6 +39,7 @@ class Recruit(models.Model):
     filling_date = models.DateField(null=True, blank=True)
     period_from = models.DateField(null=True, blank=True)
     period_to = models.DateField(null=True, blank=True)
+    reporting_date = models.DateField(null=True, blank=True)
     temporary_task_assignment_to = models.CharField(max_length=255)
     replacement_details = models.JSONField(null=True, blank=True)
     rejection_reasons = models.JSONField(null=True, blank=True)
