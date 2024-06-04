@@ -119,3 +119,16 @@ class FetchStatusChangeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.StatusChange
         fields = '__all__'
+
+class SlimFetchLocumAttendanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.LocumAttendance
+        fields = '__all__'
+
+class AttendanceSerializer(serializers.Serializer):
+    request_id = serializers.IntegerField()
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+    day = serializers.IntegerField()
+    hours_worked = serializers.IntegerField()
+    overtime_hours = serializers.IntegerField()

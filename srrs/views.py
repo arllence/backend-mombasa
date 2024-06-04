@@ -852,46 +852,104 @@ class LocumViewSet(viewsets.ViewSet):
         return paginator.get_paginated_response(serializer.data)
 
 
-    @action(methods=["GET",],
+    @action(methods=["POST","GET",],
             detail=False,
             url_path="attendance",
             url_name="attendance")
     def attendance(self, request):
-        request_id = request.query_params.get('request_id')
+        authenticated_user = request.user
+        if request.method == "POST":
+            payload = request.data
 
-        resp = models.Recruit.objects.get(Q(id=request_id))
+            serializer = serializers.AttendanceSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                month = payload['month']
+                year = payload['year']
+                day = payload['day']
+                hours_worked = payload['hours_worked']
+                overtime_hours = payload['overtime_hours']
 
-        reporting_date = resp.reporting_date
+                try:
+                    recruit = models.Recruit.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Requisition"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if reporting_date:
-            # Extract the month
-            month = reporting_date.month
-            # Extract day
-            start_day = reporting_date.day
+                is_existing =  models.LocumAttendance.objects.filter(
+                    Q(month=month) & Q(year=year) & Q(recruit=recruit)
+                ).order_by('-date_created').first()
 
-            # Determine the number of days in the month
-            year = reporting_date.year
-            _, num_days = calendar.monthrange(year, month)
+                with transaction.atomic():
+                    data = {
+                        "id" : uuid.uuid4(),
+                        "month": month,
+                        "year": year,
+                        "day": day,
+                        "hours_worked": hours_worked,
+                        "overtime_hours": overtime_hours
+                    }
+                    raw = {
+                        "recruit": recruit,
+                        "month": month,
+                        "year": year,
+                        "action_by": authenticated_user,
+                        "data": [data]
+                    }
 
-            # Print the month and the number of days
-            month_name = calendar.month_name[month]
-            print(f"Month: {month_name}, Number of days: {num_days}")
-            days = []
-            for i in range(start_day, num_days + 1):
-                days.append(i)
+                    if is_existing:
+                        attendance = is_existing.data
+                        attendance.append(data)
+                        is_existing.data = attendance
+                        is_existing.save()
+                    else:
+                        models.LocumAttendance.objects.create(**raw)
 
-            print(days)
-        else:
-            print("reporting_date is not set.")
 
-        resp = {
-            "days": days,
-            "month": month,
-            "month_name" : month_name
-        }
+        elif request.method == "GET":
 
-        # resp = serializers.FetchRecruitSerializer(resp, many=False, context={"user_id":request.user.id}).data
-        return Response(resp, status=status.HTTP_200_OK)
+            request_id = request.query_params.get('request_id')
+
+            resp = models.Recruit.objects.get(Q(id=request_id))
+
+            reporting_date = resp.reporting_date
+            
+
+            if reporting_date:
+                # Extract the month
+                month = reporting_date.month
+                # Extract day
+                start_day = reporting_date.day
+
+                # Determine the number of days in the month
+                year = reporting_date.year
+                _, num_days = calendar.monthrange(year, month)
+
+                # Print the month and the number of days
+                month_name = calendar.month_name[month]
+                print(f"Month: {month_name}, Number of days: {num_days}")
+                days = []
+                for i in range(start_day, num_days + 1):
+                    days.append(i)
+
+                print(days)
+            else:
+                print("reporting_date is not set.")
+
+            attendance = models.LocumAttendance.objects.filter(Q(recruit=request_id), year=year, month=month)
+            serialized_attendance = serializers.SlimFetchLocumAttendanceSerializer(
+                            attendance, many=True).data
+
+            resp = {
+                "days": days,
+                "month": month,
+                "month_name" : month_name,
+                "attendance" : serialized_attendance,
+            }
+
+
+            return Response(resp, status=status.HTTP_200_OK)
 
     
    
