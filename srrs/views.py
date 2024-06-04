@@ -72,6 +72,17 @@ class SrrsViewSet(viewsets.ViewSet):
 
                 uid = shared_fxns.generate_unique_identifier()
 
+                # Check temporary hire period
+                if position_type == 'Temporary':
+                    if not period_from or not period_to:
+                        return Response({"details": "Period From and Period To required"},
+                                status=status.HTTP_400_BAD_REQUEST)
+                    
+                    years = shared_fxns.find_date_difference(period_from,period_to,'years')
+                    if years > 1:
+                        return Response({"details": "Temporary hire period cannot be more than one year"},
+                                status=status.HTTP_400_BAD_REQUEST)
+
                 try:
                     department = Department.objects.get(id=department)
                 except Exception as e:
