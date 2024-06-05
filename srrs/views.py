@@ -290,7 +290,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 reason = payload.get('comments', None) 
                 reporting_date = payload.get('reporting_date', None) 
                 reporting_station = payload.get('reporting_station', None) 
-                working_station = payload.get('working_station', None) 
+                working_station = payload.get('work_station', None) 
 
                 try:
                     recruit = models.Recruit.objects.get(id=recruit_id)
