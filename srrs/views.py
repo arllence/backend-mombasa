@@ -884,6 +884,15 @@ class LocumViewSet(viewsets.ViewSet):
                     recruit = models.Recruit.objects.get(id=request_id)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Requisition"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # check if date is within hire period
+                end_period_date = recruit.period_to
+                selected_date =  f"{year}-{month}-{day}"
+                period = shared_fxns.find_date_difference(selected_date, str(end_period_date.strftime('%Y-%m-%d')),'days')
+
+                if period < 0:
+                    return Response({"details": "Attendance date is beyond locum period"}, status=status.HTTP_400_BAD_REQUEST)
+
 
                 is_existing =  models.LocumAttendance.objects.filter(
                     Q(month=month) & Q(year=year) & Q(recruit=recruit)
