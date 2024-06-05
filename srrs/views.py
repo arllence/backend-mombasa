@@ -289,6 +289,8 @@ class SrrsViewSet(viewsets.ViewSet):
                 recruit_status = payload['status'].upper()
                 reason = payload.get('comments', None) 
                 reporting_date = payload.get('reporting_date', None) 
+                reporting_station = payload.get('reporting_station', None) 
+                working_station = payload.get('working_station', None) 
 
                 try:
                     recruit = models.Recruit.objects.get(id=recruit_id)
@@ -321,6 +323,9 @@ class SrrsViewSet(viewsets.ViewSet):
                             return Response({"details": f"Reporting date required "}, status=status.HTTP_400_BAD_REQUEST)
                         
                         recruit.reporting_date = reporting_date
+                        recruit.reporting_station = reporting_station
+                        recruit.working_station = working_station
+                        
                         recruit.status = recruit_status
 
                     else:
