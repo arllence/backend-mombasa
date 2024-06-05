@@ -10,6 +10,8 @@ router.register('ict-support',
                 views.ICTSupportViewSet, basename='ict-support')   
 router.register('department',
                 views.DepartmentViewSet, basename='department')
+router.register('srrs-departments',
+                views.SRRSDepartmentViewSet, basename='srrs-departments')
 router.register('slt',
                 views.SltViewSet, basename='slt')
    

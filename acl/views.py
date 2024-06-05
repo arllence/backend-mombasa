@@ -960,7 +960,7 @@ class DepartmentViewSet(viewsets.ViewSet):
                         return Response({"details": "Unknown HOD"}, status=status.HTTP_400_BAD_REQUEST)
                     
                     if dept.hod and dept.hod.id != hod.id:
-                        user_util.revoke_role('HOD', str(dept.slt.lead.id))
+                        user_util.revoke_role('HOD', str(dept.hod.id))
                     
                     roles = user_util.fetchusergroups(str(hod.id))
                     if 'HOD' not in roles:
@@ -1043,6 +1043,193 @@ class DepartmentViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": "Please upload a CSV file."}, status=status.HTTP_400_BAD_REQUEST)
 
+class SRRSDepartmentViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    search_fields = ['id', ]
+
+    def get_queryset(self):
+        return []
+
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="department",
+            url_name="department")
+    def srrs_department(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                slt_id = payload.get('slt')
+                hod_id = payload.get('hod')
+
+                with transaction.atomic():
+                    raw = {
+                        "name": name
+                    }
+
+                    if slt_id:
+                        try:
+                            slt = models.User.objects.get(id=slt_id)
+                        except Exception as e:
+                            return Response({"details": "Unknown SLT"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        roles = user_util.fetchusergroups(slt_id)
+                        if 'SLT' not in roles:
+                            assign_role = user_util.award_role('SLT', slt_id)
+
+                            if not assign_role:
+                                return Response({"details": "Unable to assign role SLT"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        raw.update({"slt": slt})
+
+                    if hod_id:
+                        try:
+                            hod = models.User.objects.get(id=hod_id)
+                        except Exception as e:
+                            return Response({"details": "Unknown HOD"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        roles = user_util.fetchusergroups(hod_id)
+                        if 'HOD' not in roles:
+                            assign_role = user_util.award_role('HOD', hod_id)
+
+                            if not assign_role:
+                                return Response({"details": "Unable to assign role HOD"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        raw.update({"hod": hod})
+
+                    models.SRRSDepartment.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateDepartmentSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                dept_id = payload['request_id']
+                name = payload['name']
+                slt_id = payload.get('slt')
+                hod_id = payload.get('hod')
+
+                try:
+                    dept = models.SRRSDepartment.objects.get(id=dept_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown SRRS Department"}, status=status.HTTP_400_BAD_REQUEST)
+
+                if slt_id:
+                    try:
+                        slt = models.User.objects.get(id=slt_id)
+                    except Exception as e:
+                        return Response({"details": "Unknown SLT"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    if dept.slt and dept.slt.id != slt.id:
+                        user_util.revoke_role('SLT', str(dept.slt.id))
+
+                    roles = user_util.fetchusergroups(slt_id)
+                    if 'SLT' not in roles:
+                        assign_role = user_util.award_role('SLT', slt_id)
+
+                        if not assign_role:
+                            return Response({"details": "Unable to assign role SLT"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                if hod_id:
+                    try:
+                        hod = models.User.objects.get(id=hod_id)
+                    except Exception as e:
+                        return Response({"details": "Unknown HOD"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    if dept.hod and dept.hod.id != hod.id:
+                        user_util.revoke_role('HOD', str(dept.hod.id))
+                    
+                    roles = user_util.fetchusergroups(hod_id)
+                    if 'HOD' not in roles:
+                        assign_role = user_util.award_role('HOD', hod_id)
+
+                        if not assign_role:
+                            return Response({"details": "Unable to assign role HOD"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    try:
+                        
+                        dept.name = name
+                        
+                        if slt:
+                            dept.slt = slt 
+                        if hod:
+                            dept.hod = hod 
+
+                        dept.save()
+                        
+                    except (ValidationError, ObjectDoesNotExist):
+                        return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    department = models.SRRSDepartment.objects.get(Q(id=request_id))
+                    department = serializers.FetchSRRSDepartmentSerializer(department,many=False).data
+                    return Response(department, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+
+                    if 'USER' in roles:
+                        department = request.user.srrs_department
+                        department = serializers.FetchSRRSDepartmentSerializer(department,many=False).data
+                        return Response([department], status=status.HTTP_200_OK)
+                    else:
+                        departments = models.SRRSDepartment.objects.all().order_by('name')
+                        departments = serializers.FetchSRRSDepartmentSerializer(departments,many=True).data
+                        return Response(departments, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+    @action(methods=["POST"],
+            detail=False,
+            url_path="upload",
+            url_name="upload")
+    def upload(self, request):
+        if request.method == "POST":
+            formfiles = request.FILES
+            if not formfiles:
+                return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            f = request.FILES.getlist('documents')[0]
+            if f.name.endswith('.csv'):
+                decoded_file = f.read().decode('utf-8')
+                csv_data = csv.reader(decoded_file.splitlines(), delimiter=',')
+                # Skip the header row
+                next(csv_data)
+                departments = [models.Department(name=row[0].strip()) for row in csv_data]
+                models.SRRSDepartment.objects.bulk_create(departments)
+                return Response('Data uploaded successfully', status=status.HTTP_200_OK)
+            else:
+                return Response({"details": "Please upload a CSV file."}, status=status.HTTP_400_BAD_REQUEST)
+            
 class SltViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     search_fields = ['id', ]

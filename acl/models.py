@@ -46,6 +46,27 @@ class Department(models.Model):
     class Meta:
         db_table = "departments"
 
+class SRRSDepartment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    slt = models.ForeignKey(
+        'User', related_name='srrs_department_slt', 
+        null=True, blank=True,
+        on_delete=models.DO_NOTHING
+    )
+    hod = models.ForeignKey(
+        'User', related_name='srrs_department_hod', 
+        null=True, blank=True,
+        on_delete=models.DO_NOTHING
+    )
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = "srrs_departments"
+
 
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
