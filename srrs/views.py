@@ -919,45 +919,131 @@ class LocumViewSet(viewsets.ViewSet):
         elif request.method == "GET":
 
             request_id = request.query_params.get('request_id')
+            month = request.query_params.get('month', 0) or 0
+            year = request.query_params.get('year', 0) or 0
 
-            resp = models.Recruit.objects.get(Q(id=request_id))
+            year = int(year)
+            month = int(month)
 
-            reporting_date = resp.reporting_date
-            
+            targetInstance = models.Recruit.objects.get(Q(id=request_id))
 
-            if reporting_date:
-                # Extract the month
+            def is_reporting_month_fn(targetInstance):
+                reporting_date = targetInstance.reporting_date
                 month = reporting_date.month
-                # Extract day
-                start_day = reporting_date.day
-
-                # Determine the number of days in the month
                 year = reporting_date.year
+                return [year,month]
+            
+            def current_month_fn():
+                current_date = datetime.datetime.now().date()
+                month = current_date.month
+                year = current_date.year
+                return [year,month]
+            
+            def check_if_hiring_month_fn():
+                hiring_month, hiring_year = is_reporting_month_fn(targetInstance)
+                current_month, current_year = current_month_fn()
+
+                if current_month == hiring_month and current_year == hiring_year:
+                    return True
+                return False
+
+            def reporting_date_fn(targetInstance):
+                reporting_date = targetInstance.reporting_date
+
+                if reporting_date:
+                    # Extract the month
+                    month = reporting_date.month
+                    # Extract day
+                    start_day = reporting_date.day
+
+                    # Determine the number of days in the month
+                    year = reporting_date.year
+                    _, num_days = calendar.monthrange(year, month)
+
+                    # Print the month and the number of days
+                    month_name = calendar.month_name[month]
+
+                    days = []
+                    for i in range(start_day, num_days + 1):
+                        days.append(i)
+
+                    attendance = models.LocumAttendance.objects.filter(Q(recruit=request_id), year=year, month=month)
+                    serialized_attendance = serializers.SlimFetchLocumAttendanceSerializer(
+                            attendance, many=True).data
+
+                    resp = {
+                        "days": days,
+                        "month": month,
+                        "month_name" : month_name,
+                        "year" : year,
+                        "attendance" : serialized_attendance,
+                    }
+
+                return resp
+
+            def current_month_days_fn(request_id):
+
+                current_date = datetime.now().date()
+                month = current_date.month
+                start_day = current_date.day
+                year = current_date.year
                 _, num_days = calendar.monthrange(year, month)
 
-                # Print the month and the number of days
+                # Get the month name
                 month_name = calendar.month_name[month]
-                print(f"Month: {month_name}, Number of days: {num_days}")
+
                 days = []
                 for i in range(start_day, num_days + 1):
                     days.append(i)
 
-                print(days)
+                attendance = models.LocumAttendance.objects.filter(Q(recruit=request_id), year=year, month=month)
+                serialized_attendance = serializers.SlimFetchLocumAttendanceSerializer(
+                        attendance, many=True).data
+
+                resp = {
+                    "days": days,
+                    "month": month,
+                    "month_name" : month_name,
+                    "year" : year,
+                    "attendance" : serialized_attendance
+                }
+
+                return Response(resp, status=status.HTTP_200_OK)
+            
+            def selected_period_fn(request_id,month,year):
+                start_day = 1
+                _, num_days = calendar.monthrange(int(year), int(month))
+
+                # Get the month name
+                month_name = calendar.month_name[month]
+
+                days = []
+                for i in range(start_day, num_days + 1):
+                    days.append(i)
+
+                attendance = models.LocumAttendance.objects.filter(Q(recruit=request_id), year=year, month=month)
+                serialized_attendance = serializers.SlimFetchLocumAttendanceSerializer(
+                        attendance, many=True).data
+
+                resp = {
+                    "days": days,
+                    "month": month,
+                    "month_name" : month_name,
+                    "year" : year,
+                    "attendance" : serialized_attendance
+                }
+                
+                return resp
+            
+
+            if month or year:
+                if not year:
+                    year = datetime.datetime.now().date().year
+                resp = selected_period_fn(request_id,month,year)
+            elif check_if_hiring_month_fn():
+                resp = reporting_date_fn(targetInstance)
             else:
-                print("reporting_date is not set.")
-
-            attendance = models.LocumAttendance.objects.filter(Q(recruit=request_id), year=year, month=month)
-            serialized_attendance = serializers.SlimFetchLocumAttendanceSerializer(
-                            attendance, many=True).data
-
-            resp = {
-                "days": days,
-                "month": month,
-                "month_name" : month_name,
-                "year" : year,
-                "attendance" : serialized_attendance,
-            }
-
+                resp = current_month_days_fn(request_id)
 
             return Response(resp, status=status.HTTP_200_OK)
 
