@@ -324,8 +324,11 @@ class SrrsViewSet(viewsets.ViewSet):
                         
                         recruit.reporting_date = reporting_date
                         recruit.reporting_station = reporting_station
-                        recruit.working_station = working_station
-                        
+                        if reporting_station == 'OUTREACH CENTRES':
+                            if not working_station:
+                                return Response({"details": "Working station required "}, status=status.HTTP_400_BAD_REQUEST)
+                            recruit.working_station = working_station
+
                         recruit.status = recruit_status
 
                     else:
