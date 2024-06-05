@@ -900,6 +900,9 @@ class LocumViewSet(viewsets.ViewSet):
 
                     if is_existing:
                         attendance = is_existing.data
+                        for item in data:
+                            if int(item['day']) == int(day):
+                                return Response({"details": f"Attendance for {month} {day} has been taken"}, status=status.HTTP_400_BAD_REQUEST)
                         attendance.append(data)
                         is_existing.data = attendance
                         is_existing.save()
