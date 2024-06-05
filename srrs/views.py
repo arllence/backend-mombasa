@@ -603,7 +603,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=previous_office)).values_list('email', flat=True))
                     emails.append(recruit.created_by.email)
                     subject = f"Recruitment Request: {recruit.uid} Status  [SRRS-AKHK]"
-                    message = f"Hello, \n\Staff Recruitment Request of id: {recruit.uid} for position: {recruit.position_title} has been {new_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nSRRS-AKHK"
+                    message = f"Hello, \nStaff Recruitment Request of id: {recruit.uid} for position: {recruit.position_title} has been {new_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nSRRS-AKHK"
                     
                     try:
                         mail = {
@@ -618,7 +618,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     # Notify next office
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=forward_to)).values_list('email', flat=True))
                     subject = f"Recruitment Request: {recruit.uid} Pending Your Action.  [SRRS-AKHK]"
-                    message = f"Hello. \n\Recruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\nSRRS-AKHK"
+                    message = f"Hello. \nRecruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\nSRRS-AKHK"
 
                     try:
                         if emails:
@@ -881,9 +881,10 @@ class LocumViewSet(viewsets.ViewSet):
                     Q(month=month) & Q(year=year) & Q(recruit=recruit)
                 ).order_by('-date_created').first()
 
+
                 with transaction.atomic():
                     data = {
-                        "id" : uuid.uuid4(),
+                        "id" : str(uuid.uuid4()),
                         "month": month,
                         "year": year,
                         "day": day,
@@ -900,14 +901,19 @@ class LocumViewSet(viewsets.ViewSet):
 
                     if is_existing:
                         attendance = is_existing.data
-                        for item in data:
+                        for item in attendance:
                             if int(item['day']) == int(day):
-                                return Response({"details": f"Attendance for {month} {day} has been taken"}, status=status.HTTP_400_BAD_REQUEST)
+                                return Response({"details": f"Attendance for {day} of {calendar.month_name[month]}  has been added"}, status=status.HTTP_400_BAD_REQUEST)
                         attendance.append(data)
                         is_existing.data = attendance
                         is_existing.save()
                     else:
                         models.LocumAttendance.objects.create(**raw)
+                    
+                    return Response(200, status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
 
 
         elif request.method == "GET":
@@ -948,6 +954,7 @@ class LocumViewSet(viewsets.ViewSet):
                 "days": days,
                 "month": month,
                 "month_name" : month_name,
+                "year" : year,
                 "attendance" : serialized_attendance,
             }
 

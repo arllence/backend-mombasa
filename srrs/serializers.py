@@ -126,7 +126,7 @@ class SlimFetchLocumAttendanceSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class AttendanceSerializer(serializers.Serializer):
-    request_id = serializers.IntegerField()
+    request_id = serializers.CharField(max_length=500)
     month = serializers.IntegerField()
     year = serializers.IntegerField()
     day = serializers.IntegerField()
