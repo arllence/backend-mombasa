@@ -85,6 +85,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         null=True, blank=True,
         on_delete=models.DO_NOTHING
     )
+    srrs_department = models.ForeignKey(
+        SRRSDepartment, related_name="srrs_user_department", 
+        null=True, blank=True,
+        on_delete=models.DO_NOTHING
+    )
     objects = UserManager()
 
     USERNAME_FIELD = "email"

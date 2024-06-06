@@ -91,11 +91,12 @@ class UsersSerializer(serializers.ModelSerializer):
     is_active = serializers.CharField()
     is_suspended = serializers.CharField()
     department = FetchDepartmentSerializer()
+    srrs_department = FetchSRRSDepartmentSerializer()
     user_groups = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = get_user_model()
         fields = [
-            'id', 'email', 'first_name', 'last_name', 'employee_no', 'is_active', 'is_suspended','department', 'user_groups','date_created'
+            'id', 'email', 'first_name', 'last_name', 'employee_no', 'is_active', 'is_suspended','department', 'srrs_department', 'user_groups','date_created'
         ]
 
     def get_user_groups(self, obj):

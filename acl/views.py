@@ -494,13 +494,19 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             with transaction.atomic():
                 department_id = payload['department_id']
                 user_id = payload['user_id']
+                app = request.query_params.get('app')
                 try:
                     user_details = get_user_model().objects.get(id=user_id)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
                 try:
-                    department_details = models.Department.objects.get(
-                        id=department_id)
+                    if not app:
+                        department_details = models.Department.objects.get(
+                            id=department_id)
+                    else:
+                        if app == 'srrs':
+                            department_details = models.SRRSDepartment.objects.get(
+                            id=department_id)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Department does not exist'}, status=status.HTTP_400_BAD_REQUEST)
                 user_details.department = department_details
@@ -619,7 +625,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
 
             if not role_id:
                 return Response(
-                    {'details': 'Select atleast one role'},
+                    {'details': 'Select at least one role'},
                     status=status.HTTP_400_BAD_REQUEST)
 
             try:
@@ -636,7 +642,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 record_instance.groups.remove(group)
 
             user_util.log_account_activity(
-                authenticated_user, record_instance, "Role Revokation",
+                authenticated_user, record_instance, "Role Revocation",
                 f"USER REVOKED ROLES {str(group_names)}")
             
             return Response("Successfully Updated",
@@ -697,9 +703,9 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     return Response({'details': 'Role does not exist'}, 
                                     status=status.HTTP_400_BAD_REQUEST) 
                 
-                subject = "Welcome To PSMDQS. Platform Access Details"
+                subject = "Platform Access Details"
                 def set_message(instance):
-                    message = f"Dear {instance.first_name}, \n\nYour email is: {instance.email}\nYour password is: welcome@123\nPortal Link is: http://172.20.0.17:82/\nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nPSMDQS-AKHK"
+                    message = f"Dear {instance.first_name}, \n\nYour email is: {instance.email}\nYour password is: welcome@123\nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nPSMDQS-AKHK"
                     return message
                 # send_mail(subject, message, 'notification@akhskenya.org', [email])
 
@@ -730,6 +736,8 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
         """
         payload = request.data
         authenticated_user = request.user
+        app = request.query_params.get('app', None)
+
         serializer = serializers.UserDetailSerializer(data=payload, many=False)
         if serializer.is_valid():
             with transaction.atomic():
@@ -750,7 +758,11 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     return Response({'details': 'Role does not exist'}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    department = models.Department.objects.get(id=department)
+                    if not app:
+                        department = models.Department.objects.get(id=department)
+                    else:
+                        if app == 'srrs':
+                            department = models.SRRSDepartment.objects.get(id=department)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Department does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -762,7 +774,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     "first_name": first_name,
                     "last_name": last_name,
                     "email": email,
-                    "department": department,
+                    # "department": department,
                     "is_active": True,
                     "is_superuser": False,
                     "is_staff": False,
@@ -770,17 +782,19 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     "password": hashed_pwd,
                 }
 
+                if not app:
+                    newuser.update({"department": department})
+                else:
+                    if app == 'srrs':
+                        newuser.update({"srrs_department": department})
+
                 create_user = get_user_model().objects.create(**newuser)
                 group_details.user_set.add(create_user)
 
-                # try:
-                #     general_group_details = Group.objects.get(name='USER')
-                #     general_group_details.user_set.add(create_user)
-                # except (ValidationError, ObjectDoesNotExist):
-                #     pass
 
-                subject = "Welcome To PSMDQS. Platform Access Details"
-                message = f"Dear {first_name}, \nYour email is {email}\nYour password is: {password}\nPortal Link is: http://172.20.0.17:82/\nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nPSMDQS-AKHK"
+
+                subject = "Platform Access Details"
+                message = f"Dear {first_name}, \nYour email is {email}\nYour password is: {password}\nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nPSMDQS-AKHK"
                 # mailgun_general.send_mail(first_name,email,subject,message)
                 send_mail(subject, message, 'notification@akhskenya.org', [email])
 
@@ -1224,7 +1238,7 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                 csv_data = csv.reader(decoded_file.splitlines(), delimiter=',')
                 # Skip the header row
                 next(csv_data)
-                departments = [models.Department(name=row[0].strip()) for row in csv_data]
+                departments = [models.Department(name=row[0].strip()) for row in csv_data if row[0]]
                 models.SRRSDepartment.objects.bulk_create(departments)
                 return Response('Data uploaded successfully', status=status.HTTP_200_OK)
             else:
