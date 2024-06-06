@@ -1019,12 +1019,16 @@ class LocumViewSet(viewsets.ViewSet):
                 overtime_hours = payload['overtime_hours']
 
                 try:
-                    recruit = models.Recruit.objects.get(id=request_id)
+                    employee = models.Employee.objects.get(id=request_id)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Requisition"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 # check if date is within hire period
-                end_period_date = recruit.period_to
+                end_period_date = employee.recruit.period_to
                 selected_date =  f"{year}-{month}-{day}"
                 period = shared_fxns.find_date_difference(selected_date, str(end_period_date.strftime('%Y-%m-%d')),'days')
 
@@ -1033,7 +1037,7 @@ class LocumViewSet(viewsets.ViewSet):
 
 
                 is_existing =  models.LocumAttendance.objects.filter(
-                    Q(month=month) & Q(year=year) & Q(recruit=recruit)
+                    Q(month=month) & Q(year=year) & Q(employee=employee)
                 ).order_by('-date_created').first()
 
 
@@ -1047,7 +1051,7 @@ class LocumViewSet(viewsets.ViewSet):
                         "overtime_hours": overtime_hours
                     }
                     raw = {
-                        "recruit": recruit,
+                        "employee": employee,
                         "month": month,
                         "year": year,
                         "action_by": authenticated_user,
@@ -1080,7 +1084,13 @@ class LocumViewSet(viewsets.ViewSet):
             year = int(year)
             month = int(month)
 
-            targetInstance = models.Recruit.objects.get(Q(id=request_id))
+            try:
+                targetInstance = models.Employee.objects.get(Q(id=request_id))
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown Staff"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                logger.error(e)
+                return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
 
             def is_reporting_month_fn(targetInstance):
                 reporting_date = targetInstance.reporting_date
@@ -1122,7 +1132,7 @@ class LocumViewSet(viewsets.ViewSet):
                     for i in range(start_day, num_days + 1):
                         days.append(i)
 
-                    attendance = models.LocumAttendance.objects.filter(Q(recruit=request_id), year=year, month=month)
+                    attendance = models.LocumAttendance.objects.filter(Q(employee=request_id), year=year, month=month)
                     serialized_attendance = serializers.SlimFetchLocumAttendanceSerializer(
                             attendance, many=True).data
 
@@ -1176,7 +1186,7 @@ class LocumViewSet(viewsets.ViewSet):
                 for i in range(start_day, num_days + 1):
                     days.append(i)
 
-                attendance = models.LocumAttendance.objects.filter(Q(recruit=request_id), year=year, month=month)
+                attendance = models.LocumAttendance.objects.filter(Q(employee=request_id), year=year, month=month)
                 serialized_attendance = serializers.SlimFetchLocumAttendanceSerializer(
                         attendance, many=True).data
 
