@@ -18,7 +18,7 @@ from srrs import models
 from srrs import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
-from acl.models import User, Department, Sendmail
+from acl.models import User, Sendmail, SRRSDepartment
 from srrs.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
@@ -85,7 +85,9 @@ class SrrsViewSet(viewsets.ViewSet):
                                 status=status.HTTP_400_BAD_REQUEST)
 
                 try:
-                    department = Department.objects.get(id=department)
+                    print("department id: ", department)
+                    department = SRRSDepartment.objects.get(id=department)
+                    print("department: ", department)
                 except Exception as e:
                     return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -94,7 +96,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     return Response({"details": "Qualifications Required !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 if department.slt:
-                    managers_emails = [department.slt.lead.email]
+                    managers_emails = [department.slt.email]
                 else:
                     return Response({"details": "Your Department has no SLT assigned !"}, status=status.HTTP_400_BAD_REQUEST)
                 
@@ -115,6 +117,8 @@ class SrrsViewSet(viewsets.ViewSet):
                         "temporary_task_assignment_to": temporary_task_assignment_to,
                         "uid": uid
                     }  
+
+                    print(raw)
 
                     recruit = models.Recruit.objects.create(
                         **raw
@@ -145,7 +149,8 @@ class SrrsViewSet(viewsets.ViewSet):
                         Sendmail.objects.create(**mail)
 
                     except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        logger.error(e)
+                        # send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Recruitment Request created", f"Recruitment Request Id: {recruit.id}")
@@ -196,7 +201,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Recruit Request !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    department = Department.objects.get(id=department)
+                    department = SRRSDepartment.objects.get(id=department)
                 except Exception as e:
                     print(e)
                     return Response({"details": "Unknown Department!"}, status=status.HTTP_400_BAD_REQUEST)
@@ -288,9 +293,6 @@ class SrrsViewSet(viewsets.ViewSet):
                 recruit_id = payload['recruit_id']
                 recruit_status = payload['status'].upper()
                 reason = payload.get('comments', None) 
-                reporting_date = payload.get('reporting_date', None) 
-                reporting_station = payload.get('reporting_station', None) 
-                working_station = payload.get('work_station', None) 
 
                 try:
                     recruit = models.Recruit.objects.get(id=recruit_id)
@@ -317,19 +319,6 @@ class SrrsViewSet(viewsets.ViewSet):
                                 break
 
                         recruit.status = selected_status
-
-                    elif recruit_status == "HIRED":
-                        if not reporting_date:
-                            return Response({"details": f"Reporting date required "}, status=status.HTTP_400_BAD_REQUEST)
-                        
-                        recruit.reporting_date = reporting_date
-                        recruit.reporting_station = reporting_station
-                        if reporting_station == 'OUTREACH CENTRES':
-                            if not working_station:
-                                return Response({"details": "Working station required "}, status=status.HTTP_400_BAD_REQUEST)
-                            recruit.working_station = working_station
-
-                        recruit.status = recruit_status
 
                     else:
                         recruit.status = recruit_status
@@ -370,7 +359,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     target = []
 
                     if recruit.is_slt_approved:
-                        emails.append(recruit.department.slt.lead.email)
+                        emails.append(recruit.department.slt.email)
 
                     if recruit.is_hhr_approved:
                        target += ["HR","HHR"]
@@ -431,10 +420,10 @@ class SrrsViewSet(viewsets.ViewSet):
                     if "HOD" in roles:
 
                         if query == 'pending':
-                            resp = models.Recruit.objects.filter(Q(department=request.user.department) | Q(created_by=request.user), is_ceo_approved=False, is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_ceo_approved=False, is_deleted=False).order_by('-date_created')
 
                         else:
-                            resp = models.Recruit.objects.filter(Q(department=request.user.department) | Q(created_by=request.user), is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).order_by('-date_created')
 
                     elif "USER_MANAGER" in roles:
                         resp = models.Recruit.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
@@ -444,13 +433,13 @@ class SrrsViewSet(viewsets.ViewSet):
                         if "HOF" in roles:
 
                             if query == 'pending':
-                                resp = models.Recruit.objects.filter((Q(department__slt__lead=authenticated_user) & Q(is_slt_approved=False)) |(Q(is_hof_approved=False) & Q(is_hhr_approved=True)), is_deleted=False).order_by('-date_created')
+                                resp = models.Recruit.objects.filter((Q(department__slt=authenticated_user) & Q(is_slt_approved=False)) |(Q(is_hof_approved=False) & Q(is_hhr_approved=True)), is_deleted=False).order_by('-date_created')
 
                             else:
-                                resp = models.Recruit.objects.filter((Q(department__slt__lead=authenticated_user) & Q(is_slt_approved=False)) |(Q(is_hof_approved=False) & Q(is_hhr_approved=True)), is_deleted=False).order_by('-date_created')
+                                resp = models.Recruit.objects.filter((Q(department__slt=authenticated_user) & Q(is_slt_approved=False)) |(Q(is_hof_approved=False) & Q(is_hhr_approved=True)), is_deleted=False).order_by('-date_created')
 
                         else:
-                            resp = models.Recruit.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) & Q(is_slt_approved=False)).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(Q(is_deleted=False) & Q(department__slt=authenticated_user) & Q(is_slt_approved=False)).order_by('-date_created')
 
                     elif "HR" in roles:
                         if not query:
@@ -549,7 +538,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     previous_office = []
 
                     if 'SLT' in roles:
-                        if recruit.department.slt.lead == authenticated_user and not recruit.is_slt_approved:
+                        if recruit.department.slt == authenticated_user and not recruit.is_slt_approved:
                             recruit.is_slt_approved = True
                             new_status = "SLT APPROVED"
                             forward_to = ["HR","HHR"]
@@ -767,7 +756,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     recipients = list(get_user_model().objects.filter(
                         Q(groups__name__in=['HR','HOF'])).values_list('email', flat=True))
                     subject = f"Recruitment Request {recruit.uid} Budget  [SRRS-AKHK]"
-                    message = f"Hello. \n\nThe requisition request for position: {recruit.position_title},\nhas been uploaded by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
+                    message = f"Hello. \nBudget approval for requisition position: {recruit.position_title},\nhas been uploaded by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
 
                     try:
                         mail = {
@@ -786,6 +775,155 @@ class SrrsViewSet(viewsets.ViewSet):
             
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+    @action(methods=["POST","PUT"],
+            detail=False,
+            url_path="employee",
+            url_name="employee")
+    def employee(self, request):
+
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        allowed = ["HOF","HR","HHR","FINANCE"]
+
+        if not any(item in allowed for item in roles):
+            return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            employees = payload.get('employees', None) 
+            if not employees:
+                return Response({"details": "Staff details required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            recruit_id = payload.get('recruit_id', None) 
+            if not recruit_id:
+                return Response({"details": "Request id required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                recruit = models.Recruit.objects.get(id=recruit_id)
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown Recruit !"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            for employee in employees:
+                serializer = serializers.EmployeeSerializer(
+                    data=employee, many=False)
+                if not serializer.is_valid():
+                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+            
+            for employee in employees:
+                reporting_date = employee.get('reporting_date', None) 
+                reporting_station = employee.get('reporting_station', None) 
+                working_station = employee.get('work_station', None) 
+                employee_no = employee.get('name', None) 
+                name = employee.get('name', None) 
+                email = employee.get('email', None) 
+
+                if reporting_station == 'OUTREACH CENTRES':
+                    if not working_station:
+                        return Response({"details": "Working station required "}, status=status.HTTP_400_BAD_REQUEST)
+
+                is_existing = models.Employee.objects.filter(Q(employee_no=employee_no)).exists()
+                if is_existing:
+                    return Response({"details": f"Employee {employee_no} already exists "}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "name" : name,
+                        "email" : email,
+                        "recruit" : recruit,
+                        "employee_no" : employee_no, 
+                        "reporting_date" : reporting_date, 
+                        "working_station" : working_station,
+                        "action_by" : authenticated_user
+                    }
+
+                    models.Employee.objects.create(**raw)
+
+                    # Notify the HR / FINANCE
+                    recipients = list(get_user_model().objects.filter(
+                        Q(groups__name__in=['HR','HOF', 'CEO'])).values_list('email', flat=True))
+                    recipients.append(recruit.created_by.email)
+                    recipients.append(recruit.department.slt.email)
+                    subject = f"Candidate hired [SRRS-AKHK]"
+                    message = f"Hello. \n\nThe position: {recruit.position_title},\nhas been filled. Candidate name: {name},\nas updated by{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
+
+                    try:
+                        mail = {
+                            "email" : recipients, 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+
+            recruit.status = "HIRED"
+            recruit.save()
+
+            # update status
+            raw = {
+                "recruit": recruit,
+                "status": "HIRED",
+                "status_for": '/'.join(roles),
+                "action_by": authenticated_user
+            }
+
+            models.StatusChange.objects.create(**raw)
+
+            user_util.log_account_activity(
+                authenticated_user, recruit.created_by, "SRRS Employee added", f"UID: {str(recruit.id)}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+        
+        if request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.PutEmployeeSerializer(
+                data=payload, many=False)
+            if not serializer.is_valid():
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+            request_id = payload.get('request_id', None) 
+            reporting_date = payload.get('reporting_date', None) 
+            reporting_station = payload.get('reporting_station', None) 
+            working_station = payload.get('work_station', None) 
+            employee_no = payload.get('name', None) 
+            name = payload.get('name', None) 
+            email = payload.get('email', None) 
+
+            try:
+                employee = models.Employee.objects.get(id=request_id)
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown Employee "}, status=status.HTTP_400_BAD_REQUEST)
+
+            if reporting_station == 'OUTREACH CENTRES':
+                if not working_station:
+                    return Response({"details": "Working station required "}, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                raw = {
+                    "name" : name,
+                    "email" : email,
+                    "employee_no" : employee_no, 
+                    "reporting_date" : reporting_date, 
+                    "working_station" : working_station,
+                }
+
+                models.Employee.objects.filter(Q(id=request_id)).update(**raw)
+
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "SRRS Employee edited", f"UID: {str(request_id)}")
+            
+            return Response('success', status=status.HTTP_200_OK) 
 
 
 class LocumViewSet(viewsets.ViewSet):
@@ -847,7 +985,7 @@ class LocumViewSet(viewsets.ViewSet):
             roles = user_util.fetchusergroups(request.user.id)  
 
             if "HOD" in roles:
-                resp = models.Recruit.objects.filter(Q(recruit__department=request.user.department) | Q(created_by=request.user), position_type='Temporary', is_deleted=False).order_by('-date_created')
+                resp = models.Recruit.objects.filter(Q(recruit__department=request.user.srrs_department) | Q(created_by=request.user), position_type='Temporary', is_deleted=False).order_by('-date_created')
 
             else:
                 resp = models.Recruit.objects.filter(Q(position_type='Temporary') & Q(status='HIRED') & Q(is_deleted=False)).order_by('-date_created')
@@ -1203,10 +1341,10 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
         active_status = ['REQUESTED','CEO APPROVED','HR APPROVED','SLT APPROVED','CLOSED']
 
         if 'HOD' in roles:
-            requests = models.Recruit.objects.filter(Q(department=request.user.department) | Q(created_by=request.user), is_deleted=False).count()
-            canceled = models.Recruit.objects.filter(Q(department=request.user.department) |  Q(created_by=request.user), status="CANCELED", is_deleted=False).count()
-            declined = models.Recruit.objects.filter(Q(department=request.user.department) |  Q(created_by=request.user), status="DECLINED", is_deleted=False).count()
-            pending = models.Recruit.objects.filter(Q(department=request.user.department) |  Q(created_by=request.user), status__in=active_status, is_ceo_approved=False, is_deleted=False).count()
+            requests = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
+            canceled = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="CANCELED", is_deleted=False).count()
+            declined = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="DECLINED", is_deleted=False).count()
+            pending = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status__in=active_status, is_ceo_approved=False, is_deleted=False).count()
         else:
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="CANCELED"), is_deleted=False).count()

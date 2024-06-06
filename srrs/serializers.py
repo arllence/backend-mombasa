@@ -1,5 +1,5 @@
 from django.db.models import  Q
-from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchDepartmentSerializer
+from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, FetchSRRSDepartmentSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
 from srrs import models
 from rest_framework import serializers
@@ -10,7 +10,7 @@ class GeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
 
 class SlimFetchRecruitSerializer(serializers.ModelSerializer):
-    department = FetchDepartmentSerializer()
+    department = FetchSRRSDepartmentSerializer()
     class Meta:
         model = models.Recruit
         fields = '__all__'
@@ -22,9 +22,10 @@ class SuperSlimFetchRecruitSerializer(serializers.ModelSerializer):
 class FetchRecruitSerializer(serializers.ModelSerializer):
     created_by = UsersSerializer()
     closed_by = UsersSerializer()
-    department = FetchDepartmentSerializer()
+    department = FetchSRRSDepartmentSerializer()
     can_approve = serializers.SerializerMethodField()
     approvals = serializers.SerializerMethodField()
+    employees = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Recruit
@@ -34,6 +35,18 @@ class FetchRecruitSerializer(serializers.ModelSerializer):
         try:
             request = models.StatusChange.objects.filter(recruit=obj)
             serializer = FetchStatusChangeSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+        
+    def get_employees(self, obj):
+        try:
+            request = models.Employee.objects.filter(recruit=obj)
+            serializer = FetchEmployeeSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return {}
@@ -51,7 +64,7 @@ class FetchRecruitSerializer(serializers.ModelSerializer):
 
             if "SLT" in  roles:
                 try:
-                    if str(obj.department.slt.lead.id) == user_id:
+                    if str(obj.department.slt.id) == user_id:
                         if obj.is_slt_approved:
                             approve = False
                         else: 
@@ -132,3 +145,23 @@ class AttendanceSerializer(serializers.Serializer):
     day = serializers.IntegerField()
     hours_worked = serializers.IntegerField()
     overtime_hours = serializers.IntegerField()
+
+class EmployeeSerializer(serializers.Serializer):
+    # request_id = serializers.CharField(max_length=500)
+    name = serializers.CharField(max_length=500)
+    employee_no = serializers.CharField(max_length=255)
+    reporting_date = serializers.CharField(max_length=255)
+    reporting_station = serializers.CharField(max_length=500)
+
+class FetchEmployeeSerializer(serializers.ModelSerializer):
+    action_by = SlimUsersSerializer()
+    class Meta:
+        model = models.Employee
+        fields = '__all__'
+
+class PutEmployeeSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    name = serializers.CharField(max_length=500)
+    employee_no = serializers.CharField(max_length=255)
+    reporting_date = serializers.CharField(max_length=255)
+    reporting_station = serializers.CharField(max_length=500)

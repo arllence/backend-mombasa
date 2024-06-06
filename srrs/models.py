@@ -1,5 +1,5 @@
 import uuid
-from acl.models import User, Department
+from acl.models import User, SRRSDepartment
 from django.db import models
 from django.conf import settings
 
@@ -23,7 +23,7 @@ class Recruit(models.Model):
        null=True, blank=True
     )
     department = models.ForeignKey(
-       Department, on_delete=models.DO_NOTHING, 
+       SRRSDepartment, on_delete=models.DO_NOTHING, 
        related_name="srrs_department",
        null=True, blank=True
     )
@@ -39,9 +39,9 @@ class Recruit(models.Model):
     filling_date = models.DateField(null=True, blank=True)
     period_from = models.DateField(null=True, blank=True)
     period_to = models.DateField(null=True, blank=True)
-    reporting_date = models.DateField(null=True, blank=True)
-    reporting_station = models.CharField(max_length=255, null=True, blank=True)
-    working_station = models.CharField(max_length=255, null=True, blank=True)
+    # reporting_date = models.DateField(null=True, blank=True)
+    # reporting_station = models.CharField(max_length=255, null=True, blank=True)
+    # working_station = models.CharField(max_length=255, null=True, blank=True)
     temporary_task_assignment_to = models.CharField(max_length=255)
     replacement_details = models.JSONField(null=True, blank=True)
     rejection_reasons = models.JSONField(null=True, blank=True)
@@ -129,3 +129,30 @@ class LocumAttendance(models.Model):
 
     class Meta:
         db_table = u'"{}\".\"locum_attendance"'.format(settings.STAFF_REQUISITION_SYSTEM)
+
+class Employee(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    recruit = models.ForeignKey(
+        Recruit, on_delete=models.DO_NOTHING,
+        related_name="employee_recruit_instance"
+    )
+
+    name = models.CharField(max_length=500)
+    email = models.EmailField(max_length=500, null=True, blank=True)
+    employee_no = models.CharField(max_length=255)
+    reporting_date = models.DateField()
+    reporting_station = models.CharField(max_length=500)
+    working_station = models.CharField(max_length=500, null=True, blank=True)
+
+    action_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="employee_action_by"
+    )
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.recruit.uid)
+
+    class Meta:
+        db_table = u'"{}\".\"employees"'.format(settings.STAFF_REQUISITION_SYSTEM)
