@@ -1,5 +1,5 @@
 from django.db.models import  Q
-from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, FetchSRRSDepartmentSerializer
+from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, SlimFetchSRRSDepartmentSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
 from srrs import models
 from rest_framework import serializers
@@ -146,6 +146,16 @@ class AttendanceSerializer(serializers.Serializer):
     hours_worked = serializers.IntegerField()
     overtime_hours = serializers.IntegerField()
 
+
+class CustomFetchRecruitSerializer(serializers.ModelSerializer):
+    id = serializers.CharField()
+    department = SlimFetchSRRSDepartmentSerializer()
+    class Meta:
+        model = models.Recruit
+        fields = [
+            'id', 'department'
+        ]
+
 class EmployeeSerializer(serializers.Serializer):
     # request_id = serializers.CharField(max_length=500)
     name = serializers.CharField(max_length=500)
@@ -165,3 +175,9 @@ class PutEmployeeSerializer(serializers.Serializer):
     employee_no = serializers.CharField(max_length=255)
     reporting_date = serializers.CharField(max_length=255)
     reporting_station = serializers.CharField(max_length=500)
+
+class SlimFetchEmployeeSerializer(serializers.ModelSerializer):
+    recruit = CustomFetchRecruitSerializer()
+    class Meta:
+        model = models.Employee
+        fields = '__all__'

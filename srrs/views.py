@@ -819,8 +819,8 @@ class SrrsViewSet(viewsets.ViewSet):
             for employee in employees:
                 reporting_date = employee.get('reporting_date', None) 
                 reporting_station = employee.get('reporting_station', None) 
-                working_station = employee.get('work_station', None) 
-                employee_no = employee.get('name', None) 
+                working_station = employee.get('working_station', None) 
+                employee_no = employee.get('employee_no', None) 
                 name = employee.get('name', None) 
                 email = employee.get('email', None) 
 
@@ -894,8 +894,8 @@ class SrrsViewSet(viewsets.ViewSet):
             request_id = payload.get('request_id', None) 
             reporting_date = payload.get('reporting_date', None) 
             reporting_station = payload.get('reporting_station', None) 
-            working_station = payload.get('work_station', None) 
-            employee_no = payload.get('name', None) 
+            working_station = payload.get('working_station', None) 
+            employee_no = payload.get('employee_no', None) 
             name = payload.get('name', None) 
             email = payload.get('email', None) 
 
@@ -985,15 +985,15 @@ class LocumViewSet(viewsets.ViewSet):
             roles = user_util.fetchusergroups(request.user.id)  
 
             if "HOD" in roles:
-                resp = models.Recruit.objects.filter(Q(recruit__department=request.user.srrs_department) | Q(created_by=request.user), position_type='Temporary', is_deleted=False).order_by('-date_created')
+                resp = models.Employee.objects.filter(Q(recruit__department=request.user.srrs_department) | Q(created_by=request.user), recruit__position_type='Temporary', is_deleted=False).order_by('-date_created')
 
             else:
-                resp = models.Recruit.objects.filter(Q(position_type='Temporary') & Q(status='HIRED') & Q(is_deleted=False)).order_by('-date_created')
+                resp = models.Employee.objects.filter(Q(recruit__position_type='Temporary') & Q(is_deleted=False)).order_by('-date_created')
    
         paginator = PageNumberPagination()
         paginator.page_size = 50
         result_page = paginator.paginate_queryset(resp, request)
-        serializer = serializers.SlimFetchRecruitSerializer(
+        serializer = serializers.SlimFetchEmployeeSerializer(
             result_page, many=True, context={"user_id":request.user.id})
         return paginator.get_paginated_response(serializer.data)
 

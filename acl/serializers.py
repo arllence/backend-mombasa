@@ -44,6 +44,11 @@ class FetchSRRSDepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Department
         fields = '__all__'
+
+class SlimFetchSRRSDepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Department
+        fields = '__all__'
 class UserDetailSerializer(serializers.Serializer):
     email = serializers.CharField()
     first_name = serializers.CharField()
