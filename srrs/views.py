@@ -1038,6 +1038,12 @@ class LocumViewSet(viewsets.ViewSet):
 
                 if period < 0:
                     return Response({"details": "Attendance date is beyond locum period"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                begin_period_date = employee.recruit.period_from
+                period = shared_fxns.find_date_difference(str(begin_period_date.strftime('%Y-%m-%d')),selected_date, 'days')
+
+                if period < 0:
+                    return Response({"details": "Attendance date not within locum period"}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 is_existing =  models.LocumAttendance.objects.filter(
