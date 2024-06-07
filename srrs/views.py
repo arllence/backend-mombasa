@@ -1002,7 +1002,7 @@ class LocumViewSet(viewsets.ViewSet):
         return paginator.get_paginated_response(serializer.data)
 
 
-    @action(methods=["POST","GET",],
+    @action(methods=["POST","GET","DELETE"],
             detail=False,
             url_path="attendance",
             url_name="attendance")
@@ -1066,7 +1066,7 @@ class LocumViewSet(viewsets.ViewSet):
                         attendance = is_existing.data
                         for item in attendance:
                             if int(item['day']) == int(day):
-                                return Response({"details": f"Attendance for {day} of {calendar.month_name[month]}  has been added"}, status=status.HTTP_400_BAD_REQUEST)
+                                return Response({"details": f"Attendance for {day} of {calendar.month_name[month]}  has been recorded"}, status=status.HTTP_400_BAD_REQUEST)
                         attendance.append(data)
                         is_existing.data = attendance
                         is_existing.save()
@@ -1229,7 +1229,29 @@ class LocumViewSet(viewsets.ViewSet):
 
             return Response(resp, status=status.HTTP_200_OK)
 
-    
+        elif request.method == "DELETE":
+
+            employee_id = request.query_params.get('employee_id')
+            record_id = request.query_params.get('record_id')
+
+            try:
+                targetInstance = models.Employee.objects.get(Q(id=employee_id))
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown Staff"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                logger.error(e)
+                return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            attendances = models.LocumAttendance.objects.filter(Q(employee=employee_id))
+            for attendance in attendances:
+                for data in attendance.data:
+                    if data['id']  == record_id:
+                        attendance.data.remove(data)
+                        attendance.save()
+                        break
+            return Response(200, status=status.HTTP_200_OK)
+            
+
    
 class SRRSReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]
