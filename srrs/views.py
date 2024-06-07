@@ -401,11 +401,15 @@ class SrrsViewSet(viewsets.ViewSet):
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             query = request.query_params.get('q')
+            slim = request.query_params.get('slim')
 
             if request_id:
                 try:
                     resp = models.Recruit.objects.get(Q(id=request_id))
-                    resp = serializers.FetchRecruitSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    if slim:
+                        resp = serializers.SlimFetchRecruitSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.FetchRecruitSerializer(resp, many=False, context={"user_id":request.user.id}).data
                     return Response(resp, status=status.HTTP_200_OK)
                 
                 except (ValidationError, ObjectDoesNotExist):
@@ -1135,6 +1139,10 @@ class LocumViewSet(viewsets.ViewSet):
                     attendance = models.LocumAttendance.objects.filter(Q(employee=request_id), year=year, month=month)
                     serialized_attendance = serializers.SlimFetchLocumAttendanceSerializer(
                             attendance, many=True).data
+                    
+                    employee = serializers.SuperSlimFetchEmployeeSerializer(
+                            targetInstance, many=False).data
+
 
                     resp = {
                         "days": days,
@@ -1142,6 +1150,7 @@ class LocumViewSet(viewsets.ViewSet):
                         "month_name" : month_name,
                         "year" : year,
                         "attendance" : serialized_attendance,
+                        "employee": employee
                     }
 
                 return resp
@@ -1164,13 +1173,17 @@ class LocumViewSet(viewsets.ViewSet):
                 attendance = models.LocumAttendance.objects.filter(Q(recruit=request_id), year=year, month=month)
                 serialized_attendance = serializers.SlimFetchLocumAttendanceSerializer(
                         attendance, many=True).data
+                
+                employee = serializers.SuperSlimFetchEmployeeSerializer(
+                            targetInstance, many=False).data
 
                 resp = {
                     "days": days,
                     "month": month,
                     "month_name" : month_name,
                     "year" : year,
-                    "attendance" : serialized_attendance
+                    "attendance" : serialized_attendance,
+                    "employee" : employee
                 }
 
                 return Response(resp, status=status.HTTP_200_OK)
@@ -1189,13 +1202,17 @@ class LocumViewSet(viewsets.ViewSet):
                 attendance = models.LocumAttendance.objects.filter(Q(employee=request_id), year=year, month=month)
                 serialized_attendance = serializers.SlimFetchLocumAttendanceSerializer(
                         attendance, many=True).data
+                
+                employee = serializers.SuperSlimFetchEmployeeSerializer(
+                            targetInstance, many=False).data
 
                 resp = {
                     "days": days,
                     "month": month,
                     "month_name" : month_name,
                     "year" : year,
-                    "attendance" : serialized_attendance
+                    "attendance" : serialized_attendance,
+                    "employee": employee
                 }
                 
                 return resp

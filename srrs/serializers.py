@@ -10,7 +10,7 @@ class GeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
 
 class SlimFetchRecruitSerializer(serializers.ModelSerializer):
-    department = FetchSRRSDepartmentSerializer()
+    department = SlimFetchSRRSDepartmentSerializer()
     class Meta:
         model = models.Recruit
         fields = '__all__'
@@ -178,6 +178,11 @@ class PutEmployeeSerializer(serializers.Serializer):
 
 class SlimFetchEmployeeSerializer(serializers.ModelSerializer):
     recruit = CustomFetchRecruitSerializer()
+    class Meta:
+        model = models.Employee
+        fields = '__all__'
+
+class SuperSlimFetchEmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Employee
         fields = '__all__'
