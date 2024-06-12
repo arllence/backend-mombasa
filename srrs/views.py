@@ -1404,30 +1404,21 @@ class SRRSReportsViewSet(viewsets.ViewSet):
 
             return q_filters
 
-        q_filters = Q(nature_of_hiring='Replacement')
+        q_filters = Q(status='ACTIVE')
+        q_filters &= Q(recruit__status='HIRED')
 
         if department:
-            q_filters &= Q(department=department)
+            q_filters &= Q(recruit__department=department)
 
         if date_from or date_to:
             if not date:
                 return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
             q_filters &= create_date_range(date_from,date_to)
+
+
+        resp = models.Employee.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
             
-        # if quote_status:
-        #     q_filters &= Q(status=quote_status)
-
-
-        if q_filters:
-
-            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-            
-        else:
-            roles = user_util.fetchusergroups(request.user.id)  
-
-            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')[:50]
-
-        resp = serializers.FetchRecruitSerializer(resp, many=True, context={"user_id":request.user.id}).data
+        resp = serializers.SlimFetchEmployeeSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
         
