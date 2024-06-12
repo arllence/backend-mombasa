@@ -1389,7 +1389,7 @@ class SRRSReportsViewSet(viewsets.ViewSet):
         department = request.query_params.get('department')
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
-        # quote_status = request.query_params.get('status')
+        type = request.query_params.get('type')
         date = False
 
         if date_to and date_from:
@@ -1409,6 +1409,9 @@ class SRRSReportsViewSet(viewsets.ViewSet):
 
         if department:
             q_filters &= Q(recruit__department=department)
+
+        if type:
+            q_filters &= Q(recruit__position_type=type)
 
         if date_from or date_to:
             if not date:
