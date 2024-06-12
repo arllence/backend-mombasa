@@ -186,3 +186,10 @@ class SuperSlimFetchEmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Employee
         fields = '__all__'
+
+class FullFetchEmployeeSerializer(serializers.ModelSerializer):
+    action_by = SlimUsersSerializer()
+    recruit = SlimFetchRecruitSerializer()
+    class Meta:
+        model = models.Employee
+        fields = '__all__'

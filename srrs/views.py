@@ -1418,7 +1418,7 @@ class SRRSReportsViewSet(viewsets.ViewSet):
 
         resp = models.Employee.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
             
-        resp = serializers.SlimFetchEmployeeSerializer(resp, many=True, context={"user_id":request.user.id}).data
+        resp = serializers.FullFetchEmployeeSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
         
