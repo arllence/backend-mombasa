@@ -120,6 +120,7 @@ class Employee(models.Model):
     reporting_date = models.DateField()
     reporting_station = models.CharField(max_length=500)
     working_station = models.CharField(max_length=500, null=True, blank=True)
+    status = models.CharField(max_length=255, default='ACTIVE')
 
     action_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 

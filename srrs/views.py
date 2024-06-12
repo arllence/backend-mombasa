@@ -1379,6 +1379,57 @@ class SRRSReportsViewSet(viewsets.ViewSet):
         resp = serializers.FetchRecruitSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
+    
+    @action(methods=["GET",],
+            detail=False,
+            url_path="hires",
+            url_name="hires")
+    def hires(self, request):
+                    
+        department = request.query_params.get('department')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        # quote_status = request.query_params.get('status')
+        date = False
+
+        if date_to and date_from:
+            date = True
+
+        def create_date_range(date_from,date_to):
+            # Convert the string dates to datetime objects
+            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+
+            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+
+            return q_filters
+
+        q_filters = Q(nature_of_hiring='Replacement')
+
+        if department:
+            q_filters &= Q(department=department)
+
+        if date_from or date_to:
+            if not date:
+                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
+            q_filters &= create_date_range(date_from,date_to)
+            
+        # if quote_status:
+        #     q_filters &= Q(status=quote_status)
+
+
+        if q_filters:
+
+            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            
+        else:
+            roles = user_util.fetchusergroups(request.user.id)  
+
+            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')[:50]
+
+        resp = serializers.FetchRecruitSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+        return Response(resp, status=status.HTTP_200_OK)
         
         
 class SRRSAnalyticsViewSet(viewsets.ViewSet):
