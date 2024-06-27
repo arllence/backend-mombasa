@@ -28,6 +28,8 @@ class Access(models.Model):
        User, on_delete=models.DO_NOTHING, 
        related_name="asa_granted_by"
     )
+    is_hod_approved = models.BooleanField(default=False)
+    is_ict_approved = models.BooleanField(default=False)
     status = models.CharField(max_length=255, default='REQUESTED')
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
@@ -61,7 +63,7 @@ class DoctorInfo(models.Model):
         db_table = u'"{}\".\"doctor_info"'.format(settings.ACCESS_SERVICE_AGREEMENT)
 
 
-class CanAccess(models.Model):
+class SystemAccess(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.ForeignKey(
         Employee, on_delete=models.DO_NOTHING,
@@ -78,7 +80,7 @@ class CanAccess(models.Model):
         return f"{self.employee.name} -- {self.system.name}"
 
     class Meta:
-        db_table = u'"{}\".\"can_access"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+        db_table = u'"{}\".\"system_access"'.format(settings.ACCESS_SERVICE_AGREEMENT)
 
 
 class StatusChange(models.Model):
