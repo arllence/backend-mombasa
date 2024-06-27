@@ -8,7 +8,32 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 
 class GeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
+class EmployeeSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=500)
+    email = serializers.CharField(max_length=500)
+    employee_no = serializers.CharField(max_length=255)
+    employee_type = serializers.CharField(max_length=255)
+    title = serializers.CharField(max_length=255)
+    department = serializers.CharField(max_length=255)
+    is_doctor = serializers.CharField(max_length=10)
 
+class DoctorsSerializer(serializers.Serializer):
+    employee = serializers.CharField(max_length=500)
+    type = serializers.CharField(max_length=500)
+    specialty = serializers.CharField(max_length=255)
+    admitting_rights = serializers.CharField(max_length=255)
+    clinic = serializers.CharField(max_length=255)
+
+class SystemAccessSerializer(serializers.Serializer):
+    employee = serializers.CharField(max_length=500)
+    system = serializers.CharField(max_length=500)
+
+class ModuleAccessSerializer(serializers.Serializer):
+    employee = serializers.CharField(max_length=500)
+    system = serializers.CharField(max_length=500)
+    modules = serializers.CharField(max_length=500)
+
+# OLD SERIALIZERS
 class SlimFetchRecruitSerializer(serializers.ModelSerializer):
     department = SlimFetchSRRSDepartmentSerializer()
     class Meta:

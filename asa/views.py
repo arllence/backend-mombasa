@@ -14,12 +14,12 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.contrib.auth import get_user_model
 from django.db.models import  Q
 from django.db import transaction
-from srrs import models
-from srrs import serializers
+from asa import models
+from asa import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
 from acl.models import User, Sendmail, SRRSDepartment
-from srrs.utils import shared_fxns
+from asa.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
 
@@ -28,7 +28,7 @@ from rest_framework.pagination import PageNumberPagination
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
-class AsaViewSet(viewsets.ViewSet):
+class ASAViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     search_fields = ['id', ]
     
@@ -38,127 +38,172 @@ class AsaViewSet(viewsets.ViewSet):
     
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
-            url_path="access",
-            url_name="access")
-    def access(self, request):
+            url_path="access-request",
+            url_name="access-request")
+    def access_request(self, request):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
 
         if request.method == "POST":
 
-            # payload = request.data
+            payload = request.data
+            employee = payload['employee']
+            doctor_info = payload['doctor_info']
+            system_access = payload['system_access']
+            module_access = payload['module_access']
 
-            payload = json.loads(request.data['payload'])
-            job_description_file = request.FILES.get('job_description', None)
+           
 
-            if not job_description_file:
-                return Response({"details": "No job description file attached"},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-            serializer = serializers.RecruitSerializer(
-                    data=payload, many=False)
+            # serialize employee payload
+            employee_serializer = serializers.EmployeeSerializer(
+                    data=employee, many=False)
+            if not employee_serializer.is_valid():
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
-            if serializer.is_valid():
-                department = payload['department']
-                position_title = payload['position_title']
-                position_type = payload['position_type']
-                qualifications = payload['qualifications']
-                nature_of_hiring = payload['nature_of_hiring']
-                existing_staff_same_title = payload['existing_staff_same_title']
-                reasons_for_not_sharing_tasks = payload['reasons_for_not_sharing_tasks']
-                period_from = payload['period_from']
-                period_to = payload['period_to']
-                filling_date = payload['filling_date']
-                temporary_task_assignment_to = payload['temporary_task_assignment_to']
+            # serialize system access payload
+            # system_access_serializer = serializers.SystemAccessSerializer(
+            #         data=system_access, many=False)
+            # if not system_access_serializer.is_valid():
+            #     return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # serialize doctor payload
+            if employee['is_doctor'] == 'YES':
+                employee['is_doctor'] = True
+                is_doctor = True
+                doctor_info_serializer = serializers.DoctorsSerializer(
+                        data=doctor_info, many=False)
+                if not doctor_info_serializer.is_valid():
+                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                employee['is_doctor'] = False
+                is_doctor = False
+            
+           
+            department = employee['department']
+            try:
+                department = SRRSDepartment.objects.get(id=department)
+                employee['department'] = department
+            except Exception as e:
+                return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            system = system_access['system']
+            try:
+                system = models.System.objects.get(id=system)
+                system_access['system'] = system
+            except Exception as e:
+                return Response({"details": "Unknown selected system "}, status=status.HTTP_400_BAD_REQUEST)
 
-                uid = shared_fxns.generate_unique_identifier()
-
-                # Check temporary hire period
-                if position_type == 'Temporary':
-                    if not period_from or not period_to:
-                        return Response({"details": "Period From and Period To required"},
-                                status=status.HTTP_400_BAD_REQUEST)
-                    
-                    years = shared_fxns.find_date_difference(period_from,period_to,'years')
-                    if years > 1:
-                        return Response({"details": "Temporary hire period cannot be more than one year"},
-                                status=status.HTTP_400_BAD_REQUEST)
-
-                try:
-                    print("department id: ", department)
-                    department = SRRSDepartment.objects.get(id=department)
-                    print("department: ", department)
-                except Exception as e:
-                    return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-                if not qualifications:
-                    return Response({"details": "Qualifications Required !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                if department.slt:
-                    managers_emails = [department.slt.email]
+    
+            with transaction.atomic():
+                employee_no = employee['employee_no']
+                # check if employee exists
+                employeeInstance = models.Employee.objects.filter(
+                    Q(employee_no=employee_no)
+                ).first()
+                if employeeInstance:
+                    models.Employee.objects.filter(
+                        Q(employee_no=employee_no)
+                    ).update(employee)
+                    employee_exists = True
                 else:
-                    return Response({"details": "Your Department has no SLT assigned !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                with transaction.atomic():
-                    raw = {
-                        "department": department,
-                        "created_by": authenticated_user,
-                        "position_title": position_title,
-                        "position_type": position_type,
-                        "qualifications": qualifications,
-                        "job_description": job_description_file,
-                        "nature_of_hiring": nature_of_hiring,
-                        "existing_staff_same_title": existing_staff_same_title,
-                        "reasons_for_not_sharing_tasks": reasons_for_not_sharing_tasks,
-                        "period_from": period_from,
-                        "period_to": period_to,
-                        "filling_date": filling_date,
-                        "temporary_task_assignment_to": temporary_task_assignment_to,
-                        "uid": uid
-                    }  
+                    employeeInstance = models.Employee.objects.create(
+                        **employee
+                    )
+                    employee_exists = False
 
-                    print(raw)
-
-                    recruit = models.Recruit.objects.create(
-                        **raw
+                # create system access
+                system_access.update({
+                    "employee" : employeeInstance
+                })
+                is_existing = models.SystemAccess.objects.filter(
+                    Q(employee=employeeInstance) & Q(system=system)
+                ).exists()
+                if not is_existing:
+                    system_access = models.SystemAccess.objects.create(
+                        **system_access
                     )
 
-                    # create track status change
-                    raw = {
-                        "recruit": recruit,
-                        "status": "REQUESTED",
-                        "status_for": "HOD",
-                        "action_by": authenticated_user
+                # module access
+                if module_access.get('modules'):
+                    module_access.update({
+                        "employee" : employeeInstance
+                    })
+                    # check if is existing
+                    is_existing = models.ModuleAccess.objects.filter(
+                        employee=employeeInstance, system=system
+                    ).exists()
+                    if is_existing:
+                        models.ModuleAccess.objects.filter(
+                           Q(employee=employeeInstance) & Q(system=system)
+                        ).update(module_access)
+                        # modules = is_existing.modules
+                        # modules += module_access['modules']
+                        # is_existing.save()
+                    else:
+                        module_access = models.ModuleAccess.objects.create(
+                            **module_access
+                        )
+
+                # create doctor info
+                if is_doctor:
+                    doctor_info.update({
+                        "employee" : employeeInstance
+                    })
+                    # check if is existing
+                    is_existing = models.DoctorInfo.objects.filter(
+                        Q(employee=employeeInstance)
+                    ).exists()
+                    if is_existing:
+                        models.DoctorInfo.objects.filter(
+                           Q(employee=employeeInstance)
+                        ).update(doctor_info)
+                    else:
+                        doctor_info = models.DoctorInfo.objects.create(
+                            **doctor_info
+                        )
+
+                # create access instance
+                if not employee_exists:
+                    access = {
+                        "employee": employeeInstance
+                    }
+                    access = models.Access.objects.create(
+                        **access
+                    )
+
+                # create track status change
+                raw = {
+                    "access": access,
+                    "status": "REQUESTED",
+                    "status_for": '/'.join(roles),
+                    "action_by": authenticated_user
+                }
+
+                models.StatusChange.objects.create(**raw)
+
+
+                # Notify ICT
+                subject = f"New Access Request Received [ASA-AKHK]"
+                message = f"Hello, \n\nA new access request from department: {department.name},\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nASA-AKHK"
+                
+                try:
+                    mail = {
+                        "email" : [department.hod.email], 
+                        "subject" : subject,
+                        "message" : message,
                     }
 
-                    models.StatusChange.objects.create(**raw)
+                    Sendmail.objects.create(**mail)
 
+                except Exception as e:
+                    logger.error(e)
+                    # send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
-                    # Notify SLT
-                    subject = f"New Recruitment Request {uid} Received [SRRS-AKHK]"
-                    message = f"Hello, \n\nA new recruit request of id: {uid}, from department: {department.name}, for position: {recruit.position_title}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nSRRS-AKHK"
-
-                    try:
-                        mail = {
-                            "email" : managers_emails, 
-                            "subject" : subject,
-                            "message" : message,
-                        }
-
-                        Sendmail.objects.create(**mail)
-
-                    except Exception as e:
-                        logger.error(e)
-                        # send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
-
-                user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Recruitment Request created", f"Recruitment Request Id: {recruit.id}")
-                
-                return Response('success', status=status.HTTP_200_OK)
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Access Request created", f"Employee Id: {employeeInstance.id}")
             
-            else:
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return Response('success', status=status.HTTP_200_OK)
+            
 
         if request.method == "PUT":
             payload = request.data
