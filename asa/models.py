@@ -1,8 +1,7 @@
 import uuid
-from acl.models import User
+from acl.models import User, SRRSDepartment
 from django.db import models
 from django.conf import settings
-from srrs.models import Employee
 
 
 class System(models.Model):
@@ -17,6 +16,30 @@ class System(models.Model):
     class Meta:
         db_table = u'"{}\".\"systems"'.format(settings.ACCESS_SERVICE_AGREEMENT)
 
+
+class Employee(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    department = models.ForeignKey(
+        SRRSDepartment, on_delete=models.DO_NOTHING,
+        related_name="asa_employee_department"
+    )
+
+    name = models.CharField(max_length=500)
+    email = models.EmailField(max_length=500)
+    employee_no = models.CharField(max_length=255)
+    employee_type = models.CharField(max_length=255)
+    contract_expire_date = models.DateField(null=True, blank=True)
+    warehouse = models.CharField(max_length=500, null=True, blank=True)
+    status = models.CharField(max_length=255, default='ACTIVE')
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.name)
+
+    class Meta:
+        db_table = u'"{}\".\"employees"'.format(settings.ACCESS_SERVICE_AGREEMENT)
 
 class Access(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
