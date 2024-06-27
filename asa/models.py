@@ -61,26 +61,24 @@ class DoctorInfo(models.Model):
         db_table = u'"{}\".\"doctor_info"'.format(settings.ACCESS_SERVICE_AGREEMENT)
 
 
-class AccessTo(models.Model):
+class CanAccess(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.ForeignKey(
         Employee, on_delete=models.DO_NOTHING,
         related_name="asa_employee"
     )
-    type = models.CharField(max_length=255)
-    specialty = models.CharField(max_length=255)
-    admitting_rights = models.CharField(max_length=255)
-    pc_rate = models.CharField(max_length=255, null=True, blank=True)
-    clinic = models.CharField(max_length=255)
-    services = models.JSONField(null=True, blank=True)
+    system = models.ForeignKey(
+        System, on_delete=models.DO_NOTHING,
+        related_name="asa_system"
+    )
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.employee.name
+        return f"{self.employee.name} -- {self.system.name}"
 
     class Meta:
-        db_table = u'"{}\".\"doctor_info"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+        db_table = u'"{}\".\"can_access"'.format(settings.ACCESS_SERVICE_AGREEMENT)
 
 
 class StatusChange(models.Model):
