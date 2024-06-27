@@ -83,6 +83,28 @@ class SystemAccess(models.Model):
         db_table = u'"{}\".\"system_access"'.format(settings.ACCESS_SERVICE_AGREEMENT)
 
 
+class ModuleAccess(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(
+        Employee, on_delete=models.DO_NOTHING,
+        related_name="asa_module_employee"
+    )
+    system = models.ForeignKey(
+        System, on_delete=models.DO_NOTHING,
+        related_name="asa_system_module"
+    )
+    modules = models.JSONField()
+    training_required = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.employee.name} -- {self.system.name}"
+
+    class Meta:
+        db_table = u'"{}\".\"module_access"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+
+
 class StatusChange(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     access = models.ForeignKey(
