@@ -165,7 +165,8 @@ class ASAViewSet(viewsets.ViewSet):
                 # create access instance
                 if not employee_exists:
                     access = {
-                        "employee": employeeInstance
+                        "employee": employeeInstance,
+                        "created_by": authenticated_user
                     }
                     access = models.Access.objects.create(
                         **access
