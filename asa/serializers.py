@@ -103,7 +103,24 @@ class SlimFetchEmployeeSerializer(serializers.ModelSerializer):
 
     
 
+# class FetchAccessSerializer(serializers.ModelSerializer):
+#     employee = serializers.SerializerMethodField()
+#     class Meta:
+#         model = models.Access
+#         fields = '__all__'
 
+#     def get_employee(self, obj):
+#         try:
+#             request = models.ModuleAccess.objects.filter(employee=obj)
+#             serializer = SlimFetchModuleAccessSerializer(request, many=True)
+#             return serializer.data
+#         except (ValidationError, ObjectDoesNotExist):
+#             return {}
+#         except Exception as e:
+#             print(e)
+#             # logger.error(e)
+#             return {} 
+        
 class SlimFetchAccessSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Access
