@@ -225,11 +225,13 @@ class ASAViewSet(viewsets.ViewSet):
 
             if request_id:
                 try:
-                    resp = models.Recruit.objects.get(Q(id=request_id))
+                    resp = models.Employee.objects.get(Q(id=request_id))
+
                     if slim:
-                        resp = serializers.SlimFetchRecruitSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                        resp = serializers.SlimFetchEmployeeSerializer(resp, many=False, context={"user_id":request.user.id}).data
                     else:
-                        resp = serializers.FetchRecruitSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                        resp = serializers.FetchRequestSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
                     return Response(resp, status=status.HTTP_200_OK)
                 
                 except (ValidationError, ObjectDoesNotExist):
@@ -244,7 +246,7 @@ class ASAViewSet(viewsets.ViewSet):
                     if "HOD" in roles:
 
                         if query == 'pending':
-                            resp = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_ceo_approved=False, is_deleted=False).order_by('-date_created')
+                            resp = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) | Q(created_by=request.user), is_ceo_approved=False, is_deleted=False).order_by('-date_created')
 
                         else:
                             resp = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).order_by('-date_created')

@@ -93,6 +93,14 @@ class FetchRequestSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return {} 
 
+
+class SlimFetchEmployeeSerializer(serializers.ModelSerializer):
+    department = FetchSRRSDepartmentSerializer()
+    
+    class Meta:
+        model = models.Employee
+        fields = '__all__'
+
     
 
 
