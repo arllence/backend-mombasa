@@ -221,6 +221,7 @@ class ASAViewSet(viewsets.ViewSet):
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
+            employee_no = request.query_params.get('employee_no')
             query = request.query_params.get('q')
             slim = request.query_params.get('slim')
 
@@ -241,6 +242,25 @@ class ASAViewSet(viewsets.ViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            elif employee_no:
+                try:
+                    resp = models.Employee.objects.get(Q(employee_no=employee_no))
+
+                    if slim:
+                        resp = serializers.SlimFetchEmployeeSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.FetchRequestSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
             else:
                 try:
 

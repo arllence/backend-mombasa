@@ -27,7 +27,7 @@ class Employee(models.Model):
 
     name = models.CharField(max_length=500)
     email = models.EmailField(max_length=500)
-    employee_no = models.CharField(max_length=255)
+    employee_no = models.CharField(max_length=255, unique=True)
     employee_type = models.CharField(max_length=255)
     contract_expire_date = models.DateField(null=True, blank=True)
     warehouse = models.CharField(max_length=500, null=True, blank=True)
