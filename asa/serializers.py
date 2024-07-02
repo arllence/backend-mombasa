@@ -9,6 +9,11 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 class GeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
 
+
+class UpdateGeneralNameSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
+
 class EmployeeSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=500)
     email = serializers.CharField(max_length=500)
@@ -139,5 +144,10 @@ class SlimFetchSystemAccessSerializer(serializers.ModelSerializer):
 class SlimFetchModuleAccessSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ModuleAccess
+        fields = '__all__'
+
+class SlimFetchSystemsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.System
         fields = '__all__'
 

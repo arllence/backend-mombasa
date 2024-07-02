@@ -774,7 +774,7 @@ class ASAViewSet(viewsets.ViewSet):
         elif request.method == "PUT":
             payload = request.data
 
-            serializer = serializers.UpdateDepartmentSerializer(
+            serializer = serializers.UpdateGeneralNameSerializer(
                 data=payload, many=False)
             
             if serializer.is_valid():
@@ -801,7 +801,7 @@ class ASAViewSet(viewsets.ViewSet):
             if request_id:
                 try:
                     system = models.System.objects.get(Q(id=request_id))
-                    system = serializers.SlimFetchSystemAccessSerializer(system, many=False).data
+                    system = serializers.SlimFetchSystemsSerializer(system, many=False).data
                     return Response(system, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown system"}, status=status.HTTP_400_BAD_REQUEST)
@@ -812,7 +812,7 @@ class ASAViewSet(viewsets.ViewSet):
                 try:
 
                     systems = models.System.objects.filter(Q(is_deleted=False)).order_by('name')
-                    systems = serializers.SlimFetchSystemAccessSerializer(systems, many=True).data
+                    systems = serializers.SlimFetchSystemsSerializer(systems, many=True).data
                     return Response(systems, status=status.HTTP_200_OK)
                 
                 except Exception as e:
