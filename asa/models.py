@@ -73,7 +73,7 @@ class DoctorInfo(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.ForeignKey(
         Employee, on_delete=models.DO_NOTHING,
-        related_name="asa_employee"
+        related_name="asa_employee_doctor_info"
     )
     type = models.CharField(max_length=255)
     specialty = models.CharField(max_length=255)
@@ -95,7 +95,7 @@ class SystemAccess(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.ForeignKey(
         Employee, on_delete=models.DO_NOTHING,
-        related_name="asa_employee"
+        related_name="asa_employee_system_access"
     )
     system = models.ForeignKey(
         System, on_delete=models.DO_NOTHING,
