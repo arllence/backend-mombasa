@@ -86,10 +86,10 @@ class ASAViewSet(viewsets.ViewSet):
             except Exception as e:
                 return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
             
-            system = system_access['system']
+            systems = system_access['system']
             try:
-                system = models.System.objects.get(id=system)
-                system_access['system'] = system
+                systems = models.System.objects.filter(id__in=systems)
+                # system_access['systems'] = systems
             except Exception as e:
                 return Response({"details": "Unknown selected system "}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -112,16 +112,15 @@ class ASAViewSet(viewsets.ViewSet):
                     employee_exists = False
 
                 # create system access
-                system_access.update({
-                    "employee" : employeeInstance
-                })
-                is_existing = models.SystemAccess.objects.filter(
-                    Q(employee=employeeInstance) & Q(system=system)
-                ).exists()
-                if not is_existing:
-                    system_access = models.SystemAccess.objects.create(
-                        **system_access
-                    )
+                for system in systems:
+                    is_existing = models.SystemAccess.objects.filter(
+                        Q(employee=employeeInstance) & Q(system=system)
+                    ).exists()
+
+                    if not is_existing:
+                        system_access = models.SystemAccess.objects.create(
+                            employee=employeeInstance, system=system
+                        )
 
                 # module access
                 if module_access.get('modules'):
