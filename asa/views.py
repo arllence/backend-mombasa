@@ -752,7 +752,7 @@ class ASAViewSet(viewsets.ViewSet):
             url_path="systems",
             url_name="systems")
     def systems(self, request):
-        roles = user_util.fetchusergroups(request.user.id)
+        # roles = user_util.fetchusergroups(request.user.id)
         if request.method == "POST":
             payload = request.data
             serializer = serializers.GeneralNameSerializer(
