@@ -47,6 +47,7 @@ class ASAViewSet(viewsets.ViewSet):
         if request.method == "POST":
 
             payload = request.data
+            
             employee = payload['employee']
             doctor_info = payload['doctor_info']
             system_access = payload['system_access']
@@ -86,7 +87,7 @@ class ASAViewSet(viewsets.ViewSet):
             except Exception as e:
                 return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
             
-            systems = system_access['system']
+            systems = system_access['systems']
             try:
                 systems = models.System.objects.filter(id__in=systems)
                 # system_access['systems'] = systems
