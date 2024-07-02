@@ -54,7 +54,8 @@ class Access(models.Model):
     )
     created_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="asa_created_by"
+       related_name="asa_created_by",
+       null=True, blank=True
     )
     is_hod_approved = models.BooleanField(default=False)
     is_ict_approved = models.BooleanField(default=False)
