@@ -47,7 +47,7 @@ class ASAViewSet(viewsets.ViewSet):
         if request.method == "POST":
 
             payload = request.data
-            
+
             employee = payload['employee']
             doctor_info = payload['doctor_info']
             system_access = payload['system_access']
@@ -124,21 +124,19 @@ class ASAViewSet(viewsets.ViewSet):
                         )
 
                 # module access
-                if module_access.get('modules'):
+                modules = module_access.get('modules')
+                if modules:
                     module_access.update({
                         "employee" : employeeInstance
                     })
                     # check if is existing
                     is_existing = models.ModuleAccess.objects.filter(
-                        employee=employeeInstance, system=system
-                    ).exists()
+                        employee=employeeInstance
+                    ).first()
                     if is_existing:
-                        models.ModuleAccess.objects.filter(
-                           Q(employee=employeeInstance) & Q(system=system)
-                        ).update(module_access)
-                        # modules = is_existing.modules
-                        # modules += module_access['modules']
-                        # is_existing.save()
+                        current_modules = is_existing.modules
+                        current_modules += modules
+                        is_existing.save()
                     else:
                         module_access = models.ModuleAccess.objects.create(
                             **module_access

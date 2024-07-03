@@ -118,12 +118,12 @@ class ModuleAccess(models.Model):
         Employee, on_delete=models.DO_NOTHING,
         related_name="asa_module_employee"
     )
-    system = models.ForeignKey(
-        System, on_delete=models.DO_NOTHING,
-        related_name="asa_system_module"
-    )
+    # system = models.ForeignKey(
+    #     System, on_delete=models.DO_NOTHING,
+    #     related_name="asa_system_module"
+    # )
     modules = models.JSONField()
-    training_required = models.BooleanField(default=False)
+    # training_required = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
