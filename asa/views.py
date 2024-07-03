@@ -59,7 +59,7 @@ class ASAViewSet(viewsets.ViewSet):
             employee_serializer = serializers.EmployeeSerializer(
                     data=employee, many=False)
             if not employee_serializer.is_valid():
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"details": employee_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
             # serialize system access payload
             # system_access_serializer = serializers.SystemAccessSerializer(
@@ -74,7 +74,7 @@ class ASAViewSet(viewsets.ViewSet):
                 doctor_info_serializer = serializers.DoctorsSerializer(
                         data=doctor_info, many=False)
                 if not doctor_info_serializer.is_valid():
-                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": doctor_info_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 employee['is_doctor'] = False
                 is_doctor = False
@@ -104,13 +104,14 @@ class ASAViewSet(viewsets.ViewSet):
                 if employeeInstance:
                     models.Employee.objects.filter(
                         Q(employee_no=employee_no)
-                    ).update(employee)
+                    ).update(**employee)
                     employee_exists = True
                 else:
                     employeeInstance = models.Employee.objects.create(
                         **employee
                     )
                     employee_exists = False
+                    print("created employee id: ", str(employeeInstance.id))
 
                 # create system access
                 for system in systems:
@@ -166,19 +167,33 @@ class ASAViewSet(viewsets.ViewSet):
                         "employee": employeeInstance,
                         "created_by": authenticated_user
                     }
-                    access = models.Access.objects.create(
-                        **access
-                    )
+                    try:
+                        accessInstance = models.Access.objects.create(
+                            **access
+                        )
+                    except Exception as e:
+                        print(e)
+                    track_status = "REQUESTED"
+                else:
+                    accessInstance = models.Access.objects.get(employee=employeeInstance)
+                    track_status = "UPDATED"
+
+                print("access id: ", accessInstance.id)
+                print("employeeInstance id: ", employeeInstance.id)
 
                 # create track status change
-                raw = {
-                    "access": access,
-                    "status": "REQUESTED",
-                    "status_for": '/'.join(roles),
-                    "action_by": authenticated_user
-                }
+                try:
+                    raw = {
+                        "access": accessInstance,
+                        "status": track_status,
+                        "status_for": '/'.join(roles),
+                        "action_by": authenticated_user
+                    }
 
-                models.StatusChange.objects.create(**raw)
+                    tracker = models.StatusChange.objects.create(**raw)
+                    print("tracker: ", tracker.id)
+                except Exception as e:
+                    print(e)
 
 
                 # Notify ICT
@@ -196,15 +211,16 @@ class ASAViewSet(viewsets.ViewSet):
 
                 except Exception as e:
                     logger.error(e)
+                    print("mail error: ", e)
                     # send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
-
-            user_util.log_account_activity(
-                authenticated_user, authenticated_user, "Access Request created", f"Employee Id: {employeeInstance.id}")
+            print('end atomic')
+            # user_util.log_account_activity(
+            #     authenticated_user, authenticated_user, "Access Request created", f"Employee Id: {employeeInstance.id}")
             
             return Response('success', status=status.HTTP_200_OK)
             
 
-        if request.method == "PUT":
+        elif request.method == "PUT":
             payload = request.data
 
             payload = json.loads(request.data['payload'])

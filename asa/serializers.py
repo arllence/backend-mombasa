@@ -19,12 +19,12 @@ class EmployeeSerializer(serializers.Serializer):
     email = serializers.CharField(max_length=500)
     employee_no = serializers.CharField(max_length=255)
     employee_type = serializers.CharField(max_length=255)
-    title = serializers.CharField(max_length=255)
+    # title = serializers.CharField(max_length=255)
     department = serializers.CharField(max_length=255)
     is_doctor = serializers.CharField(max_length=10)
 
 class DoctorsSerializer(serializers.Serializer):
-    employee = serializers.CharField(max_length=500)
+    # employee = serializers.CharField(max_length=500)
     type = serializers.CharField(max_length=500)
     specialty = serializers.CharField(max_length=255)
     admitting_rights = serializers.CharField(max_length=255)
@@ -64,7 +64,7 @@ class FetchRequestSerializer(serializers.ModelSerializer):
         
     def get_doctor_info(self, obj):
         try:
-            request = models.DoctorInfo.objects.filter(recruit=obj)
+            request = models.DoctorInfo.objects.filter(employee=obj)
             serializer = SlimFetchDoctorInfoSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):

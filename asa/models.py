@@ -32,6 +32,7 @@ class Employee(models.Model):
     contract_expire_date = models.DateField(null=True, blank=True)
     warehouse = models.CharField(max_length=500, null=True, blank=True)
     status = models.CharField(max_length=255, default='ACTIVE')
+    is_doctor = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
@@ -45,7 +46,8 @@ class Access(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     employee = models.ForeignKey(
         Employee, on_delete=models.DO_NOTHING,
-        related_name="asa_employee"
+        related_name="asa_employee",
+        null=True, blank=True
     )
     granted_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
@@ -128,7 +130,7 @@ class ModuleAccess(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.employee.name} -- {self.system.name}"
+        return f"{self.employee.name}"
 
     class Meta:
         db_table = u'"{}\".\"module_access"'.format(settings.ACCESS_SERVICE_AGREEMENT)
