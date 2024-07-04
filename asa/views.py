@@ -96,14 +96,15 @@ class ASAViewSet(viewsets.ViewSet):
 
     
             with transaction.atomic():
+                record_id = payload['record_id']
                 employee_no = employee['employee_no']
                 # check if employee exists
                 employeeInstance = models.Employee.objects.filter(
-                    Q(employee_no=employee_no)
+                    Q(employee_no=employee_no) | Q(id=record_id)
                 ).first()
                 if employeeInstance:
                     models.Employee.objects.filter(
-                        Q(employee_no=employee_no)
+                        Q(employee_no=employee_no) | Q(id=record_id)
                     ).update(**employee)
                     employee_exists = True
                 else:
@@ -111,18 +112,15 @@ class ASAViewSet(viewsets.ViewSet):
                         **employee
                     )
                     employee_exists = False
-                    print("created employee id: ", str(employeeInstance.id))
 
                 # create system access
+                models.SystemAccess.objects.filter(
+                        Q(employee=employeeInstance)
+                    ).delete()
                 for system in systems:
-                    is_existing = models.SystemAccess.objects.filter(
-                        Q(employee=employeeInstance) & Q(system=system)
-                    ).exists()
-
-                    if not is_existing:
-                        system_access = models.SystemAccess.objects.create(
-                            employee=employeeInstance, system=system
-                        )
+                    models.SystemAccess.objects.create(
+                        employee=employeeInstance, system=system
+                    )
 
                 # module access
                 modules = module_access.get('modules')
@@ -135,8 +133,9 @@ class ASAViewSet(viewsets.ViewSet):
                         employee=employeeInstance
                     ).first()
                     if is_existing:
-                        current_modules = is_existing.modules
-                        current_modules += modules
+                        # current_modules = is_existing.modules
+                        # current_modules += modules
+                        is_existing.modules = modules
                         is_existing.save()
                     else:
                         module_access = models.ModuleAccess.objects.create(
@@ -155,7 +154,7 @@ class ASAViewSet(viewsets.ViewSet):
                     if is_existing:
                         models.DoctorInfo.objects.filter(
                            Q(employee=employeeInstance)
-                        ).update(doctor_info)
+                        ).update(**doctor_info)
                     else:
                         doctor_info = models.DoctorInfo.objects.create(
                             **doctor_info
@@ -178,9 +177,6 @@ class ASAViewSet(viewsets.ViewSet):
                     accessInstance = models.Access.objects.get(employee=employeeInstance)
                     track_status = "UPDATED"
 
-                print("access id: ", accessInstance.id)
-                print("employeeInstance id: ", employeeInstance.id)
-
                 # create track status change
                 try:
                     raw = {
@@ -191,7 +187,6 @@ class ASAViewSet(viewsets.ViewSet):
                     }
 
                     tracker = models.StatusChange.objects.create(**raw)
-                    print("tracker: ", tracker.id)
                 except Exception as e:
                     print(e)
 
@@ -213,9 +208,9 @@ class ASAViewSet(viewsets.ViewSet):
                     logger.error(e)
                     print("mail error: ", e)
                     # send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
-            print('end atomic')
-            # user_util.log_account_activity(
-            #     authenticated_user, authenticated_user, "Access Request created", f"Employee Id: {employeeInstance.id}")
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Access Request created", f"Employee Id: {employeeInstance.id}")
             
             return Response('success', status=status.HTTP_200_OK)
             
