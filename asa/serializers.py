@@ -38,7 +38,11 @@ class ModuleAccessSerializer(serializers.Serializer):
     employee = serializers.CharField(max_length=500)
     system = serializers.CharField(max_length=500)
     modules = serializers.CharField(max_length=500)
-
+    
+class SlimFetchSystemsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.System
+        fields = '__all__'
 class FetchRequestSerializer(serializers.ModelSerializer):
     department = FetchSRRSDepartmentSerializer()
     access = serializers.SerializerMethodField()
@@ -52,8 +56,8 @@ class FetchRequestSerializer(serializers.ModelSerializer):
 
     def get_access(self, obj):
         try:
-            request = models.Access.objects.filter(employee=obj)
-            serializer = SlimFetchAccessSerializer(request, many=True)
+            request = models.Access.objects.get(employee=obj)
+            serializer = SlimFetchAccessSerializer(request, many=False)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return {}
@@ -64,8 +68,8 @@ class FetchRequestSerializer(serializers.ModelSerializer):
         
     def get_doctor_info(self, obj):
         try:
-            request = models.DoctorInfo.objects.filter(employee=obj)
-            serializer = SlimFetchDoctorInfoSerializer(request, many=True)
+            request = models.DoctorInfo.objects.get(employee=obj)
+            serializer = SlimFetchDoctorInfoSerializer(request, many=False)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return {}
@@ -88,8 +92,8 @@ class FetchRequestSerializer(serializers.ModelSerializer):
         
     def get_module_access(self, obj):
         try:
-            request = models.ModuleAccess.objects.filter(employee=obj)
-            serializer = SlimFetchModuleAccessSerializer(request, many=True)
+            request = models.ModuleAccess.objects.get(employee=obj)
+            serializer = SlimFetchModuleAccessSerializer(request, many=False)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return {}
@@ -137,6 +141,7 @@ class SlimFetchDoctorInfoSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class SlimFetchSystemAccessSerializer(serializers.ModelSerializer):
+    system = SlimFetchSystemsSerializer()
     class Meta:
         model = models.SystemAccess
         fields = '__all__'
@@ -146,8 +151,5 @@ class SlimFetchModuleAccessSerializer(serializers.ModelSerializer):
         model = models.ModuleAccess
         fields = '__all__'
 
-class SlimFetchSystemsSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.System
-        fields = '__all__'
+
 
