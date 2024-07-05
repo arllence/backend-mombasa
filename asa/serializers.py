@@ -9,7 +9,6 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 class GeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
 
-
 class UpdateGeneralNameSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
     name = serializers.CharField(max_length=255)
@@ -38,7 +37,15 @@ class ModuleAccessSerializer(serializers.Serializer):
     employee = serializers.CharField(max_length=500)
     system = serializers.CharField(max_length=500)
     modules = serializers.CharField(max_length=500)
-    
+
+class ApproverSerializer(serializers.Serializer):
+    approver = serializers.CharField(max_length=255)
+
+class UpdateApproverSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    approver = serializers.CharField(max_length=255)
+
+
 class SlimFetchSystemsSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.System
@@ -149,6 +156,14 @@ class SlimFetchSystemAccessSerializer(serializers.ModelSerializer):
 class SlimFetchModuleAccessSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ModuleAccess
+        fields = '__all__'
+
+class FetchApproverSerializer(serializers.ModelSerializer):
+    approver = UsersSerializer()
+    created_by = UsersSerializer()
+    
+    class Meta:
+        model = models.RequestApprover
         fields = '__all__'
 
 

@@ -328,434 +328,6 @@ class ASAViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)    
 
-    
-    @action(methods=["POST"],
-            detail=False,
-            url_path="approve-request",
-            url_name="approve-request")
-    def approval(self, request):
-
-        authenticated_user = request.user
-        roles = user_util.fetchusergroups(request.user.id) 
-
-        allowed = ["HOF","SLT","HHR","CEO"]
-
-        if not any(role in allowed for role in roles):
-            return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if request.method == "POST":
-
-            payload = request.data
-            roles = user_util.fetchusergroups(request.user.id) 
-
-            serializer = serializers.ApprovalSerializer(
-                    data=payload, many=False)
-            
-            if serializer.is_valid():
-                recruit_id = payload['recruit_id']
-                comments = payload.get('comments')
-                replacement = payload.get('replacement', None)
-
-                try:
-                    recruit = models.Recruit.objects.get(Q(id=recruit_id))
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Recruit !"}, 
-                                    status=status.HTTP_400_BAD_REQUEST)
-                
-                with transaction.atomic():
-
-                    new_status = "APPROVED"
-                    forward_to = []
-                    previous_office = []
-
-                    if 'SLT' in roles:
-                        if recruit.department.slt == authenticated_user and not recruit.is_slt_approved:
-                            recruit.is_slt_approved = True
-                            new_status = "SLT APPROVED"
-                            forward_to = ["HR","HHR"]
-                            previous_office = []
-
-                            if comments:
-                                recruit.slt_comments = comments
-
-                    if 'HHR' in roles:
-                        if recruit.is_slt_approved:
-                            recruit.is_hhr_approved = True
-                            new_status = "HR APPROVED"
-                            forward_to = ["HOF","FINANCE"]
-                            previous_office = ["SLT"]
-
-                            if comments:
-                                recruit.hhr_comments = comments
-                            
-                            if recruit.nature_of_hiring == 'Replacement':
-                                if not replacement:
-                                    return Response({"details": "Staff Replacement Details Required"}, 
-                                    status=status.HTTP_400_BAD_REQUEST)
-                                
-                                recruit.replacement_details = replacement
-
-                    if 'HOF' in roles:
-                        if recruit.is_hhr_approved:
-                            recruit.is_hof_approved = True
-                            new_status = "FINANCE APPROVED"
-                            forward_to = ["CEO"]
-                            previous_office = ["SLT","HR","HHR"]
-                            if comments:
-                                recruit.hof_comments = comments
-
-                    if 'CEO' in roles:
-                        if recruit.is_hof_approved:
-                            recruit.is_ceo_approved = True
-                            new_status = "CEO APPROVED"
-                            forward_to = []
-                            previous_office = ["SLT","HR","HHR","HOF","FINANCE"]
-                            if comments:
-                                recruit.ceo_comments = comments
-
-                    
-                    recruit.status = new_status
-                    recruit.save()
-
-                    # track status change
-                    raw = {
-                        "recruit": recruit,
-                        "status": new_status,
-                        "status_for": '/'.join(roles),
-                        "action_by": authenticated_user
-                    }
-
-                    models.StatusChange.objects.create(**raw)
-
-                    # Notify the requestor & previous offices
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=previous_office)).values_list('email', flat=True))
-                    emails.append(recruit.created_by.email)
-                    subject = f"Recruitment Request: {recruit.uid} Status  [SRRS-AKHK]"
-                    message = f"Hello, \nStaff Recruitment Request of id: {recruit.uid} for position: {recruit.position_title} has been {new_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nSRRS-AKHK"
-                    
-                    try:
-                        mail = {
-                            "email" : [recruit.created_by.email], 
-                            "subject" : subject,
-                            "message" : message,
-                        }
-                        Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        logger.error(e)
-
-                    # Notify next office
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=forward_to)).values_list('email', flat=True))
-                    subject = f"Recruitment Request: {recruit.uid} Pending Your Action.  [SRRS-AKHK]"
-                    message = f"Hello. \nRecruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\nSRRS-AKHK"
-
-                    try:
-                        if emails:
-                            mail = {
-                                "email" : emails, 
-                                "subject" : subject,
-                                "message" : message,
-                            }
-                            
-                            Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        logger.error(e)
-
-
-                user_util.log_account_activity(
-                    authenticated_user, recruit.created_by, "Recruitment Request approval", 
-                    f"Approval Executed UID: {str(recruit.id)}")
-                
-                return Response('success', status=status.HTTP_200_OK)
-            
-            else:
-                return Response({"details": serializer.errors}, 
-                                status=status.HTTP_400_BAD_REQUEST)
-            
-
-    @action(methods=["POST","PUT"],
-            detail=False,
-            url_path="hr-details-update",
-            url_name="hr-details-update")
-    def hr_details_update(self, request):
-
-        authenticated_user = request.user
-        roles = user_util.fetchusergroups(request.user.id) 
-
-        allowed = ["HOF","HR","HHR","FINANCE"]
-
-        if not any(item in allowed for item in roles):
-            return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if request.method == "POST":
-
-            payload = request.data
-
-            serializer = serializers.PatchHRDetailsSerializer(
-                    data=payload, many=False)
-            
-            if serializer.is_valid():
-                recruit_id = payload['recruit_id']
-                proposed_salary = payload['proposed_salary']
-                replacement_details = payload.get('replacement_details', None)
-                comments = payload.get('comments', None)
-
-                try:
-                    recruit = models.Recruit.objects.get(id=recruit_id)
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Recruitment Request !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                if recruit.nature_of_hiring == 'Replacement' and not replacement_details:
-                    return Response({"details": "Replacement details required !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                # keep history before editing
-                try:
-                    history = serializers.SlimFetchRecruitSerializer(recruit, many=False).data
-                    raw = {
-                        "uid" : recruit.uid,
-                        "data" : history,
-                        "triggered_by": authenticated_user
-                    }
-                    models.RecruitHistory.objects.create(**raw)
-                except Exception as e:
-                    print(e)
-                
-                with transaction.atomic():
-
-                    recruit.proposed_salary = proposed_salary
-                    recruit.replacement_details = replacement_details
-                    recruit.hhr_comments = comments
-                    recruit.save()
-
-                user_util.log_account_activity(
-                    authenticated_user, recruit.created_by, "HR Details Added", f"Recruitment ID : {str(recruit.id)}")
-                
-                return Response('success', status=status.HTTP_200_OK)
-            
-            else:
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        
-                 
-    @action(methods=["POST"],
-            detail=False,
-            url_path="attach-budget-approval",
-            url_name="attach-budget-approval")
-    def attach_budget_approval(self, request):
-
-        authenticated_user = request.user
-        roles = user_util.fetchusergroups(request.user.id) 
-
-        allowed = ["HOF","HR","HHR","FINANCE"]
-
-        if not any(item in allowed for item in roles):
-            return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if request.method == "POST":
-
-            payload = json.loads(request.data['payload'])
-            budget_approval_file = request.FILES.get('budget_approval', None)
-
-            if not budget_approval_file:
-                return Response({"details": "No file attached"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-            serializer = serializers.ApprovalSerializer(
-                    data=payload, many=False)
-            
-            if serializer.is_valid():
-                recruit_id = payload['recruit_id']
-
-                try:
-                    recruit = models.Recruit.objects.get(id=recruit_id)
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Recruit !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                with transaction.atomic():
-                    recruit.budget_approval_file = budget_approval_file
-                    recruit.save()
-
-                    # update status
-                    raw = {
-                        "recruit": recruit,
-                        "status": "BUDGET APPROVAL UPLOADED",
-                        "status_for": '/'.join(roles),
-                        "action_by": authenticated_user
-                    }
-
-                    models.StatusChange.objects.create(**raw)
-
-                    # Notify the HR / FINANCE
-                    recipients = list(get_user_model().objects.filter(
-                        Q(groups__name__in=['HR','HOF'])).values_list('email', flat=True))
-                    subject = f"Recruitment Request {recruit.uid} Budget  [SRRS-AKHK]"
-                    message = f"Hello. \nBudget approval for requisition position: {recruit.position_title},\nhas been uploaded by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
-
-                    try:
-                        mail = {
-                            "email" : recipients, 
-                            "subject" : subject,
-                            "message" : message,
-                        }
-                        Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        logger.error(e)
-
-                user_util.log_account_activity(
-                    authenticated_user, recruit.created_by, "SRRS budget approval", f"UID: {str(recruit.id)}")
-                
-                return Response('success', status=status.HTTP_200_OK)
-            
-            else:
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-    @action(methods=["POST","PUT"],
-            detail=False,
-            url_path="employee",
-            url_name="employee")
-    def employee(self, request):
-
-        authenticated_user = request.user
-        roles = user_util.fetchusergroups(request.user.id) 
-
-        allowed = ["HOF","HR","HHR","FINANCE"]
-
-        if not any(item in allowed for item in roles):
-            return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if request.method == "POST":
-
-            payload = request.data
-
-            employees = payload.get('employees', None) 
-            if not employees:
-                return Response({"details": "Staff details required"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            recruit_id = payload.get('recruit_id', None) 
-            if not recruit_id:
-                return Response({"details": "Request id required"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            try:
-                recruit = models.Recruit.objects.get(id=recruit_id)
-            except (ValidationError, ObjectDoesNotExist):
-                return Response({"details": "Unknown Recruit !"}, status=status.HTTP_400_BAD_REQUEST)
-            
-            for employee in employees:
-                serializer = serializers.EmployeeSerializer(
-                    data=employee, many=False)
-                if not serializer.is_valid():
-                    return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-            
-            
-            for employee in employees:
-                reporting_date = employee.get('reporting_date', None) 
-                reporting_station = employee.get('reporting_station', None) 
-                working_station = employee.get('working_station', None) 
-                employee_no = employee.get('employee_no', None) 
-                name = employee.get('name', None) 
-                email = employee.get('email', None) 
-
-                if reporting_station == 'OUTREACH CENTRES':
-                    if not working_station:
-                        return Response({"details": "Working station required "}, status=status.HTTP_400_BAD_REQUEST)
-
-                is_existing = models.Employee.objects.filter(Q(employee_no=employee_no)).exists()
-                if is_existing:
-                    return Response({"details": f"Employee {employee_no} already exists "}, status=status.HTTP_400_BAD_REQUEST)
-                
-                with transaction.atomic():
-                    raw = {
-                        "name" : name,
-                        "email" : email,
-                        "recruit" : recruit,
-                        "employee_no" : employee_no, 
-                        "reporting_date" : reporting_date, 
-                        "working_station" : working_station,
-                        "action_by" : authenticated_user
-                    }
-
-                    models.Employee.objects.create(**raw)
-
-                    # Notify the HR / FINANCE
-                    recipients = list(get_user_model().objects.filter(
-                        Q(groups__name__in=['HR','HOF', 'CEO'])).values_list('email', flat=True))
-                    recipients.append(recruit.created_by.email)
-                    recipients.append(recruit.department.slt.email)
-                    subject = f"Candidate hired [SRRS-AKHK]"
-                    message = f"Hello. \n\nThe position: {recruit.position_title},\nhas been filled. Candidate name: {name},\nas updated by{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
-
-                    try:
-                        mail = {
-                            "email" : recipients, 
-                            "subject" : subject,
-                            "message" : message,
-                        }
-                        Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        logger.error(e)
-
-
-            recruit.status = "HIRED"
-            recruit.save()
-
-            # update status
-            raw = {
-                "recruit": recruit,
-                "status": "HIRED",
-                "status_for": '/'.join(roles),
-                "action_by": authenticated_user
-            }
-
-            models.StatusChange.objects.create(**raw)
-
-            user_util.log_account_activity(
-                authenticated_user, recruit.created_by, "SRRS Employee added", f"UID: {str(recruit.id)}")
-            
-            return Response('success', status=status.HTTP_200_OK)
-        
-        if request.method == "PUT":
-
-            payload = request.data
-
-            serializer = serializers.PutEmployeeSerializer(
-                data=payload, many=False)
-            if not serializer.is_valid():
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-            request_id = payload.get('request_id', None) 
-            reporting_date = payload.get('reporting_date', None) 
-            reporting_station = payload.get('reporting_station', None) 
-            working_station = payload.get('working_station', None) 
-            employee_no = payload.get('employee_no', None) 
-            name = payload.get('name', None) 
-            email = payload.get('email', None) 
-
-            try:
-                employee = models.Employee.objects.get(id=request_id)
-            except (ValidationError, ObjectDoesNotExist):
-                return Response({"details": "Unknown Employee "}, status=status.HTTP_400_BAD_REQUEST)
-
-            if reporting_station == 'OUTREACH CENTRES':
-                if not working_station:
-                    return Response({"details": "Working station required "}, status=status.HTTP_400_BAD_REQUEST)
-            
-            with transaction.atomic():
-                raw = {
-                    "name" : name,
-                    "email" : email,
-                    "employee_no" : employee_no, 
-                    "reporting_date" : reporting_date, 
-                    "working_station" : working_station,
-                }
-
-                models.Employee.objects.filter(Q(id=request_id)).update(**raw)
-
-
-            user_util.log_account_activity(
-                authenticated_user, authenticated_user, "SRRS Employee edited", f"UID: {str(request_id)}")
-            
-            return Response('success', status=status.HTTP_200_OK) 
-
     @action(methods=["POST", "GET", "PUT"],
             detail=False,
             url_path="systems",
@@ -828,6 +400,92 @@ class ASAViewSet(viewsets.ViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
+
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="request-approver",
+            url_name="request-approver")
+    def request_approver(self, request):
+        # roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.ApproverSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                approver = payload['approver']
+
+                try:
+                    approver = User.objects.get(id=approver)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown User"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    raw = {
+                        "approver": approver,
+                        "created_by": request.user
+                    }
+
+                    models.RequestApprover.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateApproverSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                approver = payload['approver']
+
+                try:
+                    request = models.RequestApprover.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+
+                    request.approver = approver
+                    request.created_by = request.user
+                    request.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    request = models.RequestApprover.objects.get(Q(id=request_id))
+                    request = serializers.FetchRequestSerializer(request, many=False).data
+                    return Response(request, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+
+                    request = models.RequestApprover.objects.filter(Q(is_deleted=False)).order_by('approver')
+                    request = serializers.FetchRequestSerializer(request, many=True).data
+                    return Response(request, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LocumViewSet(viewsets.ViewSet):
