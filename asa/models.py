@@ -136,6 +136,29 @@ class ModuleAccess(models.Model):
         db_table = u'"{}\".\"module_access"'.format(settings.ACCESS_SERVICE_AGREEMENT)
 
 
+class RequestApprover(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    approver = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="asa_request_approver"
+    )
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="asa_approver_created_by"
+    )
+
+    status = models.CharField(max_length=255, default='ACTIVE')
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.approver.first_name
+    
+    class Meta:
+        db_table = u'"{}\".\"approvers"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+    
+
 class StatusChange(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     access = models.ForeignKey(
