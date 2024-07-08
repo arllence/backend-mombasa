@@ -491,13 +491,13 @@ class ASAViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             if request_id:
                 try:
-                    request = models.RequestApprover.objects.get(Q(id=request_id)).delete()
+                    models.RequestApprover.objects.get(Q(id=request_id)).delete()
                     return Response(request, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
-                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
 
