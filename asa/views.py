@@ -469,7 +469,7 @@ class ASAViewSet(viewsets.ViewSet):
             if request_id:
                 try:
                     request = models.RequestApprover.objects.get(Q(id=request_id))
-                    request = serializers.FetchRequestSerializer(request, many=False).data
+                    request = serializers.FetchRequestApproverSerializer(request, many=False).data
                     return Response(request, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
@@ -480,7 +480,7 @@ class ASAViewSet(viewsets.ViewSet):
                 try:
 
                     request = models.RequestApprover.objects.filter(Q(is_deleted=False)).order_by('approver')
-                    request = serializers.FetchRequestSerializer(request, many=True).data
+                    request = serializers.FetchRequestApproverSerializer(request, many=True).data
                     return Response(request, status=status.HTTP_200_OK)
                 
                 except Exception as e:

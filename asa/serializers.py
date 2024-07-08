@@ -117,7 +117,13 @@ class SlimFetchEmployeeSerializer(serializers.ModelSerializer):
         model = models.Employee
         fields = '__all__'
 
+class FetchRequestApproverSerializer(serializers.ModelSerializer):
+    approver = UsersSerializer()
+    created_by = UsersSerializer()
     
+    class Meta:
+        model = models.RequestApprover
+        fields = '__all__'   
 
 # class FetchAccessSerializer(serializers.ModelSerializer):
 #     employee = serializers.SerializerMethodField()
