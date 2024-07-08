@@ -503,13 +503,15 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     if not app:
                         department_details = models.Department.objects.get(
                             id=department_id)
+                        user_details.department = department_details
                     else:
                         if app == 'srrs':
                             department_details = models.SRRSDepartment.objects.get(
                             id=department_id)
+                            user_details.srrs_department = department_details
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Department does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-                user_details.department = department_details
+                
                 user_details.save()
                 user_util.log_account_activity(
                     authenticated_user, user_details, "Department Swap", "Department Was Swapped")
