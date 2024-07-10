@@ -45,6 +45,10 @@ class UpdateApproverSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
     approver = serializers.CharField(max_length=255)
 
+class UpdateRequestSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    status = serializers.CharField(max_length=255)
+
 
 class SlimFetchSystemsSerializer(serializers.ModelSerializer):
     class Meta:

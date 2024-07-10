@@ -186,12 +186,12 @@ class ASAViewSet(viewsets.ViewSet):
                         "action_by": authenticated_user
                     }
 
-                    tracker = models.StatusChange.objects.create(**raw)
+                    models.StatusChange.objects.create(**raw)
                 except Exception as e:
                     print(e)
 
 
-                # Notify ICT
+                # Notify HOD
                 subject = f"New Access Request Received [ASA-AKHK]"
                 message = f"Hello, \n\nA new access request from department: {department.name},\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nASA-AKHK"
                 
@@ -216,10 +216,70 @@ class ASAViewSet(viewsets.ViewSet):
             
 
         elif request.method == "PUT":
+            # endpoint approves / alters requests status
             payload = request.data
 
-            payload = json.loads(request.data['payload'])
-            return
+            # serialize payload
+            serializer = serializers.UpdateRequestSerializer(
+                    data=payload, many=False)
+            if not serializer.is_valid():
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            # extrapolate
+            request_id = payload['request_id']
+            request_status = payload['status']
+            
+            try:
+                accessInstance = models.Access.objects.get(Q(id=request_id) | Q(employee=record_id))
+            except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                print(e)
+                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if 'HOD' in roles:
+                if request_status == 'APPROVED':
+                    accessInstance.is_hod_approved = True
+                    request_status = 'HOD APPROVED'
+                    accessInstance.status = request_status
+                else:
+                    accessInstance.status = request_status
+
+                status_for = 'HOD'
+
+            elif 'ICT' in roles:
+                if request_status == 'APPROVED':
+                    accessInstance.is_ict_approved = True
+                    request_status = 'ICT APPROVED'
+                    accessInstance.status = request_status
+                    accessInstance.granted_by = authenticated_user
+                else:
+                    accessInstance.status = request_status
+
+                status_for = 'ICT'
+
+            else:
+                return Response({"details": "Permission required"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+
+            # update instance
+            accessInstance.save()
+
+            # create track status change
+            try:
+                raw = {
+                    "access": accessInstance,
+                    "status": request_status,
+                    "status_for": status_for,
+                    "action_by": authenticated_user
+                }
+                models.StatusChange.objects.create(**raw)
+            except Exception as e:
+                print(e)
+
+            return Response('success', status=status.HTTP_200_OK)
+     
   
         elif request.method == "PATCH":
             payload = request.data
