@@ -32,6 +32,7 @@ class Employee(models.Model):
     contract_expire_date = models.DateField(null=True, blank=True)
     warehouse = models.CharField(max_length=500, null=True, blank=True)
     status = models.CharField(max_length=255, default='INACTIVE')
+    signature = models.TextField(null=True, blank=True)
     is_doctor = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
