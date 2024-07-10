@@ -377,7 +377,7 @@ class ASAViewSet(viewsets.ViewSet):
 
                         resp = [x.employee for x in resp]
 
-                    elif "SUPERUSER" in roles:
+                    elif any(role in ['SUPERUSER','ICT'] for role in roles):
                         resp = models.Access.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
                         resp = [x.employee for x in resp]
 
@@ -588,8 +588,9 @@ class ASAViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             if request_id:
                 try:
-                    models.RequestApprover.objects.get(id=request_id).delete()
-                    user_util.revoke_role('ICT', str(request_id))
+                    user = models.RequestApprover.objects.get(id=request_id)
+                    user_util.revoke_role('ICT', str(user.approver.id))
+                    user.delete()
                     return Response('200', status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
