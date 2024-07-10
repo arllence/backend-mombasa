@@ -514,7 +514,12 @@ class ASAViewSet(viewsets.ViewSet):
                     logger.error(e)
                     print(e)
                     return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
-
+                
+                # assign ICT role
+                assign_role = user_util.award_role('ICT', str(approver.id))
+                if not assign_role:
+                    return Response({"details": "Unable to assign role ICT"}, status=status.HTTP_400_BAD_REQUEST)
+                
                 with transaction.atomic():
                     raw = {
                         "approver": approver,
@@ -522,11 +527,6 @@ class ASAViewSet(viewsets.ViewSet):
                     }
 
                     models.RequestApprover.objects.create(**raw)
-
-                    assign_role = user_util.award_role('ICT', str(approver.id))
-
-                    if not assign_role:
-                        return Response({"details": "Unable to assign role ICT"}, status=status.HTTP_400_BAD_REQUEST)
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -589,6 +589,7 @@ class ASAViewSet(viewsets.ViewSet):
             if request_id:
                 try:
                     models.RequestApprover.objects.get(id=request_id).delete()
+                    user_util.revoke_role('ICT', str(request_id))
                     return Response('200', status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
