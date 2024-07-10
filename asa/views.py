@@ -523,6 +523,11 @@ class ASAViewSet(viewsets.ViewSet):
 
                     models.RequestApprover.objects.create(**raw)
 
+                    assign_role = user_util.award_role('ICT', str(approver.id))
+
+                    if not assign_role:
+                        return Response({"details": "Unable to assign role ICT"}, status=status.HTTP_400_BAD_REQUEST)
+
                     return Response("Success", status=status.HTTP_200_OK)
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
