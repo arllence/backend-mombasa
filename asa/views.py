@@ -230,7 +230,7 @@ class ASAViewSet(viewsets.ViewSet):
             request_status = payload['status']
             
             try:
-                accessInstance = models.Access.objects.get(Q(id=request_id) | Q(employee=record_id))
+                accessInstance = models.Access.objects.get(Q(id=request_id) | Q(employee=request_id))
             except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
@@ -414,11 +414,9 @@ class ASAViewSet(viewsets.ViewSet):
             
             with transaction.atomic():
                 try:
-
                     raw = {"is_deleted" : True}
-                    models.Recruit.objects.filter(Q(id=request_id)).update(**raw)
+                    models.Access.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)    
-                 
                 except Exception as e:
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)    
 
