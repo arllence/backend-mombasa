@@ -259,8 +259,11 @@ class ASAViewSet(viewsets.ViewSet):
                 status_for = 'ICT'
 
             else:
-                return Response({"details": "Permission required"}, 
+                return Response({"details": "Permission denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
+            
+            # update instance
+            accessInstance.save()
             
             # Notify ICT
             if status_for == 'HOD' and request_status == 'HOD APPROVED':
@@ -273,15 +276,29 @@ class ASAViewSet(viewsets.ViewSet):
                     mail = {
                         "email" : emails, 
                         "subject" : subject,
-                        "message" : message,
+                        "message" : message
                     }
                     Sendmail.objects.create(**mail)
                 except Exception as e:
                     logger.error(e)
                     print("mail error: ", e)
 
-            # update instance
-            accessInstance.save()
+            # Notify requestor
+            emails = [accessInstance.employee.email]
+
+            subject = f"Access Request Progress Update"
+            message = f"Hello, \nYour Access request has been marked as {request_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} for {status_for} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nASA-AKHK"
+
+            try:
+                mail = {
+                    "email" : emails, 
+                    "subject" : subject,
+                    "message" : message,
+                }
+                Sendmail.objects.create(**mail)
+            except Exception as e:
+                logger.error(e)
+
 
             # create track status change
             try:
