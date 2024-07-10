@@ -207,7 +207,6 @@ class ASAViewSet(viewsets.ViewSet):
                 except Exception as e:
                     logger.error(e)
                     print("mail error: ", e)
-                    # send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
 
             user_util.log_account_activity(
                 authenticated_user, authenticated_user, "Access Request created", f"Employee Id: {employeeInstance.id}")
@@ -262,6 +261,24 @@ class ASAViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": "Permission required"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
+            
+            # Notify ICT
+            if status_for == 'HOD' and request_status == 'HOD APPROVED':
+                subject = f"New Access Request Received [ASA-AKHK]"
+                message = f"Hello, \n\nA new access request from department: {accessInstance.employee.department.name},\nhas been approved by {authenticated_user.first_name} {authenticated_user.last_name} for HOD on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nASA-AKHK"
+                # get emails
+                emails = list(models.RequestApprover.objects.all().values_list('approver__email', flat=True))
+                
+                try:
+                    mail = {
+                        "email" : emails, 
+                        "subject" : subject,
+                        "message" : message,
+                    }
+                    Sendmail.objects.create(**mail)
+                except Exception as e:
+                    logger.error(e)
+                    print("mail error: ", e)
 
             # update instance
             accessInstance.save()
