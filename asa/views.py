@@ -932,7 +932,7 @@ class LocumViewSet(viewsets.ViewSet):
             
 
    
-class SRRSReportsViewSet(viewsets.ViewSet):
+class ReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]
 
     def get_queryset(self):
@@ -946,7 +946,7 @@ class SRRSReportsViewSet(viewsets.ViewSet):
                     
         department = request.query_params.get('department')
         position_type = request.query_params.get('position_type')
-        nature_of_hiring = request.query_params.get('nature_of_hiring')
+        access = request.query_params.get('access')
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
         r_status = request.query_params.get('status')
@@ -968,7 +968,7 @@ class SRRSReportsViewSet(viewsets.ViewSet):
         q_filters = Q()
 
         if department:
-            q_filters &= Q(department=department)
+            q_filters &= Q(employee__department=department)
 
         if date_from or date_to:
             if not date:
@@ -979,26 +979,29 @@ class SRRSReportsViewSet(viewsets.ViewSet):
             q_filters &= Q(status=r_status)
 
         if position_type:
-            q_filters &= Q(position_type=position_type)
+            q_filters &= Q(employee__employee_type=position_type)
 
-        if nature_of_hiring:
-            q_filters &= Q(nature_of_hiring=nature_of_hiring)
+        if access:
+            q_filters &= Q(employee__status=access)
 
 
         if q_filters:
 
-            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            resp = models.Access.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            resp = [x.employee for x in resp]
             
         else:
             roles = user_util.fetchusergroups(request.user.id)  
 
             if "HOD" in roles:
-                resp = models.Recruit.objects.filter(Q(is_deleted=False) & Q(created_by=request.user)).order_by('-date_created')[:50]
+                resp = models.Access.objects.filter(Q(is_deleted=False) & Q(created_by=request.user)).order_by('-date_created')[:50]
 
             else:
-                resp = models.Recruit.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+                resp = models.Access.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
 
-        resp = serializers.FetchRecruitSerializer(resp, many=True, context={"user_id":request.user.id}).data
+            resp = [x.employee for x in resp]
+
+        resp = serializers.FetchRequestSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
         
