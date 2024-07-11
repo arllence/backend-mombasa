@@ -265,6 +265,7 @@ class ASAViewSet(viewsets.ViewSet):
             
             # update instance
             accessInstance.save()
+            accessInstance.employee.save()
             
             # Notify ICT
             if status_for == 'HOD' and request_status == 'HOD APPROVED':
