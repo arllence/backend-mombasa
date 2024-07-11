@@ -253,6 +253,7 @@ class ASAViewSet(viewsets.ViewSet):
                     request_status = 'ICT APPROVED'
                     accessInstance.status = request_status
                     accessInstance.granted_by = authenticated_user
+                    accessInstance.employee.status = 'ACTIVE'
                 else:
                     accessInstance.status = request_status
 

@@ -60,6 +60,7 @@ class FetchRequestSerializer(serializers.ModelSerializer):
     doctor_info = serializers.SerializerMethodField()
     system_access = serializers.SerializerMethodField()
     module_access = serializers.SerializerMethodField()
+    approvals = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Employee
@@ -105,6 +106,18 @@ class FetchRequestSerializer(serializers.ModelSerializer):
         try:
             request = models.ModuleAccess.objects.get(employee=obj)
             serializer = SlimFetchModuleAccessSerializer(request, many=False)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+        
+    def get_approvals(self, obj):
+        try:
+            request = models.StatusChange.objects.filter(access__employee=obj)
+            serializer = FetchStatusChangeSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return {}
@@ -176,5 +189,10 @@ class FetchApproverSerializer(serializers.ModelSerializer):
         model = models.RequestApprover
         fields = '__all__'
 
+class FetchStatusChangeSerializer(serializers.ModelSerializer):
+    action_by = SlimUsersSerializer()
+    class Meta:
+        model = models.StatusChange
+        fields = '__all__'
 
 
