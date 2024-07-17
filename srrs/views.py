@@ -413,11 +413,11 @@ class SrrsViewSet(viewsets.ViewSet):
                     return Response(resp, status=status.HTTP_200_OK)
                 
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 except Exception as e:
                     print(e)
-                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
 
@@ -989,7 +989,7 @@ class LocumViewSet(viewsets.ViewSet):
             roles = user_util.fetchusergroups(request.user.id)  
 
             if "HOD" in roles:
-                resp = models.Employee.objects.filter(Q(recruit__department=request.user.srrs_department) | Q(created_by=request.user), recruit__position_type='Temporary', is_deleted=False).order_by('-date_created')
+                resp = models.Employee.objects.filter(Q(recruit__department=request.user.srrs_department) | Q(action_by=request.user), recruit__position_type='Temporary', is_deleted=False).order_by('-date_created')
 
             else:
                 resp = models.Employee.objects.filter(Q(recruit__position_type='Temporary') & Q(is_deleted=False)).order_by('-date_created')
@@ -1163,7 +1163,7 @@ class LocumViewSet(viewsets.ViewSet):
 
             def current_month_days_fn(request_id):
 
-                current_date = datetime.now().date()
+                current_date = datetime.datetime.now().date()
                 month = current_date.month
                 start_day = current_date.day
                 year = current_date.year
@@ -1176,7 +1176,7 @@ class LocumViewSet(viewsets.ViewSet):
                 for i in range(start_day, num_days + 1):
                     days.append(i)
 
-                attendance = models.LocumAttendance.objects.filter(Q(recruit=request_id), year=year, month=month)
+                attendance = models.LocumAttendance.objects.filter(Q(employee=request_id), year=year, month=month)
                 serialized_attendance = serializers.SlimFetchLocumAttendanceSerializer(
                         attendance, many=True).data
                 
@@ -1192,7 +1192,7 @@ class LocumViewSet(viewsets.ViewSet):
                     "employee" : employee
                 }
 
-                return Response(resp, status=status.HTTP_200_OK)
+                return resp
             
             def selected_period_fn(request_id,month,year):
                 start_day = 1
@@ -1232,7 +1232,7 @@ class LocumViewSet(viewsets.ViewSet):
                 resp = reporting_date_fn(targetInstance)
             else:
                 resp = current_month_days_fn(request_id)
-
+                
             return Response(resp, status=status.HTTP_200_OK)
 
         elif request.method == "DELETE":
