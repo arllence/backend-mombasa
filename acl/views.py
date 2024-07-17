@@ -1246,6 +1246,153 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": "Please upload a CSV file."}, status=status.HTTP_400_BAD_REQUEST)
             
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="sub-departments",
+            url_name="sub-departments")
+    def sub_department(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+
+                with transaction.atomic():
+                    raw = {
+                        "name": name
+                    }
+
+                    models.SubDepartment.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateDepartmentSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                dept_id = payload['request_id']
+                name = payload['name']
+
+                try:
+                    dept = models.SubDepartment.objects.get(id=dept_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown Sub Department"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    dept.name = name
+                    dept.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    department = models.SubDepartment.objects.get(Q(id=request_id))
+                    department = serializers.FetchSubDepartmentSerializer(department,many=False).data
+                    return Response(department, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    departments = models.SubDepartment.objects.filter(is_deleted=False).order_by('name')
+                    departments = serializers.FetchSubDepartmentSerializer(departments,many=True).data
+                    return Response(departments, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="ohc",
+            url_name="ohc")
+    def ohc(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+
+                with transaction.atomic():
+                    raw = {
+                        "name": name
+                    }
+
+                    models.OHC.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateDepartmentSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                dept_id = payload['request_id']
+                name = payload['name']
+
+                try:
+                    dept = models.OHC.objects.get(id=dept_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown Sub Department"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    dept.name = name
+                    dept.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    ohc = models.OHC.objects.get(Q(id=request_id))
+                    ohc = serializers.FetchOHCSerializer(ohc,many=False).data
+                    return Response(ohc, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown ohc!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    ohcs = models.OHC.objects.filter(is_deleted=False).order_by('name')
+                    ohcs = serializers.FetchOHCSerializer(ohcs,many=True).data
+                    return Response(ohcs, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
 class SltViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     search_fields = ['id', ]
