@@ -40,10 +40,24 @@ class FetchDepartmentSerializer(serializers.ModelSerializer):
 
 class FetchSRRSDepartmentSerializer(serializers.ModelSerializer):
     slt = SlimUsersSerializer()
-    hod = SlimUsersSerializer()
+    # hod = SlimUsersSerializer()
+    hods = serializers.SerializerMethodField()
     class Meta:
-        model = models.Department
+        model = models.SRRSDepartment
         fields = '__all__'
+
+
+    def get_hods(self, obj):
+        try:
+            hods = models.Hods.objects.filter(department=obj)
+            serializer = FetchHODsSerializer(hods, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
 
 class SlimFetchSRRSDepartmentSerializer(serializers.ModelSerializer):
     class Meta:
@@ -58,6 +72,13 @@ class FetchSubDepartmentSerializer(serializers.ModelSerializer):
 class FetchOHCSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.OHC
+        fields = '__all__'
+
+class FetchHODsSerializer(serializers.ModelSerializer):
+    hod = SlimUsersSerializer()
+    department = SlimFetchSRRSDepartmentSerializer()
+    class Meta:
+        model = models.Hods
         fields = '__all__'
 
 class UserDetailSerializer(serializers.Serializer):
