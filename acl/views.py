@@ -776,7 +776,6 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     "first_name": first_name,
                     "last_name": last_name,
                     "email": email,
-                    # "department": department,
                     "is_active": True,
                     "is_superuser": False,
                     "is_staff": False,
@@ -789,6 +788,19 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 else:
                     if app == 'srrs':
                         newuser.update({"srrs_department": department})
+
+                        sub_department_id = payload['sub_department_id']
+                        ohc_id = payload['ohc_id']
+
+                        if sub_department_id:
+                            sub_department = models.SubDepartment.objects.get(id=sub_department_id)
+                            newuser.update({"sub_department": sub_department})
+
+                        if ohc_id:
+                            ohc = models.OHC.objects.get(id=ohc_id)
+                            newuser.update({"ohc": ohc})
+
+
 
                 create_user = get_user_model().objects.create(**newuser)
                 group_details.user_set.add(create_user)
