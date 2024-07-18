@@ -1101,22 +1101,33 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                         
                         raw.update({"slt": slt})
 
+                    
+                    departmentInstance = models.SRRSDepartment.objects.create(**raw)
+
                     if hod_id:
+                        # delete existing hods
+                        models.Hods.objects.filter(department=departmentInstance).delete()
+
                         try:
-                            hod = models.User.objects.get(id=hod_id)
+                            hods = models.User.objects.filter(id__in=hod_id)
                         except Exception as e:
-                            return Response({"details": "Unknown HOD"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"details": "Unknown HODs"}, status=status.HTTP_400_BAD_REQUEST)
                         
-                        roles = user_util.fetchusergroups(hod_id)
-                        if 'HOD' not in roles:
-                            assign_role = user_util.award_role('HOD', hod_id)
+                        for hod in hods:
+                            roles = user_util.fetchusergroups(str(hod.id))
+                            if 'HOD' not in roles:
+                                assign_role = user_util.award_role('HOD', str(hod.id))
 
-                            if not assign_role:
-                                return Response({"details": "Unable to assign role HOD"}, status=status.HTTP_400_BAD_REQUEST)
+                                if not assign_role:
+                                    return Response({"details": "Unable to assign role HOD"}, status=status.HTTP_400_BAD_REQUEST)
                         
-                        raw.update({"hod": hod})
+                            raw = {
+                                    "hod": hod,
+                                    "department": departmentInstance
+                                }
+                            
+                            models.Hods.objects.create(**raw)
 
-                    models.SRRSDepartment.objects.create(**raw)
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
