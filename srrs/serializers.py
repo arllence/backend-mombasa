@@ -1,5 +1,5 @@
 from django.db.models import  Q
-from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, SlimFetchSRRSDepartmentSerializer
+from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, SlimFetchSRRSDepartmentSerializer, FetchSubDepartmentSerializer, FetchOHCSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
 from srrs import models
 from rest_framework import serializers
@@ -11,6 +11,8 @@ class GeneralNameSerializer(serializers.Serializer):
 
 class SlimFetchRecruitSerializer(serializers.ModelSerializer):
     department = SlimFetchSRRSDepartmentSerializer()
+    sub_department = FetchSubDepartmentSerializer()
+    ohc = FetchOHCSerializer()
     class Meta:
         model = models.Recruit
         fields = '__all__'
@@ -23,6 +25,8 @@ class FetchRecruitSerializer(serializers.ModelSerializer):
     created_by = UsersSerializer()
     closed_by = UsersSerializer()
     department = FetchSRRSDepartmentSerializer()
+    sub_department = FetchSubDepartmentSerializer()
+    ohc = FetchOHCSerializer()
     can_approve = serializers.SerializerMethodField()
     approvals = serializers.SerializerMethodField()
     employees = serializers.SerializerMethodField()
