@@ -1167,21 +1167,6 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                         if not assign_role:
                             return Response({"details": "Unable to assign role SLT"}, status=status.HTTP_400_BAD_REQUEST)
                         
-                if hod_id:
-                    try:
-                        hod = models.User.objects.get(id=hod_id)
-                    except Exception as e:
-                        return Response({"details": "Unknown HOD"}, status=status.HTTP_400_BAD_REQUEST)
-                    
-                    if dept.hod and dept.hod.id != hod.id:
-                        user_util.revoke_role('HOD', str(dept.hod.id))
-                    
-                    roles = user_util.fetchusergroups(hod_id)
-                    if 'HOD' not in roles:
-                        assign_role = user_util.award_role('HOD', hod_id)
-
-                        if not assign_role:
-                            return Response({"details": "Unable to assign role HOD"}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
                     try:
@@ -1190,13 +1175,38 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                         
                         if slt:
                             dept.slt = slt 
-                        if hod:
-                            dept.hod = hod 
 
                         dept.save()
                         
                     except (ValidationError, ObjectDoesNotExist):
                         return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    if hod_id:
+                        # delete existing hods
+                        currentHods = models.Hods.objects.filter(department=dept)
+                        for hod in currentHods:
+                            user_util.revoke_role('HOD', str(hod.id))
+                        currentHods.delete()
+
+                        try:
+                            hods = models.User.objects.filter(id__in=hod_id)
+                        except Exception as e:
+                            return Response({"details": "Unknown HODs"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        for hod in hods:
+                            roles = user_util.fetchusergroups(str(hod.id))
+                            if 'HOD' not in roles:
+                                assign_role = user_util.award_role('HOD', str(hod.id))
+
+                                if not assign_role:
+                                    return Response({"details": "Unable to assign role HOD"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                            raw = {
+                                    "hod": hod,
+                                    "department": dept
+                                }
+                            
+                            models.Hods.objects.create(**raw)
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
