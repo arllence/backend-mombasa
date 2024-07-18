@@ -60,6 +60,7 @@ class SrrsViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 department = payload['department']
+                sub_department = payload['sub_department']
                 position_title = payload['position_title']
                 position_type = payload['position_type']
                 qualifications = payload['qualifications']
@@ -70,6 +71,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 period_to = payload['period_to']
                 filling_date = payload['filling_date']
                 temporary_task_assignment_to = payload['temporary_task_assignment_to']
+                ohc = payload.get('ohc')
 
                 uid = shared_fxns.generate_unique_identifier()
 
@@ -85,9 +87,7 @@ class SrrsViewSet(viewsets.ViewSet):
                                 status=status.HTTP_400_BAD_REQUEST)
 
                 try:
-                    print("department id: ", department)
                     department = SRRSDepartment.objects.get(id=department)
-                    print("department: ", department)
                 except Exception as e:
                     return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -103,6 +103,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 with transaction.atomic():
                     raw = {
                         "department": department,
+                        "sub_department": sub_department,
                         "created_by": authenticated_user,
                         "position_title": position_title,
                         "position_type": position_type,
@@ -114,6 +115,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         "period_from": period_from,
                         "period_to": period_to,
                         "filling_date": filling_date,
+                        "ohc": ohc,
                         "temporary_task_assignment_to": temporary_task_assignment_to,
                         "uid": uid
                     }  
@@ -173,6 +175,7 @@ class SrrsViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['record_id']
                 department = payload['department']
+                sub_department = payload['sub_department']
                 position_title = payload['position_title']
                 position_type = payload['position_type']
                 qualifications = payload['qualifications']
@@ -183,6 +186,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 period_to = payload['period_to']
                 filling_date = payload['filling_date']
                 temporary_task_assignment_to = payload['temporary_task_assignment_to']
+                ohc = payload.get('ohc')
 
                 # Check temporary hire period
                 if position_type == 'Temporary':
@@ -230,6 +234,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 with transaction.atomic():
                     raw = {
                         "department": department,
+                        "sub_department": sub_department,
                         "created_by": authenticated_user,
                         "position_title": position_title,
                         "position_type": position_type,
@@ -239,6 +244,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         "reasons_for_not_sharing_tasks": reasons_for_not_sharing_tasks,
                         "period_from": period_from,
                         "period_to": period_to,
+                        "ohc": ohc,
                         "filling_date": filling_date,
                         "temporary_task_assignment_to": temporary_task_assignment_to,
                     }  

@@ -1,5 +1,5 @@
 import uuid
-from acl.models import User, SRRSDepartment
+from acl.models import User, SRRSDepartment, SubDepartment, OHC
 from django.db import models
 from django.conf import settings
 
@@ -27,6 +27,16 @@ class Recruit(models.Model):
        related_name="srrs_department",
        null=True, blank=True
     )
+    sub_department = models.ForeignKey(
+       SubDepartment, on_delete=models.DO_NOTHING, 
+       related_name="srrs_sub_department",
+       null=True, blank=True
+    )
+    ohc = models.ForeignKey(
+       OHC, on_delete=models.DO_NOTHING, 
+       related_name="srrs_ohc",
+       null=True, blank=True
+    )
     uid = models.CharField(max_length=50, unique=True)
     status = models.CharField(max_length=255, default='REQUESTED')
     position_title = models.CharField(max_length=255)
@@ -39,9 +49,6 @@ class Recruit(models.Model):
     filling_date = models.DateField(null=True, blank=True)
     period_from = models.DateField(null=True, blank=True)
     period_to = models.DateField(null=True, blank=True)
-    # reporting_date = models.DateField(null=True, blank=True)
-    # reporting_station = models.CharField(max_length=255, null=True, blank=True)
-    # working_station = models.CharField(max_length=255, null=True, blank=True)
     temporary_task_assignment_to = models.CharField(max_length=255)
     replacement_details = models.JSONField(null=True, blank=True)
     rejection_reasons = models.JSONField(null=True, blank=True)

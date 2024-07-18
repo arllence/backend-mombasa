@@ -106,6 +106,8 @@ class RecruitSerializer(serializers.Serializer):
     nature_of_hiring = serializers.CharField(max_length=500)
     filling_date = serializers.DateField()
     temporary_task_assignment_to = serializers.CharField(max_length=255)
+    department = serializers.CharField(max_length=255)
+    sub_department = serializers.CharField(max_length=255)
 
 class PutRecruitSerializer(serializers.Serializer):
     record_id = serializers.CharField(max_length=500)
@@ -115,6 +117,8 @@ class PutRecruitSerializer(serializers.Serializer):
     nature_of_hiring = serializers.CharField(max_length=500)
     filling_date = serializers.CharField(max_length=255)
     temporary_task_assignment_to = serializers.CharField(max_length=255)
+    department = serializers.CharField(max_length=255)
+    sub_department = serializers.CharField(max_length=255)
 
 class PatchRecruitSerializer(serializers.Serializer):
     recruit_id = serializers.CharField(max_length=500)
