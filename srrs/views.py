@@ -18,7 +18,7 @@ from srrs import models
 from srrs import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
-from acl.models import User, Sendmail, SRRSDepartment
+from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
 from srrs.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
@@ -89,7 +89,18 @@ class SrrsViewSet(viewsets.ViewSet):
                 try:
                     department = SRRSDepartment.objects.get(id=department)
                 except Exception as e:
-                    return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    sub_department = SubDepartment.objects.get(id=sub_department)
+                except Exception as e:
+                    return Response({"details": "Unknown Sub Department"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if ohc:
+                    try:
+                        ohc = OHC.objects.get(id=ohc)
+                    except Exception as e:
+                        return Response({"details": "Unknown OHC "}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 if not qualifications:
@@ -209,6 +220,18 @@ class SrrsViewSet(viewsets.ViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Unknown Department!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    sub_department = SubDepartment.objects.get(id=sub_department)
+                except Exception as e:
+                    return Response({"details": "Unknown Sub Department"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if ohc:
+                    try:
+                        ohc = OHC.objects.get(id=ohc)
+                    except Exception as e:
+                        return Response({"details": "Unknown OHC "}, status=status.HTTP_400_BAD_REQUEST)
+
 
                 if not qualifications:
                     return Response({"details": "Qualifications Required !"}, status=status.HTTP_400_BAD_REQUEST)
