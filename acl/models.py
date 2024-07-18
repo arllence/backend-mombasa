@@ -143,6 +143,25 @@ class User(AbstractBaseUser, PermissionsMixin):
         db_table = "systemusers"
 
 
+class Hods(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    hod = models.ForeignKey(
+        User, related_name='hod', 
+        on_delete=models.DO_NOTHING
+    )
+    department = models.ForeignKey(
+        SRRSDepartment, related_name='hod_department', 
+        on_delete=models.DO_NOTHING
+    )
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.hod.first_name} {self.hod.last_name}"
+
+    class Meta:
+        db_table = "hods"
+
+
 class AccountActivity(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     recipient = models.ForeignKey(
