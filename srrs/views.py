@@ -561,7 +561,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 try:
                     recruit = models.Recruit.objects.get(Q(id=recruit_id))
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Recruit !"}, 
+                    return Response({"details": "Unknown Requisition "}, 
                                     status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
