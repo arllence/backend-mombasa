@@ -161,6 +161,16 @@ class Hods(models.Model):
     class Meta:
         db_table = "hods"
 
+class OTP(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    otp = models.CharField(max_length=50)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.otp}"
+
+    class Meta:
+        db_table = "otps"
 
 class AccountActivity(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
