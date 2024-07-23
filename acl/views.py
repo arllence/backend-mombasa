@@ -915,6 +915,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 }
 
                 models.Sendmail.objects.create(**mail)
+                send_mail(subject, message, 'notification@akhskenya.org', [email])
 
             except Exception as e:
                 logger.error(e)
