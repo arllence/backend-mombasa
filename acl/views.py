@@ -898,7 +898,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
 
         characters = string.digits
         otp = ''.join(random.choice(characters) for i in range(6))
-        link = f"http://localhost:4000/authentication/invitation/{otp}"
+        link = f"http://localhost:4000/authentication/create-account/{otp}"
 
         with transaction.atomic():
             models.OTP.objects.create(otp=otp)
