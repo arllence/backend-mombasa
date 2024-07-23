@@ -96,8 +96,9 @@ class ASAViewSet(viewsets.ViewSet):
 
     
             with transaction.atomic():
-                record_id = payload['record_id']
-                employee_no = employee['employee_no']
+                record_id = None if payload.get('record_id') == '' else payload.get('record_id')
+                employee_no = None if payload.get('employee_no') == '' else payload.get('employee_no')
+                # employee_no = employee['employee_no']
                 # check if employee exists
                 employeeInstance = models.Employee.objects.filter(
                     Q(employee_no=employee_no) | Q(id=record_id)
