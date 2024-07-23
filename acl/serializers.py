@@ -161,6 +161,9 @@ class CreateUserSerializer(serializers.Serializer):
     password = serializers.CharField()
     confirm_password = serializers.CharField()
 
+class InvitationLinkSerializer(serializers.Serializer):
+    email = serializers.CharField()
+
 class SwapUserDepartmentSerializer(serializers.Serializer):
     department_id = serializers.CharField()
     user_id = serializers.CharField()

@@ -887,12 +887,37 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
     def invitation_link(self, request):
 
         authenticated_user = request.user
+        payload = request.data
+
+        serializer = serializers.InvitationLinkSerializer(
+            data=payload, many=False)
+        if not serializer.is_valid():
+            return Response({"details": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        email = payload['email']
 
         characters = string.digits
         otp = ''.join(random.choice(characters) for i in range(6))
+        link = f"http://localhost:4000/authentication/invitation/{otp}"
 
         with transaction.atomic():
             models.OTP.objects.create(otp=otp)
+
+            # Notify User
+            subject = f"Platform Invitation"
+            message = f"Hello, \n\nUse the below invitation link to join\n{link}\n\nRegards,\nAKHK"
+
+            try:
+                mail = {
+                    "email" : [email], 
+                    "subject" : subject,
+                    "message" : message,
+                }
+
+                models.Sendmail.objects.create(**mail)
+
+            except Exception as e:
+                logger.error(e)
 
             user_util.log_account_activity(
                 authenticated_user, authenticated_user, "Invitation link", "Link generated")
