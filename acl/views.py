@@ -891,21 +891,13 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
         characters = string.digits
         otp = ''.join(random.choice(characters) for i in range(6))
 
-
-
-
-
         with transaction.atomic():
-            try:
-                user_details = get_user_model().objects.get(id=user_id)
-            except (ValidationError, ObjectDoesNotExist):
-                return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+            models.OTP.objects.create(otp=otp)
 
-            user_details.is_suspended = False
             user_util.log_account_activity(
-                authenticated_user, user_details, "Account UnSuspended", remarks)
-            user_details.save()
-            return Response("Account Unsuspended", status=status.HTTP_200_OK)
+                authenticated_user, authenticated_user, "Invitation link", "Link generated")
+
+            return Response("200", status=status.HTTP_200_OK)
         
 
 
