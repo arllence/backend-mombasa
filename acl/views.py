@@ -213,6 +213,21 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                 user_details, user_details, "Password Reset", "Password Reset Executed")
             return Response(f"Password Reset Successful. Pass: {new_password}", status=status.HTTP_200_OK)
 
+    @action(methods=["GET"],
+            detail=False,
+            url_path="departments",
+            url_name="departments")
+    def department(self, request):
+        try:
+
+            departments = models.Department.objects.all().order_by('name')
+            departments = serializers.FetchDepartmentSerializer(departments,many=True).data
+            return Response(departments, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            print(e)
+            return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+        
 class AccountManagementViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     queryset = models.User.objects.all().order_by('id')
