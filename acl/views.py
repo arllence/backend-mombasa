@@ -117,9 +117,9 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                                     status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    department = models.SRRSDepartment.objects.get(name='USER')
+                    department = models.SRRSDepartment.objects.get(id=department)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({'details': 'Role does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'details': 'Department does not exist'}, status=status.HTTP_400_BAD_REQUEST)
                 
                 # try:
                 #     group_details = Group.objects.get(name='USER')
@@ -132,15 +132,16 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                     "email": email,
                     "first_name": first_name,
                     "last_name": last_name,
+                    "srrs_department": department,
                     "is_active": True,
                     "password": hashed_pwd,
                 }
                 create_user = get_user_model().objects.create(**newuser)
 
-                group_details.user_set.add(create_user)
-                user_util.log_account_activity(
-                    create_user, create_user, "Account Creation",
-                    "USER CREATED")
+                # group_details.user_set.add(create_user)
+                # user_util.log_account_activity(
+                #     create_user, create_user, "Account Creation",
+                #     "USER CREATED")
                 
 
                 return Response("success", status=status.HTTP_200_OK)
