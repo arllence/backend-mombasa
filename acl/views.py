@@ -101,7 +101,7 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                 first_name = payload['first_name']
                 last_name = payload['last_name']
                 password = payload['password']
-                confirm_password = payload['confirm_password']
+                department = payload['department']
                 
                 userexists = get_user_model().objects.filter(email=email).exists()
 
@@ -111,42 +111,20 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                
                 password_min_length = 8
 
-                string_check= re.compile('[-@_!#$%^&*()<>?/\|}{~:;]') 
-
-                if(password != confirm_password): 
-                    return Response({'details':
-                                     'Passwords Not Matching'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-
-                if(string_check.search(password) == None): 
-                    return Response({'details':
-                                     'Password Must contain a special character, choose one from these: [-@_!#$%^&*()<>?/\|}{~:;]'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-
-                if not any(char.isupper() for char in password):
-                    return Response({'details':
-                                     'Password must contain at least 1 uppercase letter'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-
                 if len(password) < password_min_length:
                     return Response({'details':
                                      'Password Must be atleast 8 characters'},
                                     status=status.HTTP_400_BAD_REQUEST)
-
-                if not any(char.isdigit() for char in password):
-                    return Response({'details':
-                                     'Password must contain at least 1 digit'},
-                                    status=status.HTTP_400_BAD_REQUEST)
-                                    
-                if not any(char.isalpha() for char in password):
-                    return Response({'details':
-                                     'Password must contain at least 1 letter'},
-                                    status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    group_details = Group.objects.get(name='USER')
+                    department = models.SRRSDepartment.objects.get(name='USER')
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Role does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # try:
+                #     group_details = Group.objects.get(name='USER')
+                # except (ValidationError, ObjectDoesNotExist):
+                #     return Response({'details': 'Role does not exist'}, status=status.HTTP_400_BAD_REQUEST)
                             
 
                 hashed_pwd = make_password(password)
@@ -220,8 +198,8 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
     def department(self, request):
         try:
 
-            departments = models.Department.objects.all().order_by('name')
-            departments = serializers.FetchDepartmentSerializer(departments,many=True).data
+            departments = models.SRRSDepartment.objects.all().order_by('name')
+            departments = serializers.SlimFetchSRRSDepartmentSerializer(departments,many=True).data
             return Response(departments, status=status.HTTP_200_OK)
         
         except Exception as e:

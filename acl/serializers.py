@@ -61,7 +61,7 @@ class FetchSRRSDepartmentSerializer(serializers.ModelSerializer):
 
 class SlimFetchSRRSDepartmentSerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.Department
+        model = models.SRRSDepartment
         fields = '__all__'
 
 class FetchSubDepartmentSerializer(serializers.ModelSerializer):
@@ -159,7 +159,7 @@ class CreateUserSerializer(serializers.Serializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     password = serializers.CharField()
-    confirm_password = serializers.CharField()
+    department = serializers.CharField()
 
 class InvitationLinkSerializer(serializers.Serializer):
     email = serializers.CharField()
