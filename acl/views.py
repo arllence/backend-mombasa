@@ -139,6 +139,7 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                     "srrs_department": department,
                     "is_active": True,
                     "password": hashed_pwd,
+                    "is_defaultpassword": False
                 }
                 create_user = get_user_model().objects.create(**newuser)
                 otp.delete()
@@ -897,7 +898,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
 
         characters = string.digits
         otp = ''.join(random.choice(characters) for i in range(6))
-        link = f"http://localhost:4000/authentication/create-account/{otp}"
+        link = f"http://localhost:4200/authentication/create-account/{otp}"
 
         with transaction.atomic():
             models.OTP.objects.create(otp=otp)
