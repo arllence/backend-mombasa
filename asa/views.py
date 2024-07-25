@@ -1131,10 +1131,10 @@ class ASAAnalyticsViewSet(viewsets.ViewSet):
             rejected = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) |  Q(created_by=request.user), status="REJECTED", is_deleted=False).count()
             pending = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) |  Q(created_by=request.user), status__in=active_status, is_deleted=False).count()
         elif 'ICT' in roles or 'SUPERUSER' in roles:
-            requests = models.Access.objects.filter(Q(created_by=request.user), is_deleted=False).count()
-            approved = models.Access.objects.filter(Q(created_by=request.user), status="ICT APPROVED", is_deleted=False).count()
-            rejected = models.Access.objects.filter(Q(created_by=request.user), status="REJECTED", is_deleted=False).count()
-            pending = models.Access.objects.filter(Q(created_by=request.user), status__in=active_status, is_deleted=False).count()
+            requests = models.Access.objects.filter(is_deleted=False).count()
+            approved = models.Access.objects.filter(status="ICT APPROVED", is_deleted=False).count()
+            rejected = models.Access.objects.filter(status="REJECTED", is_deleted=False).count()
+            pending = models.Access.objects.filter(status__in=active_status, is_deleted=False).count()
         else:
             requests = models.Access.objects.filter(Q(created_by=request.user) & Q(is_deleted=False)).count()
             approved = models.Access.objects.filter(Q(created_by=request.user) & Q(status="ICT APPROVED"), is_deleted=False).count()
