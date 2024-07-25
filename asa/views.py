@@ -1111,7 +1111,7 @@ class ReportsViewSet(viewsets.ViewSet):
         return Response(resp, status=status.HTTP_200_OK)
         
         
-class SRRSAnalyticsViewSet(viewsets.ViewSet):
+class ASAAnalyticsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
@@ -1123,23 +1123,23 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
             url_name="general")
     def general(self, request):
         roles = user_util.fetchusergroups(request.user.id)
-        active_status = ['REQUESTED','CEO APPROVED','HR APPROVED','SLT APPROVED','CLOSED']
+        active_status = ['REQUESTED','HOD APPROVED','CLOSED']
 
         if 'HOD' in roles:
-            requests = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
-            canceled = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="CANCELED", is_deleted=False).count()
-            declined = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="DECLINED", is_deleted=False).count()
-            pending = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status__in=active_status, is_ceo_approved=False, is_deleted=False).count()
+            requests = models.Employee.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
+            approved = models.Employee.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="ICT APPROVED", is_deleted=False).count()
+            rejected = models.Employee.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="REJECTED", is_deleted=False).count()
+            pending = models.Employee.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status__in=active_status, is_deleted=False).count()
         else:
-            requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
-            canceled = models.Recruit.objects.filter(Q(status="CANCELED"), is_deleted=False).count()
-            declined = models.Recruit.objects.filter(Q(created_by=request.user), status="DECLINED", is_deleted=False).count()
-            pending = models.Recruit.objects.filter(Q(status__in=active_status), is_ceo_approved=False, is_deleted=False).count()
+            requests = models.Employee.objects.filter(Q(is_deleted=False)).count()
+            approved = models.Employee.objects.filter(Q(status="ICT APPROVED"), is_deleted=False).count()
+            rejected = models.Employee.objects.filter(Q(status="REJECTED"), is_deleted=False).count()
+            pending = models.Employee.objects.filter(Q(status__in=active_status), is_deleted=False).count()
 
         resp = {
             "requests": requests,
-            "canceled": canceled,
-            "declined": declined,
+            "rejected": rejected,
+            "approved": approved,
             "pending": pending,
         }
 
