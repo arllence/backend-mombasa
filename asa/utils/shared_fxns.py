@@ -2,6 +2,9 @@ from datetime import datetime
 import string
 import random
 from srrs.models import Recruit
+import json
+from collections import OrderedDict
+from uuid import UUID
 
 def find_date_difference(start_date,end_date,period):
     try:
@@ -56,4 +59,18 @@ def generate_unique_identifier():
         generate_unique_identifier()
     else:
         return uid
+    
+def convert_to_json_serializable(data):
+    if isinstance(data, dict):
+        return {key: convert_to_json_serializable(value) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [convert_to_json_serializable(item) for item in data]
+    elif isinstance(data, OrderedDict):
+        return {key: convert_to_json_serializable(value) for key, value in data.items()}
+    elif isinstance(data, UUID):
+        return str(data)
+    elif hasattr(data, '__dict__'):
+        return convert_to_json_serializable(data.__dict__)
+    else:
+        return data
 

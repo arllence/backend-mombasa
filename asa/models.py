@@ -121,12 +121,7 @@ class ModuleAccess(models.Model):
         Employee, on_delete=models.DO_NOTHING,
         related_name="asa_module_employee"
     )
-    # system = models.ForeignKey(
-    #     System, on_delete=models.DO_NOTHING,
-    #     related_name="asa_system_module"
-    # )
     modules = models.JSONField()
-    # training_required = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
@@ -180,3 +175,24 @@ class StatusChange(models.Model):
 
     class Meta:
         db_table = u'"{}\".\"status_change"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+
+
+class RequestHistory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(
+        Employee, on_delete=models.DO_NOTHING,
+        related_name="asa_employee_history"
+    )
+    data = models.JSONField()
+    triggered_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="action_triggered_by"
+    )
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.traveler.uid)
+
+    class Meta:
+        db_table = u'"{}\".\"request_history"'.format(settings.ACCESS_SERVICE_AGREEMENT)

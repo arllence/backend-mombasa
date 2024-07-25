@@ -53,20 +53,13 @@ class ASAViewSet(viewsets.ViewSet):
             system_access = payload['system_access']
             module_access = payload['module_access']
 
-           
-
             # serialize employee payload
             employee_serializer = serializers.EmployeeSerializer(
                     data=employee, many=False)
             if not employee_serializer.is_valid():
                 return Response({"details": employee_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
-            # serialize system access payload
-            # system_access_serializer = serializers.SystemAccessSerializer(
-            #         data=system_access, many=False)
-            # if not system_access_serializer.is_valid():
-            #     return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-            
+      
             # serialize doctor payload
             if employee['is_doctor'] == 'YES':
                 employee['is_doctor'] = True
@@ -113,6 +106,21 @@ class ASAViewSet(viewsets.ViewSet):
                         **employee
                     )
                     employee_exists = False
+
+                # keep history before editing
+                if employee_exists:
+                    try:
+                        history = serializers.FetchRequestSerializer(employeeInstance, many=False, context={"user_id":request.user.id}).data
+                        history = shared_fxns.convert_to_json_serializable(history)
+                        raw = {
+                            "employee" : employeeInstance,
+                            "data" : history,
+                            "triggered_by": authenticated_user
+                        }
+                        models.RequestHistory.objects.create(**raw)
+                    except Exception as e:
+                        print(e) 
+                        return
 
                 # create system access
                 models.SystemAccess.objects.filter(
