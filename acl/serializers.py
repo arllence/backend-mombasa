@@ -160,6 +160,7 @@ class CreateUserSerializer(serializers.Serializer):
     last_name = serializers.CharField()
     password = serializers.CharField()
     department = serializers.CharField()
+    otp = serializers.CharField()
 
 class InvitationLinkSerializer(serializers.Serializer):
     email = serializers.CharField()

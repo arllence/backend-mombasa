@@ -102,18 +102,22 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                 last_name = payload['last_name']
                 password = payload['password']
                 department = payload['department']
+                otp = payload['otp']
                 
                 userexists = get_user_model().objects.filter(email=email).exists()
-
                 if userexists:
                     return Response({'details': 'User With Credentials Already Exist'}, status=status.HTTP_400_BAD_REQUEST)
 
-               
-                password_min_length = 8
+                try:
+                    otp = models.OTP.objects.get(otp=otp)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Incorrect OTP'}, status=status.HTTP_400_BAD_REQUEST)
+
+                password_min_length = 6
 
                 if len(password) < password_min_length:
                     return Response({'details':
-                                     'Password Must be atleast 8 characters'},
+                                     'Password Must be at least 6 characters'},
                                     status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
@@ -137,6 +141,7 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                     "password": hashed_pwd,
                 }
                 create_user = get_user_model().objects.create(**newuser)
+                otp.delete()
 
                 # group_details.user_set.add(create_user)
                 # user_util.log_account_activity(
