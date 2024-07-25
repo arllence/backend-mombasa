@@ -1126,15 +1126,20 @@ class ASAAnalyticsViewSet(viewsets.ViewSet):
         active_status = ['REQUESTED','HOD APPROVED','CLOSED']
 
         if 'HOD' in roles:
-            requests = models.Employee.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
-            approved = models.Employee.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="ICT APPROVED", is_deleted=False).count()
-            rejected = models.Employee.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="REJECTED", is_deleted=False).count()
-            pending = models.Employee.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status__in=active_status, is_deleted=False).count()
+            requests = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
+            approved = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) |  Q(created_by=request.user), status="ICT APPROVED", is_deleted=False).count()
+            rejected = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) |  Q(created_by=request.user), status="REJECTED", is_deleted=False).count()
+            pending = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) |  Q(created_by=request.user), status__in=active_status, is_deleted=False).count()
+        elif 'ICT' in roles or 'SUPERUSER' in roles:
+            requests = models.Access.objects.filter(Q(created_by=request.user), is_deleted=False).count()
+            approved = models.Access.objects.filter(Q(created_by=request.user), status="ICT APPROVED", is_deleted=False).count()
+            rejected = models.Access.objects.filter(Q(created_by=request.user), status="REJECTED", is_deleted=False).count()
+            pending = models.Access.objects.filter(Q(created_by=request.user), status__in=active_status, is_deleted=False).count()
         else:
-            requests = models.Employee.objects.filter(Q(is_deleted=False)).count()
-            approved = models.Employee.objects.filter(Q(status="ICT APPROVED"), is_deleted=False).count()
-            rejected = models.Employee.objects.filter(Q(status="REJECTED"), is_deleted=False).count()
-            pending = models.Employee.objects.filter(Q(status__in=active_status), is_deleted=False).count()
+            requests = models.Access.objects.filter(Q(created_by=request.user) & Q(is_deleted=False)).count()
+            approved = models.Access.objects.filter(Q(created_by=request.user) & Q(status="ICT APPROVED"), is_deleted=False).count()
+            rejected = models.Access.objects.filter(Q(created_by=request.user) & Q(status="REJECTED"), is_deleted=False).count()
+            pending = models.Access.objects.filter(Q(created_by=request.user) & Q(status__in=active_status), is_deleted=False).count()
 
         resp = {
             "requests": requests,
