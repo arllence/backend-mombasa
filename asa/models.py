@@ -192,7 +192,7 @@ class RequestHistory(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return str(self.traveler.uid)
+        return str(self.employee.name)
 
     class Meta:
         db_table = u'"{}\".\"request_history"'.format(settings.ACCESS_SERVICE_AGREEMENT)
