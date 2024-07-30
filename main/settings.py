@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     'trs',
     'srrs',
     'asa',
+    'ams',
 ]
 
 MIDDLEWARE = [
@@ -116,6 +117,7 @@ DATABASES = {
 TRAVEL_REQUEST_SYSTEM = 'trs'
 STAFF_REQUISITION_SYSTEM = 'srrs'
 ACCESS_SERVICE_AGREEMENT = 'asa'
+ASSET_MANAGEMENT_SYSTEM = 'ams'
 
 
 
