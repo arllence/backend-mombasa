@@ -14,6 +14,7 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.contrib.auth import get_user_model
 from django.db.models import  Q
 from django.db import transaction
+from django.utils import timezone
 from ams import models
 from ams import serializers
 from ams.utils import shared_fxns
@@ -141,7 +142,7 @@ class AMSViewSet(viewsets.ViewSet):
                 asset.serial_no = serial_no
                 asset.department = department
                 asset.data = payload
-                asset.last_updated = datetime.timezone.now()
+                asset.last_updated = timezone.now()
 
                 asset.save()
 
