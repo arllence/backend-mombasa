@@ -56,6 +56,7 @@ class TrsViewSet(viewsets.ViewSet):
                 description = payload['description']
                 purpose = payload['purpose']
                 route = payload['route']
+                estimated_distance = payload['estimated_distance']
                 departure_date = payload['departure_date']
                 return_date = payload['return_date']
                 mode_of_transport = payload['mode_of_transport']
@@ -193,6 +194,7 @@ class TrsViewSet(viewsets.ViewSet):
                         "departure_date": departure_date,
                         "return_date": return_date,
                         "accommodation": accommodation,
+                        "estimated_distance": estimated_distance
                     }  
 
                     if visa_required_date:
@@ -330,6 +332,7 @@ class TrsViewSet(viewsets.ViewSet):
                 description = payload['description']
                 purpose = payload['purpose']
                 route = payload['route']
+                estimated_distance = payload['estimated_distance']
                 departure_date = payload['departure_date']
                 return_date = payload['return_date']
                 mode_of_transport = payload['mode_of_transport']
@@ -439,6 +442,7 @@ class TrsViewSet(viewsets.ViewSet):
                         "departure_date": departure_date,
                         "return_date": return_date,
                         "accommodation": accommodation,
+                        "estimated_distance": estimated_distance,
                     }  
 
                     if visa_required_date:

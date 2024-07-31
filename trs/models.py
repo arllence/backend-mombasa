@@ -81,6 +81,7 @@ class Trip(models.Model):
     route = models.TextField()
     departure_date = models.DateField()
     return_date = models.DateField()
+    estimated_distance = models.IntegerField(default=0)
     accommodation = models.BooleanField(default=False)
     visa_required_date = models.DateField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
