@@ -274,10 +274,10 @@ class TrsViewSet(viewsets.ViewSet):
                             "message" : message,
                         }
 
-                        #Sendmail.objects.create(**mail)
+                        Sendmail.objects.create(**mail)
 
                     except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        logger.error(e)
 
                     # Notify transport department
                     subject = f"Travel Request {tid} Has Been Initiated [TRF-AKHK]"
@@ -290,10 +290,10 @@ class TrsViewSet(viewsets.ViewSet):
                             "message" : message,
                         }
 
-                        #Sendmail.objects.create(**mail)
+                        Sendmail.objects.create(**mail)
 
                     except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        logger.error(e)
 
                     # Notify the hof
                     if salary_advance_required:
@@ -308,7 +308,7 @@ class TrsViewSet(viewsets.ViewSet):
                                 "subject" : subject,
                                 "message" : message,
                             }
-                            #Sendmail.objects.create(**mail)
+                            Sendmail.objects.create(**mail)
                         except Exception as e:
                             logger.error(e)
 
@@ -478,9 +478,9 @@ class TrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        #Sendmail.objects.create(**mail)
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        logger.error(e)
    
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Travel Request resubmitted", f"Travel Request Id: {traveler.id}")
@@ -549,7 +549,7 @@ class TrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        #Sendmail.objects.create(**mail)
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
                         logger.error(e)
                                                 
@@ -1001,9 +1001,9 @@ class TrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        #Sendmail.objects.create(**mail)
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
-                        send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
+                        logger.error(e)
 
                     # # Notify HOF
                     # if is_slt and traveler_status == 'APPROVED':
@@ -1038,7 +1038,7 @@ class TrsViewSet(viewsets.ViewSet):
                                 "subject" : subject,
                                 "message" : message,
                             }
-                            #Sendmail.objects.create(**mail)
+                            Sendmail.objects.create(**mail)
                         except Exception as e:
                             logger.error(e)
 
@@ -1054,7 +1054,7 @@ class TrsViewSet(viewsets.ViewSet):
                                 "subject" : subject,
                                 "message" : message,
                             }
-                            #Sendmail.objects.create(**mail)
+                            Sendmail.objects.create(**mail)
                         except Exception as e:
                             logger.error(e)
 
@@ -1070,7 +1070,7 @@ class TrsViewSet(viewsets.ViewSet):
                                 "subject" : subject,
                                 "message" : message,
                             }
-                            #Sendmail.objects.create(**mail)
+                            Sendmail.objects.create(**mail)
                         except Exception as e:
                             logger.error(e)
 
@@ -1086,7 +1086,7 @@ class TrsViewSet(viewsets.ViewSet):
                                 "subject" : subject,
                                 "message" : message,
                             }
-                            #Sendmail.objects.create(**mail)
+                            Sendmail.objects.create(**mail)
                         except Exception as e:
                             logger.error(e)
 
@@ -1193,7 +1193,7 @@ class TrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        #Sendmail.objects.create(**mail)
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
                         logger.error(e)
 
@@ -1256,7 +1256,7 @@ class TrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        #Sendmail.objects.create(**mail)
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
                         send_mail(subject, message, 'notification@akhskenya.org', [salaryRequest.traveler.traveler.email])
 
@@ -1415,7 +1415,7 @@ class TrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        #Sendmail.objects.create(**mail)
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
                         send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
 
