@@ -574,6 +574,7 @@ class TrsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Quote!"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
