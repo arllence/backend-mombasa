@@ -1288,6 +1288,7 @@ class LocumViewSet(viewsets.ViewSet):
                         break
             return Response(200, status=status.HTTP_200_OK)
         
+        
     @action(methods=["POST","GET","DELETE"],
             detail=False,
             url_path="monthly-attendance",
@@ -1297,7 +1298,7 @@ class LocumViewSet(viewsets.ViewSet):
         if request.method == "POST":
             payload = request.data
 
-            serializer = serializers.AttendanceSerializer(
+            serializer = serializers.MonthlyAttendanceSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
@@ -1493,16 +1494,44 @@ class LocumViewSet(viewsets.ViewSet):
                 
                 return resp
             
+            def full_attendance_fn(request_id,month,year):
+                start_day = 1
+                _, num_days = calendar.monthrange(int(year), int(month))
 
-            if month or year:
-                if not year:
-                    year = datetime.datetime.now().date().year
-                resp = selected_period_fn(request_id,month,year)
-            elif check_if_hiring_month_fn():
-                resp = reporting_date_fn(targetInstance)
-            else:
-                resp = current_month_days_fn(request_id)
+                # Get the month name
+                month_name = calendar.month_name[month]
+
+                attendance = models.MonthlyLocumAttendance.objects.filter(Q(employee=request_id), year=year)
+                serialized_attendance = serializers.SlimFetchMonthlyLocumAttendanceSerializer(
+                        attendance, many=True).data
                 
+                employee = serializers.SuperSlimFetchEmployeeSerializer(
+                            targetInstance, many=False).data
+
+                resp = {
+                    "month": month,
+                    "month_name" : month_name,
+                    "year" : year,
+                    "attendance" : serialized_attendance,
+                    "employee": employee
+                }
+                
+                return resp
+            
+
+            # if month or year:
+            #     if not year:
+            #         year = datetime.datetime.now().date().year
+            #     resp = selected_period_fn(request_id,month,year)
+            # elif check_if_hiring_month_fn():
+            #     resp = reporting_date_fn(targetInstance)
+            # else:
+            #     resp = current_month_days_fn(request_id)
+            if not year:
+                year = datetime.datetime.now().date().year
+            if not month:
+                month = datetime.datetime.now().date().month
+            resp = full_attendance_fn(request_id,month,year)
             return Response(resp, status=status.HTTP_200_OK)
 
         elif request.method == "DELETE":
