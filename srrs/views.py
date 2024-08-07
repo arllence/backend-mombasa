@@ -872,6 +872,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         "recruit" : recruit,
                         "employee_no" : employee_no, 
                         "reporting_date" : reporting_date, 
+                        "reporting_station" : reporting_station,
                         "working_station" : working_station,
                         "action_by" : authenticated_user
                     }
@@ -947,7 +948,8 @@ class SrrsViewSet(viewsets.ViewSet):
                     "email" : email,
                     "employee_no" : employee_no, 
                     "reporting_date" : reporting_date, 
-                    "working_station" : working_station,
+                    "reporting_station" : reporting_station,
+                    "working_station" : working_station
                 }
 
                 models.Employee.objects.filter(Q(id=request_id)).update(**raw)
