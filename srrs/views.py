@@ -1546,8 +1546,7 @@ class LocumViewSet(viewsets.ViewSet):
                 logger.error(e)
                 return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
             
-            targetInstance.is_deleted = True
-            targetInstance.save()
+            targetInstance.delete()
 
             return Response(200, status=status.HTTP_200_OK)
             
