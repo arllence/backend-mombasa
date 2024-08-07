@@ -154,6 +154,16 @@ class AttendanceSerializer(serializers.Serializer):
     hours_worked = serializers.IntegerField()
     overtime_hours = serializers.IntegerField()
 
+class MonthlyAttendanceSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    month = serializers.IntegerField()
+    year = serializers.IntegerField()
+    hours_worked = serializers.IntegerField()
+
+class SlimFetchMonthlyLocumAttendanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.MonthlyLocumAttendance
+        fields = '__all__'
 
 class CustomFetchRecruitSerializer(serializers.ModelSerializer):
     id = serializers.CharField()

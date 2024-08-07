@@ -1287,6 +1287,240 @@ class LocumViewSet(viewsets.ViewSet):
                         attendance.save()
                         break
             return Response(200, status=status.HTTP_200_OK)
+        
+    @action(methods=["POST","GET","DELETE"],
+            detail=False,
+            url_path="monthly-attendance",
+            url_name="monthly-attendance")
+    def monthly_attendance(self, request):
+        authenticated_user = request.user
+        if request.method == "POST":
+            payload = request.data
+
+            serializer = serializers.AttendanceSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                month = payload['month']
+                year = payload['year']
+                hours_worked = payload['hours_worked']
+
+                try:
+                    employee = models.Employee.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Requisition"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # check if date is within hire period
+                end_period_date = employee.recruit.period_to
+                selected_date =  f"{year}-{month}-1"
+                period = shared_fxns.find_date_difference(selected_date, str(end_period_date.strftime('%Y-%m-%d')),'days')
+
+                if period < 0:
+                    return Response({"details": "Attendance date is beyond locum period"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                begin_period_date = employee.recruit.period_from
+                period = shared_fxns.find_date_difference(str(begin_period_date.strftime('%Y-%m-%d')),selected_date, 'days')
+
+                if period < 0:
+                    return Response({"details": "Attendance date not within locum period"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                is_existing =  models.MonthlyLocumAttendance.objects.filter(
+                    Q(month=month) & Q(year=year) & Q(employee=employee)
+                ).order_by('-date_created').first()
+
+
+                with transaction.atomic():
+                    raw = {
+                        "employee": employee,
+                        "month": month,
+                        "year": year,
+                        "hours_worked": hours_worked,
+                        "action_by": authenticated_user
+                    }
+
+                    if is_existing:
+                        is_existing.hours_worked = hours_worked
+                        is_existing.save()
+                    else:
+                        models.MonthlyLocumAttendance.objects.create(**raw)
+                    
+                    return Response(200, status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+            month = request.query_params.get('month', 0) or 0
+            year = request.query_params.get('year', 0) or 0
+
+            year = int(year)
+            month = int(month)
+
+            try:
+                targetInstance = models.Employee.objects.get(Q(id=request_id))
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown Staff"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                logger.error(e)
+                return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+
+            def is_reporting_month_fn(targetInstance):
+                reporting_date = targetInstance.reporting_date
+                month = reporting_date.month
+                year = reporting_date.year
+                return [year,month]
+            
+            def current_month_fn():
+                current_date = datetime.datetime.now().date()
+                month = current_date.month
+                year = current_date.year
+                return [year,month]
+            
+            def check_if_hiring_month_fn():
+                hiring_month, hiring_year = is_reporting_month_fn(targetInstance)
+                current_month, current_year = current_month_fn()
+
+                if current_month == hiring_month and current_year == hiring_year:
+                    return True
+                return False
+
+            def reporting_date_fn(targetInstance):
+                reporting_date = targetInstance.reporting_date
+
+                if reporting_date:
+                    # Extract the month
+                    month = reporting_date.month
+                    # Extract day
+                    start_day = reporting_date.day
+
+                    # Determine the number of days in the month
+                    year = reporting_date.year
+                    _, num_days = calendar.monthrange(year, month)
+
+                    # Print the month and the number of days
+                    month_name = calendar.month_name[month]
+
+                    days = []
+                    for i in range(start_day, num_days + 1):
+                        days.append(i)
+
+                    attendance = models.MonthlyLocumAttendance.objects.filter(Q(employee=request_id), year=year, month=month)
+                    serialized_attendance = serializers.SlimFetchMonthlyLocumAttendanceSerializer(
+                            attendance, many=True).data
+                    
+                    employee = serializers.SuperSlimFetchEmployeeSerializer(
+                            targetInstance, many=False).data
+
+
+                    resp = {
+                        "days": days,
+                        "month": month,
+                        "month_name" : month_name,
+                        "year" : year,
+                        "attendance" : serialized_attendance,
+                        "employee": employee
+                    }
+
+                return resp
+
+            def current_month_days_fn(request_id):
+
+                current_date = datetime.datetime.now().date()
+                month = current_date.month
+                start_day = current_date.day
+                year = current_date.year
+                _, num_days = calendar.monthrange(year, month)
+
+                # Get the month name
+                month_name = calendar.month_name[month]
+
+                days = []
+                for i in range(start_day, num_days + 1):
+                    days.append(i)
+
+                attendance = models.MonthlyLocumAttendance.objects.filter(Q(employee=request_id), year=year, month=month)
+                serialized_attendance = serializers.SlimFetchMonthlyLocumAttendanceSerializer(
+                        attendance, many=True).data
+                
+                employee = serializers.SuperSlimFetchEmployeeSerializer(
+                            targetInstance, many=False).data
+
+                resp = {
+                    "days": days,
+                    "month": month,
+                    "month_name" : month_name,
+                    "year" : year,
+                    "attendance" : serialized_attendance,
+                    "employee" : employee
+                }
+
+                return resp
+            
+            def selected_period_fn(request_id,month,year):
+                start_day = 1
+                _, num_days = calendar.monthrange(int(year), int(month))
+
+                # Get the month name
+                month_name = calendar.month_name[month]
+
+                days = []
+                for i in range(start_day, num_days + 1):
+                    days.append(i)
+
+                attendance = models.MonthlyLocumAttendance.objects.filter(Q(employee=request_id), year=year, month=month)
+                serialized_attendance = serializers.SlimFetchMonthlyLocumAttendanceSerializer(
+                        attendance, many=True).data
+                
+                employee = serializers.SuperSlimFetchEmployeeSerializer(
+                            targetInstance, many=False).data
+
+                resp = {
+                    "month": month,
+                    "month_name" : month_name,
+                    "year" : year,
+                    "attendance" : serialized_attendance,
+                    "employee": employee
+                }
+                
+                return resp
+            
+
+            if month or year:
+                if not year:
+                    year = datetime.datetime.now().date().year
+                resp = selected_period_fn(request_id,month,year)
+            elif check_if_hiring_month_fn():
+                resp = reporting_date_fn(targetInstance)
+            else:
+                resp = current_month_days_fn(request_id)
+                
+            return Response(resp, status=status.HTTP_200_OK)
+
+        elif request.method == "DELETE":
+
+            record_id = request.query_params.get('record_id')
+
+            try:
+                targetInstance = models.MonthlyLocumAttendance.objects.get(Q(id=record_id))
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown record id"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                logger.error(e)
+                return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            targetInstance.is_deleted = True
+            targetInstance.save()
+
+            return Response(200, status=status.HTTP_200_OK)
             
 
    

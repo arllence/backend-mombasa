@@ -165,3 +165,25 @@ class LocumAttendance(models.Model):
 
     class Meta:
         db_table = u'"{}\".\"locum_attendance"'.format(settings.STAFF_REQUISITION_SYSTEM)
+
+class MonthlyLocumAttendance(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(
+        Employee, on_delete=models.DO_NOTHING,
+        related_name="employee_monthly_attendance"
+    )
+    month = models.IntegerField()
+    year = models.IntegerField()
+    hours_worked = models.IntegerField()
+    action_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="monthly_attendance_action_by"
+    )
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.employee.name)
+
+    class Meta:
+        db_table = u'"{}\".\"monthly_locum_attendance"'.format(settings.STAFF_REQUISITION_SYSTEM)
