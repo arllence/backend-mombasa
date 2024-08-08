@@ -83,8 +83,8 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                     'staff': is_authenticated.is_staff,
                     'department_name': department_name,
                     'department_id': str(department_id),
-                    'srrs_department_name': department_name,
-                    'srrs_department_id': str(department_id),
+                    'srrs_department_name': srrs_department_name,
+                    'srrs_department_id': str(srrs_department_id),
                     'password_change_status': is_authenticated.is_defaultpassword,
                     'exp': datetime.utcnow() + timedelta(seconds=settings.TOKEN_EXPIRY),
                     'iat': datetime.utcnow()
