@@ -1185,6 +1185,10 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                             
                             models.Hods.objects.create(**raw)
 
+                            # update hod department
+                            hod.srrs_department = departmentInstance
+                            hod.save()
+
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -1264,6 +1268,10 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                                 }
                             
                             models.Hods.objects.create(**raw)
+
+                            # update hod department
+                            hod.srrs_department = dept
+                            hod.save()
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:

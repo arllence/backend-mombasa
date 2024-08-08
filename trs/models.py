@@ -1,5 +1,5 @@
 import uuid
-from acl.models import User, Department
+from acl.models import User, Department, SRRSDepartment
 from django.db import models
 from django.conf import settings
 
@@ -28,7 +28,7 @@ class Traveler(models.Model):
        null=True, blank=True
     )
     department = models.ForeignKey(
-       Department, on_delete=models.DO_NOTHING, 
+       SRRSDepartment, on_delete=models.DO_NOTHING, 
        related_name="department",
        null=True, blank=True
     )

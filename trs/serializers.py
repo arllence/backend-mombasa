@@ -1,7 +1,7 @@
 import math
 from urllib import request
 from django.db.models import  Q
-from acl.serializers import UsersSerializer, FetchDepartmentSerializer
+from acl.serializers import UsersSerializer, FetchSRRSDepartmentSerializer, FetchDepartmentSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
 from trs import models
 from rest_framework import serializers
@@ -22,7 +22,7 @@ class FetchTravelerSerializer(serializers.ModelSerializer):
     traveler = UsersSerializer()
     created_by = UsersSerializer()
     closed_by = UsersSerializer()
-    department = FetchDepartmentSerializer()
+    department = FetchSRRSDepartmentSerializer()
     trip = serializers.SerializerMethodField()
     salary_advance = serializers.SerializerMethodField()
     administration = serializers.SerializerMethodField()

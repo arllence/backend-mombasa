@@ -16,7 +16,7 @@ from trs import models
 from trs import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
-from acl.models import User, Department, Sendmail
+from acl.models import User, Hods, SRRSDepartment, Sendmail
 from trs.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
@@ -135,7 +135,7 @@ class TrsViewSet(viewsets.ViewSet):
                     pass
 
                 try:
-                    department = Department.objects.get(id=department)
+                    department = SRRSDepartment.objects.get(id=department)
                 except Exception as e:
                     return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -247,7 +247,7 @@ class TrsViewSet(viewsets.ViewSet):
                         )
 
                     if send_to == 'HOD':
-                        managers_emails = list(get_user_model().objects.filter(Q(groups__name='HOD') & Q(department=department) ).values_list('email', flat=True))
+                        managers_emails = list(get_user_model().objects.filter(Q(groups__name='HOD') & Q(srrs_department=department) ).values_list('email', flat=True))
 
                     elif send_to == 'SLT':
                         if department.slt:
@@ -394,7 +394,7 @@ class TrsViewSet(viewsets.ViewSet):
                     pass
 
                 try:
-                    department = Department.objects.get(id=department)
+                    department = SRRSDepartment.objects.get(id=department)
                 except Exception as e:
                     return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -582,15 +582,16 @@ class TrsViewSet(viewsets.ViewSet):
                     if "HOD" in roles:
 
                         if query == 'salary-advance':
+                            print("in advance")
                             targets = models.AdvanceSalaryRequests.objects.filter(
-                                Q(traveler__created_by=authenticated_user) & Q(traveler__department=request.user.department),is_deleted=False).order_by('-date_created')
+                                Q(traveler__department=request.user.srrs_department),is_deleted=False).order_by('-date_created')
                             resp = [x.traveler for x in targets]
 
                         elif query == 'pending':
-                            resp = models.Traveler.objects.filter(Q(traveler__department=request.user.department) | Q(department=request.user.department) | Q(created_by=request.user) | Q(requires_hod_approval=True) , is_hod_approved=False, is_deleted=False).order_by('-date_created')
+                            resp = models.Traveler.objects.filter(Q(department=request.user.srrs_department) & Q(requires_hod_approval=True) , is_hod_approved=False, is_deleted=False).order_by('-date_created')
 
                         else:
-                            resp = models.Traveler.objects.filter(Q(traveler__department=request.user.department) | Q(department=request.user.department) | Q(created_by=request.user) | Q(requires_hod_approval=True) |  Q(created_by=authenticated_user), is_deleted=False).order_by('-date_created')
+                            resp = models.Traveler.objects.filter((Q(department=request.user.srrs_department) &  Q(requires_hod_approval=True)) |  Q(traveler=authenticated_user), is_deleted=False).order_by('-date_created')
 
                     elif "USER_MANAGER" in roles:
                         if query == 'salary-advance':
@@ -641,13 +642,13 @@ class TrsViewSet(viewsets.ViewSet):
                         elif query == 'pending':
                             resp = models.Traveler.objects.filter(Q(requires_ceo_approval=True) & Q(is_ceo_approved=False), is_deleted=False).order_by('-date_created')
 
-                    elif "USER" in roles:
-                        if not query:
-                            resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(traveler=request.user)).order_by('-date_created')
+                    # elif "USER" in roles:
+                    #     if not query:
+                    #         resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(traveler=request.user)).order_by('-date_created')
 
-                        if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False) & Q(traveler__traveler=request.user)).order_by('-date_created')
-                            resp = [x.traveler for x in targets]
+                    #     if query == 'salary-advance':
+                    #         targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False) & Q(traveler__traveler=request.user)).order_by('-date_created')
+                    #         resp = [x.traveler for x in targets]
 
                     elif "ADMINISTRATOR" in roles :
                         allowed_statuses = ['APPROVED', 'CLOSED']
@@ -685,6 +686,13 @@ class TrsViewSet(viewsets.ViewSet):
                         else:
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(requires_transport_approval=True) & Q(status__in=allowed_statuses) ).order_by('-date_created')
 
+                    else:
+                        if not query:
+                            resp = models.Traveler.objects.filter(Q(created_by=request.user) | Q(traveler=request.user),is_deleted=False).order_by('-date_created')
+
+                        if query == 'salary-advance':
+                            targets = models.AdvanceSalaryRequests.objects.filter(Q(traveler__created_by=request.user) & Q(traveler__traveler=request.user), is_deleted=False).order_by('-date_created')
+                            resp = [x.traveler for x in targets]
 
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
@@ -1130,7 +1138,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     if send_to == 'HOD':
                         traveler.requires_hod_approval = True
-                        emails = list(get_user_model().objects.filter(Q(groups__name='HOD') & Q(department=traveler.department)).values_list('email', flat=True))
+                        emails = list(get_user_model().objects.filter(Q(groups__name='HOD') & Q(srrs_department=traveler.department)).values_list('email', flat=True))
                         
                     elif send_to == "SLT":
                         traveler.requires_slt_approval = True
@@ -1520,7 +1528,7 @@ class TRSReportsViewSet(viewsets.ViewSet):
         q_filters = Q(approval_for='TRANSPORT')
 
         if department:
-            q_filters &= Q(department=department)
+            q_filters &= Q(traveler__srrs_department=department)
 
         if date_from or date_to:
             if not date:
@@ -1572,7 +1580,7 @@ class TRSReportsViewSet(viewsets.ViewSet):
         q_filters = Q(approval_for='ADMINISTRATOR')
 
         if department:
-            q_filters &= Q(department=department)
+            q_filters &= Q(traveler__srrs_department=department)
 
         if date_from or date_to:
             if not date:
