@@ -603,7 +603,7 @@ class TrsViewSet(viewsets.ViewSet):
                         else:
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
 
-                    elif "SLT" in roles:
+                    elif "SLTs" in roles:
                         resp = []
                         if "HOF" in roles:
 
@@ -911,7 +911,7 @@ class TrsViewSet(viewsets.ViewSet):
                                     amount += int(msg.get('amount',0))
 
                             if disbursement_type == 'Travel Cost':
-                                if amount == travel_cost:
+                                if int(amount) == travel_cost:
                                     traveler.is_cash_office_approved = is_cash_office
                                     close_request()
                                     update_approval()
