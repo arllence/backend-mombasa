@@ -69,6 +69,13 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                     department_name = ''
                     department_id = ''
 
+                try:
+                    srrs_department_name = is_authenticated.srrs_department.name
+                    srrs_department_id = is_authenticated.srrs_department.id
+                except:
+                    srrs_department_name = ''
+                    srrs_department_id = ''
+
                 payload = {
                     'id': str(is_authenticated.id),
                     'email': is_authenticated.email,
@@ -76,6 +83,8 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                     'staff': is_authenticated.is_staff,
                     'department_name': department_name,
                     'department_id': str(department_id),
+                    'srrs_department_name': department_name,
+                    'srrs_department_id': str(department_id),
                     'password_change_status': is_authenticated.is_defaultpassword,
                     'exp': datetime.utcnow() + timedelta(seconds=settings.TOKEN_EXPIRY),
                     'iat': datetime.utcnow()
