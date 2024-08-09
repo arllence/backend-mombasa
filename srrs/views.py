@@ -71,6 +71,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 period_to = payload['period_to']
                 filling_date = payload['filling_date']
                 temporary_task_assignment_to = payload['temporary_task_assignment_to']
+                justification = payload['justification']
                 ohc = payload.get('ohc')
 
                 uid = shared_fxns.generate_unique_identifier()
@@ -127,11 +128,10 @@ class SrrsViewSet(viewsets.ViewSet):
                         "period_to": period_to,
                         "filling_date": filling_date,
                         "ohc": ohc,
+                        "justification": justification,
                         "temporary_task_assignment_to": temporary_task_assignment_to,
                         "uid": uid
                     }  
-
-                    print(raw)
 
                     recruit = models.Recruit.objects.create(
                         **raw
@@ -263,6 +263,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         "position_type": position_type,
                         "qualifications": qualifications,
                         "nature_of_hiring": nature_of_hiring,
+                        "justification": justification,
                         "existing_staff_same_title": existing_staff_same_title,
                         "reasons_for_not_sharing_tasks": reasons_for_not_sharing_tasks,
                         "period_from": period_from,

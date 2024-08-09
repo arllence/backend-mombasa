@@ -45,6 +45,7 @@ class Recruit(models.Model):
     job_description = models.FileField(upload_to='documents/srrs/job_description/', null=True, blank=True)
     nature_of_hiring = models.CharField(max_length=255)
     existing_staff_same_title = models.JSONField(null=True, blank=True)
+    justification = models.TextField(null=True, blank=True)
     reasons_for_not_sharing_tasks = models.TextField(null=True, blank=True)
     filling_date = models.DateField(null=True, blank=True)
     period_from = models.DateField(null=True, blank=True)
