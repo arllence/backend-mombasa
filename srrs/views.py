@@ -253,7 +253,8 @@ class SrrsViewSet(viewsets.ViewSet):
                     }
                     models.RecruitHistory.objects.create(**raw)
                 except Exception as e:
-                    print(e)       
+                    print(e)
+                    logger.error(e)
                 
                 with transaction.atomic():
                     raw = {
