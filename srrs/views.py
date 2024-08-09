@@ -639,7 +639,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     
                     try:
                         mail = {
-                            "email" : [recruit.created_by.email], 
+                            "email" : list(set(emails)), 
                             "subject" : subject,
                             "message" : message,
                         }
