@@ -1301,14 +1301,14 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
             else:
                 try:
 
-                    if 'USER' in roles:
-                        department = request.user.srrs_department
-                        department = serializers.FetchSRRSDepartmentSerializer(department,many=False).data
-                        return Response([department], status=status.HTTP_200_OK)
-                    else:
-                        departments = models.SRRSDepartment.objects.all().order_by('name')
-                        departments = serializers.FetchSRRSDepartmentSerializer(departments,many=True).data
-                        return Response(departments, status=status.HTTP_200_OK)
+                    # if 'USER' in roles:
+                    #     department = request.user.srrs_department
+                    #     department = serializers.FetchSRRSDepartmentSerializer(department,many=False).data
+                    #     return Response([department], status=status.HTTP_200_OK)
+                    # else:
+                    departments = models.SRRSDepartment.objects.all().order_by('name')
+                    departments = serializers.FetchSRRSDepartmentSerializer(departments,many=True).data
+                    return Response(departments, status=status.HTTP_200_OK)
                     
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)

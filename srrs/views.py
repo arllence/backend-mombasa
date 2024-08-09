@@ -496,7 +496,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         elif query == 'pending':
                             resp = models.Recruit.objects.filter((Q(is_hof_approved=True) & Q(is_hhr_approved=True) & Q(is_ceo_approved=False)),is_deleted=False).order_by('-date_created')
 
-                    elif "USER" in roles:
+                    else:
                         resp = []
 
 
