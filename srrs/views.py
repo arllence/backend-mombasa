@@ -191,6 +191,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 position_type = payload['position_type']
                 qualifications = payload['qualifications']
                 nature_of_hiring = payload['nature_of_hiring']
+                justification = payload['justification']
                 existing_staff_same_title = payload['existing_staff_same_title']
                 reasons_for_not_sharing_tasks = payload['reasons_for_not_sharing_tasks']
                 period_from = payload['period_from']
