@@ -72,7 +72,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 filling_date = payload['filling_date']
                 temporary_task_assignment_to = payload['temporary_task_assignment_to']
                 justification = payload['justification']
-                ohc = payload.get('ohc')
+                ohc = payload.get('ohc') or None
 
                 uid = shared_fxns.generate_unique_identifier()
 
