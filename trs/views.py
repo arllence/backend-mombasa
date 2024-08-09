@@ -269,7 +269,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     try:
                         mail = {
-                            "email" : emails, 
+                            "email" : list(set(emails)), 
                             "subject" : subject,
                             "message" : message,
                         }
@@ -285,7 +285,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     try:
                         mail = {
-                            "email" : managers_emails, 
+                            "email" : list(set(managers_emails)), 
                             "subject" : subject,
                             "message" : message,
                         }
@@ -304,7 +304,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                         try:
                             mail = {
-                                "email" : emails, 
+                                "email" : list(set(emails)), 
                                 "subject" : subject,
                                 "message" : message,
                             }
@@ -474,7 +474,7 @@ class TrsViewSet(viewsets.ViewSet):
                     #     pass
                     try:
                         mail = {
-                            "email" : managers_emails, 
+                            "email" :  list(set(managers_emails)), 
                             "subject" : subject,
                             "message" : message,
                         }
@@ -545,7 +545,7 @@ class TrsViewSet(viewsets.ViewSet):
                     #     pass
                     try:
                         mail = {
-                            "email" : emails, 
+                            "email" : list(set(emails)), 
                             "subject" : subject,
                             "message" : message,
                         }
@@ -1043,7 +1043,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                         try:
                             mail = {
-                                "email" : emails, 
+                                "email" : list(set(emails)), 
                                 "subject" : subject,
                                 "message" : message,
                             }
@@ -1059,7 +1059,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                         try:
                             mail = {
-                                "email" : emails, 
+                                "email" : list(set(emails)), 
                                 "subject" : subject,
                                 "message" : message,
                             }
@@ -1075,7 +1075,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                         try:
                             mail = {
-                                "email" : emails, 
+                                "email" : list(set(emails)), 
                                 "subject" : subject,
                                 "message" : message,
                             }
@@ -1091,7 +1091,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                         try:
                             mail = {
-                                "email" : emails, 
+                                "email" : list(set(emails)), 
                                 "subject" : subject,
                                 "message" : message,
                             }
@@ -1198,7 +1198,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     try:
                         mail = {
-                            "email" : emails, 
+                            "email" : list(set(emails)), 
                             "subject" : subject,
                             "message" : message,
                         }

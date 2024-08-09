@@ -154,7 +154,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     try:
                         mail = {
-                            "email" : managers_emails, 
+                            "email" : list(set(managers_emails)), 
                             "subject" : subject,
                             "message" : message,
                         }
@@ -415,7 +415,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     try:
                         mail = {
-                            "email" : emails, 
+                            "email" : list(set(emails)), 
                             "subject" : subject,
                             "message" : message,
                         }
@@ -655,7 +655,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     try:
                         if emails:
                             mail = {
-                                "email" : emails, 
+                                "email" : list(set(emails)), 
                                 "subject" : subject,
                                 "message" : message,
                             }
@@ -795,7 +795,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     try:
                         mail = {
-                            "email" : recipients, 
+                            "email" : list(set(recipients)), 
                             "subject" : subject,
                             "message" : message,
                         }
@@ -891,7 +891,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     try:
                         mail = {
-                            "email" : recipients, 
+                            "email" : list(set(recipients)), 
                             "subject" : subject,
                             "message" : message,
                         }
