@@ -259,7 +259,6 @@ class SrrsViewSet(viewsets.ViewSet):
                     raw = {
                         "department": department,
                         "sub_department": sub_department,
-                        "created_by": authenticated_user,
                         "position_title": position_title,
                         "position_type": position_type,
                         "qualifications": qualifications,
