@@ -6,6 +6,7 @@ import logging
 import uuid
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
+from django.contrib.auth.hashers import make_password
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import viewsets, status
@@ -22,6 +23,7 @@ from acl.models import User, Sendmail, SRRSDepartment
 from asa.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
+from django.conf import settings
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -169,11 +171,28 @@ class ASAViewSet(viewsets.ViewSet):
                             **doctor_info
                         )
 
+
+                # create user
+                name = employeeInstance.name.split()
+                password = 'welcome@123'
+                hashed_pwd = make_password(password)
+                newuser = {
+                    "email": employeeInstance.email,
+                    "first_name": name[0],
+                    "last_name": name[-1],
+                    "srrs_department": department,
+                    "is_active": True,
+                    "password": hashed_pwd,
+                    "is_defaultpassword": True
+                }
+                created_user = get_user_model().objects.create(**newuser)
+
                 # create access instance
                 if not employee_exists:
                     access = {
                         "employee": employeeInstance,
-                        "created_by": authenticated_user
+                        "created_by": authenticated_user,
+                        "created_for": created_user
                     }
                     try:
                         accessInstance = models.Access.objects.create(
@@ -200,9 +219,9 @@ class ASAViewSet(viewsets.ViewSet):
                     print(e)
 
 
-                # Notify HOD
-                subject = f"New Access Request Received [ASA-AKHK]"
-                message = f"Hello, \n\nA new access request from department: {department.name},\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nASA-AKHK"
+                # Notify New User
+                subject = f"Access Service Agreement [ASA-AKHK]"
+                message = f"Hello, \n\nA new access request has been created for you by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action. Kindly login to accept the agreement.\nYour password is: {password}\nPlatform link is: {settings.PLATFORM_LINK}\n\nRegards\nASA-AKHK"
                 
                 try:
                     mail = {

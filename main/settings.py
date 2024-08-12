@@ -257,3 +257,5 @@ CRONJOBS = [
     # ('0 * * * *', 'communication.utils.mailgun_sdk.get_emails', '>> /opt/logs/mailgun_sdk_cron.log'),
     ('*/5 * * * *', 'acl.utils.cron_mailer.get_emails', '>> /opt/logs/cron_mailer.log'),
 ]
+
+PLATFORM_LINK = 'http://172.20.0.42:8002/'
