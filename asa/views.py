@@ -81,13 +81,16 @@ class ASAViewSet(viewsets.ViewSet):
                 employee['department'] = department
             except Exception as e:
                 return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
-            
+                        
             systems = system_access['systems']
             try:
                 systems = models.System.objects.filter(id__in=systems)
                 # system_access['systems'] = systems
             except Exception as e:
                 return Response({"details": "Unknown selected system "}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if str(department.id) != str(authenticated_user.srrs_department.id):
+                return Response({"details": "Request Must be within your department"}, status=status.HTTP_400_BAD_REQUEST)
 
     
             with transaction.atomic():

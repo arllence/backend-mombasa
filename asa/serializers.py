@@ -18,7 +18,7 @@ class EmployeeSerializer(serializers.Serializer):
     email = serializers.CharField(max_length=500)
     employee_no = serializers.CharField(max_length=255)
     employee_type = serializers.CharField(max_length=255)
-    signature = serializers.CharField(min_length=10)
+    # signature = serializers.CharField(min_length=10)
     department = serializers.CharField(max_length=255)
     is_doctor = serializers.CharField(max_length=10)
 
