@@ -24,6 +24,7 @@ from asa.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
 from django.conf import settings
+from django.contrib.auth.models import Group
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -91,6 +92,10 @@ class ASAViewSet(viewsets.ViewSet):
             
             if str(department.id) != str(authenticated_user.srrs_department.id):
                 return Response({"details": "Request Must be within your department"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            user_exists = get_user_model().objects.filter(email=employee['email']).exists()
+            if user_exists:
+                return Response({'details': 'User With Credentials Already Exist'}, status=status.HTTP_400_BAD_REQUEST)
 
     
             with transaction.atomic():
@@ -189,6 +194,17 @@ class ASAViewSet(viewsets.ViewSet):
                     "is_defaultpassword": True
                 }
                 created_user = get_user_model().objects.create(**newuser)
+
+                try:
+                    group_details = Group.objects.get(name='USER')
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Role User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                group_details.user_set.add(created_user)
+                user_util.log_account_activity(
+                    created_user, created_user, "Account Creation",
+                    "USER CREATED")
+                         
 
                 # create access instance
                 if not employee_exists:
