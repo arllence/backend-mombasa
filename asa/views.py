@@ -401,23 +401,25 @@ class ASAViewSet(viewsets.ViewSet):
                     if any(role in ['HOD','SLT'] for role in roles):
 
                         if query == 'pending':
-                            resp = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) | Q(created_by=request.user), is_hod_approved=False, is_deleted=False).order_by('-date_created')
+                            resp = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) | Q(created_by=request.user), agreement_accepted=False, is_deleted=False).order_by('-date_created')
 
                         else:
                             resp = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).order_by('-date_created')
 
                         resp = [x.employee for x in resp]
 
-                    elif any(role in ['SUPERUSER','ICT'] for role in roles):
+                    elif any(role in ['ICT'] for role in roles):
+                        resp = models.Access.objects.filter(Q(is_deleted=False) & (Q(agreement_accepted=True)) ).order_by('-date_created')
+                        resp = [x.employee for x in resp]
+                    elif any(role in ['SUPERUSER'] for role in roles):
                         resp = models.Access.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
                         resp = [x.employee for x in resp]
-
                     else:
                         if query == 'pending':
-                            resp = models.Access.objects.filter(Q(created_by=request.user), is_hod_approved=False, is_deleted=False).order_by('-date_created')
+                            resp = models.Access.objects.filter(Q(created_by=request.user) | Q(created_for=request.user), agreement_accepted=False, is_deleted=False).order_by('-date_created')
 
                         else:
-                            resp = models.Access.objects.filter(Q(created_by=request.user), is_deleted=False).order_by('-date_created')
+                            resp = models.Access.objects.filter(Q(created_by=request.user) | Q(created_for=request.user), is_deleted=False).order_by('-date_created')
 
                         resp = [x.employee for x in resp]
 
