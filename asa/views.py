@@ -192,7 +192,8 @@ class ASAViewSet(viewsets.ViewSet):
                     access = {
                         "employee": employeeInstance,
                         "created_by": authenticated_user,
-                        "created_for": created_user
+                        "created_for": created_user,
+                        "is_hod_approved" : True
                     }
                     try:
                         accessInstance = models.Access.objects.create(
@@ -203,7 +204,7 @@ class ASAViewSet(viewsets.ViewSet):
                     track_status = "REQUESTED"
                 else:
                     accessInstance = models.Access.objects.get(employee=employeeInstance)
-                    track_status = "UPDATED"
+                    track_status = "EDITED"
 
                 # create track status change
                 try:
@@ -225,7 +226,7 @@ class ASAViewSet(viewsets.ViewSet):
                 
                 try:
                     mail = {
-                        "email" : [department.hod.email], 
+                        "email" : [created_user.email], 
                         "subject" : subject,
                         "message" : message,
                     }

@@ -57,7 +57,7 @@ class Access(models.Model):
     )
     created_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="asa_created_by",
+       related_name="asa_created_for",
        null=True, blank=True
     )
     created_for = models.ForeignKey(
@@ -67,7 +67,8 @@ class Access(models.Model):
     )
     is_hod_approved = models.BooleanField(default=False)
     is_ict_approved = models.BooleanField(default=False)
-    status = models.CharField(max_length=255, default='REQUESTED')
+    agreement_accepted = models.BooleanField(default=False)
+    status = models.CharField(max_length=255, default='PENDING')
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
