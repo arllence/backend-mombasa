@@ -68,6 +68,7 @@ class Access(models.Model):
     is_hod_approved = models.BooleanField(default=False)
     is_ict_approved = models.BooleanField(default=False)
     agreement_accepted = models.BooleanField(default=False)
+    agreement_details = models.JSONField(null=True, blank=True)
     status = models.CharField(max_length=255, default='PENDING')
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
