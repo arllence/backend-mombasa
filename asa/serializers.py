@@ -195,4 +195,6 @@ class FetchStatusChangeSerializer(serializers.ModelSerializer):
         model = models.StatusChange
         fields = '__all__'
 
-
+class IdNumberSerializer(serializers.Serializer):
+    id_number = serializers.IntegerField()
+    request_id = serializers.CharField(max_length=255)

@@ -471,6 +471,69 @@ class ASAViewSet(viewsets.ViewSet):
                     return Response('200', status=status.HTTP_200_OK)    
                 except Exception as e:
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)    
+                
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="agreement",
+            url_name="agreement")
+    def agreement(self, request):
+        # roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.IdNumberSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                id_number = payload['id_number']
+                request_id = payload['request_id']
+
+                try:
+                    accessInstance = models.Access.objects.get(employee=request_id)
+                except Exception as e:
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    details = {
+                        "id_number": id_number,
+                        "date_signed": str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
+                    }
+
+                    accessInstance.agreement_accepted = True
+                    accessInstance.agreement_details = details
+                    accessInstance.status = 'USER APPROVED'
+                    accessInstance.save()
+
+                    # Notify ICT
+                    subject = f"New Access Request Received [ASA-AKHK]"
+                    message = f"Hello, \n\nA new access request from department: {accessInstance.employee.department.name},\nhas been reviewed and accepted by {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nASA-AKHK"
+                    # get emails
+                    emails = list(models.RequestApprover.objects.all().values_list('approver__email', flat=True))
+                    
+                    try:
+                        mail = {
+                            "email" : emails, 
+                            "subject" : subject,
+                            "message" : message
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+                    # create track status change
+                    try:
+                        raw = {
+                            "access": accessInstance,
+                            "status": 'USER APPROVED',
+                            "status_for": 'USER',
+                            "action_by": request.user
+                        }
+                        models.StatusChange.objects.create(**raw)
+                    except Exception as e:
+                        print(e)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
 
     @action(methods=["POST", "GET", "PUT"],
             detail=False,
