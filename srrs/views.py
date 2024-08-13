@@ -1351,6 +1351,7 @@ class LocumViewSet(viewsets.ViewSet):
 
                     if is_existing:
                         is_existing.hours_worked = hours_worked
+                        is_existing.days_worked = days_worked
                         is_existing.save()
                     else:
                         models.MonthlyLocumAttendance.objects.create(**raw)
