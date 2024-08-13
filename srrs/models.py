@@ -175,7 +175,8 @@ class MonthlyLocumAttendance(models.Model):
     )
     month = models.IntegerField()
     year = models.IntegerField()
-    hours_worked = models.IntegerField()
+    hours_worked = models.IntegerField(default=0)
+    days_worked = models.IntegerField(default=0)
     action_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
        related_name="monthly_attendance_action_by"

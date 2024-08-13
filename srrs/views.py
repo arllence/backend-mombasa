@@ -1307,7 +1307,8 @@ class LocumViewSet(viewsets.ViewSet):
                 request_id = payload['request_id']
                 month = payload['month']
                 year = payload['year']
-                hours_worked = payload['hours_worked']
+                hours_worked = payload.get('hours_worked') or 0
+                days_worked = payload.get('days_worked') or 0
 
                 try:
                     employee = models.Employee.objects.get(id=request_id)
@@ -1344,6 +1345,7 @@ class LocumViewSet(viewsets.ViewSet):
                         "month": month,
                         "year": year,
                         "hours_worked": hours_worked,
+                        "days_worked": days_worked,
                         "action_by": authenticated_user
                     }
 

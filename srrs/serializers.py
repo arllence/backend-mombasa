@@ -160,7 +160,7 @@ class MonthlyAttendanceSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
     month = serializers.IntegerField()
     year = serializers.IntegerField()
-    hours_worked = serializers.IntegerField()
+    # hours_worked = serializers.IntegerField()
 
 class SlimFetchMonthlyLocumAttendanceSerializer(serializers.ModelSerializer):
     class Meta:
