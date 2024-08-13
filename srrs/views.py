@@ -328,15 +328,15 @@ class SrrsViewSet(viewsets.ViewSet):
                 try:
                     recruit = models.Recruit.objects.get(id=recruit_id)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Recruit !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Requisition"}, status=status.HTTP_400_BAD_REQUEST)
             
                 
                 with transaction.atomic():
 
-                    if recruit_status in  ['DECLINED','CANCELED', 'ONHOLD']:
+                    if recruit_status in  ['DECLINED','REFERRED', 'ONHOLD']:
                         recruit.rejected_by = authenticated_user
                         if not reason:
-                            return Response({"details": f"Reason for {recruit_status} status required !"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"details": f"Reason for {recruit_status} status required "}, status=status.HTTP_400_BAD_REQUEST)
 
                     if recruit_status == "REACTIVATED":
                         # find last status before on hold
@@ -1737,12 +1737,12 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
 
         if 'HOD' in roles:
             requests = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
-            canceled = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="CANCELED", is_deleted=False).count()
+            canceled = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="REFERRED", is_deleted=False).count()
             declined = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="DECLINED", is_deleted=False).count()
             pending = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status__in=active_status, is_ceo_approved=False, is_deleted=False).count()
         else:
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
-            canceled = models.Recruit.objects.filter(Q(status="CANCELED"), is_deleted=False).count()
+            canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
             declined = models.Recruit.objects.filter(Q(created_by=request.user), status="DECLINED", is_deleted=False).count()
             pending = models.Recruit.objects.filter(Q(status__in=active_status), is_ceo_approved=False, is_deleted=False).count()
 
