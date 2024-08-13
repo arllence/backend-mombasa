@@ -1383,7 +1383,7 @@ class LocumViewSet(viewsets.ViewSet):
 
                 with transaction.atomic():
                     attendance.hours_worked = hours_worked
-                    attendance.reason = reason
+                    attendance.reason_for_extra_hours = reason
                     attendance.updated_by = request.user
                     attendance.date_updated = timezone.now()
                     attendance.save()
