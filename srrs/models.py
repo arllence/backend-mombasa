@@ -181,8 +181,15 @@ class MonthlyLocumAttendance(models.Model):
        User, on_delete=models.DO_NOTHING, 
        related_name="monthly_attendance_action_by"
     )
+    updated_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="monthly_attendance_updated_by",
+       null=True, blank=True
+    )
+    reason_for_extra_hours = models.TextField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return str(self.employee.name)

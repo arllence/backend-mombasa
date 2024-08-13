@@ -213,3 +213,8 @@ class FullFetchEmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Employee
         fields = '__all__'
+
+class UpdateAttendanceSerializer(serializers.Serializer):
+    attendance_id = serializers.CharField(max_length=500)
+    reason = serializers.CharField(max_length=500)
+    hours_worked = serializers.IntegerField()

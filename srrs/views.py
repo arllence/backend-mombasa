@@ -22,6 +22,7 @@ from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
 from srrs.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
+from django.utils import timezone
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -1291,7 +1292,7 @@ class LocumViewSet(viewsets.ViewSet):
             return Response(200, status=status.HTTP_200_OK)
         
         
-    @action(methods=["POST","GET","DELETE"],
+    @action(methods=["POST","PUT","GET","DELETE"],
             detail=False,
             url_path="monthly-attendance",
             url_name="monthly-attendance")
@@ -1355,6 +1356,37 @@ class LocumViewSet(viewsets.ViewSet):
                         is_existing.save()
                     else:
                         models.MonthlyLocumAttendance.objects.create(**raw)
+                    
+                    return Response(200, status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateAttendanceSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                attendance_id = payload['attendance_id']
+                hours_worked = payload['hours_worked']
+                reason = payload['reason']
+
+                try:
+                    attendance = models.MonthlyLocumAttendance.objects.get(id=attendance_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Attendance Record"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    attendance.hours_worked = hours_worked
+                    attendance.reason = reason
+                    attendance.updated_by = request.user
+                    attendance.date_updated = timezone.now()
+                    attendance.save()
                     
                     return Response(200, status=status.HTTP_200_OK)
             else:
