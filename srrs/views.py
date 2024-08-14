@@ -546,7 +546,7 @@ class SrrsViewSet(viewsets.ViewSet):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
 
-        allowed = ["HOF","SLT","HHR","CEO"]
+        allowed = ["HOF","SLT","HHR","CEO", "HR"]
 
         if not any(role in allowed for role in roles):
             return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
