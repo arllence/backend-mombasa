@@ -1146,6 +1146,7 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                 name = payload['name']
                 slt_id = payload.get('slt')
                 hod_id = payload.get('hod')
+                hr_partner_id = payload.get('hr_partner')
 
                 with transaction.atomic():
                     raw = {
@@ -1166,6 +1167,21 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                                 return Response({"details": "Unable to assign role SLT"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         raw.update({"slt": slt})
+
+                    if hr_partner_id:
+                        try:
+                            hr_partner = models.User.objects.get(id=hr_partner_id)
+                        except Exception as e:
+                            return Response({"details": "Unknown HR Partner"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        roles = user_util.fetchusergroups(hr_partner_id)
+                        if 'HR' not in roles:
+                            assign_role = user_util.award_role('HR', hr_partner_id)
+
+                            if not assign_role:
+                                return Response({"details": "Unable to assign role HR"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        raw.update({"hr_partner": hr_partner})
 
                     
                     departmentInstance = models.SRRSDepartment.objects.create(**raw)
@@ -1214,6 +1230,10 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                 name = payload['name']
                 slt_id = payload.get('slt')
                 hod_id = payload.get('hod')
+                hr_partner_id = payload.get('hr_partner')
+
+                slt = None
+                hr_partner = None
 
                 try:
                     dept = models.SRRSDepartment.objects.get(id=dept_id)
@@ -1237,6 +1257,19 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                         if not assign_role:
                             return Response({"details": "Unable to assign role SLT"}, status=status.HTTP_400_BAD_REQUEST)
                         
+                if hr_partner_id:
+                    try:
+                        hr_partner = models.User.objects.get(id=hr_partner_id)
+                    except Exception as e:
+                        return Response({"details": "Unknown HR Partner"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    roles = user_util.fetchusergroups(hr_partner_id)
+                    if 'HR' not in roles:
+                        assign_role = user_util.award_role('HR', hr_partner_id)
+
+                        if not assign_role:
+                            return Response({"details": "Unable to assign role HR"}, status=status.HTTP_400_BAD_REQUEST)
+                        
 
                 with transaction.atomic():
                     try:
@@ -1245,6 +1278,9 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                         
                         if slt:
                             dept.slt = slt 
+
+                        if hr_partner:
+                            dept.hr_partner = hr_partner 
 
                         dept.save()
                         
