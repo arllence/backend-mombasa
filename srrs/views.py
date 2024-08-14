@@ -397,7 +397,8 @@ class SrrsViewSet(viewsets.ViewSet):
                         emails.append(recruit.department.slt.email)
 
                     if recruit.is_hhr_approved:
-                       target += ["HR","HHR"]
+                       target += ["HHR"]
+                       emails.append(recruit.department.hr_partner.email)
 
                     if recruit.is_hof_approved:
                        target += ["HOF","FINANCE"]
@@ -482,10 +483,19 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     elif "HR" in roles:
                         if not query:
+                            resp = models.Recruit.objects.filter((Q(is_slt_approved=True) & Q(department__hr_partner=request.user)),is_deleted=False).order_by('-date_created')
+
+                        elif query == 'pending':
+                            resp = models.Recruit.objects.filter((Q(is_slt_approved=True) & Q(is_hhr_approved=False) & Q(department__hr_partner=request.user)),is_deleted=False).order_by('-date_created')
+
+                    elif "HHR" in roles:
+                        if not query:
                             resp = models.Recruit.objects.filter((Q(is_slt_approved=True)),is_deleted=False).order_by('-date_created')
 
                         elif query == 'pending':
                             resp = models.Recruit.objects.filter((Q(is_slt_approved=True) & Q(is_hhr_approved=False)),is_deleted=False).order_by('-date_created')
+
+                        # resp = []
 
                     elif "HOF" in roles:
                         if not query:
