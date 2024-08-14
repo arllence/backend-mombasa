@@ -40,7 +40,7 @@ class FetchDepartmentSerializer(serializers.ModelSerializer):
 
 class FetchSRRSDepartmentSerializer(serializers.ModelSerializer):
     slt = SlimUsersSerializer()
-    # hod = SlimUsersSerializer()
+    hr_partner = SlimUsersSerializer()
     hods = serializers.SerializerMethodField()
     class Meta:
         model = models.SRRSDepartment
