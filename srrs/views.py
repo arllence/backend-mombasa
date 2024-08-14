@@ -111,7 +111,10 @@ class SrrsViewSet(viewsets.ViewSet):
                 if department.slt:
                     managers_emails = [department.slt.email]
                 else:
-                    return Response({"details": "Your Department has no SLT assigned !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Your Department has no SLT assigned"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if not department.hr_partner:
+                    return Response({"details": "Your Department has no HR Partner assigned !"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
                     raw = {
