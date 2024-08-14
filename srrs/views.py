@@ -572,23 +572,27 @@ class SrrsViewSet(viewsets.ViewSet):
                     new_status = "APPROVED"
                     forward_to = []
                     previous_office = []
+                    forward_to_emails = []
+                    previous_office_emails = []
 
                     if 'SLT' in roles:
                         if recruit.department.slt == authenticated_user and not recruit.is_slt_approved:
                             recruit.is_slt_approved = True
                             new_status = "SLT APPROVED"
-                            forward_to = ["HR","HHR"]
+                            # forward_to = ["HR","HHR"]
                             previous_office = []
+                            forward_to_emails = [recruit.department.hr_partner.email]
 
                             if comments:
                                 recruit.slt_comments = comments
 
-                    if 'HHR' in roles:
+                    if 'HHR' in roles or 'HR' in roles:
                         if recruit.is_slt_approved:
                             recruit.is_hhr_approved = True
                             new_status = "HR APPROVED"
                             forward_to = ["HOF","FINANCE"]
                             previous_office = ["SLT"]
+                            previous_office_emails = [recruit.department.slt.email]
 
                             if comments:
                                 recruit.hhr_comments = comments
@@ -605,7 +609,8 @@ class SrrsViewSet(viewsets.ViewSet):
                             recruit.is_hof_approved = True
                             new_status = "FINANCE APPROVED"
                             forward_to = ["CEO"]
-                            previous_office = ["SLT","HR","HHR"]
+                            # previous_office = ["SLT","HR","HHR"]
+                            previous_office_emails = [recruit.department.slt.email, recruit.department.hr_partner.email]
                             if comments:
                                 recruit.hof_comments = comments
 
@@ -614,7 +619,8 @@ class SrrsViewSet(viewsets.ViewSet):
                             recruit.is_ceo_approved = True
                             new_status = "CEO APPROVED"
                             forward_to = []
-                            previous_office = ["SLT","HR","HHR","HOF","FINANCE"]
+                            previous_office = ["HOF","FINANCE"]
+                            previous_office_emails = [recruit.department.slt.email, recruit.department.hr_partner.email]
                             if comments:
                                 recruit.ceo_comments = comments
 
@@ -634,6 +640,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     # Notify the requestor & previous offices
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=previous_office)).values_list('email', flat=True))
+                    emails += previous_office_emails
                     emails.append(recruit.created_by.email)
                     subject = f"Recruitment Request: {recruit.uid} Status  [SRRS-AKHK]"
                     message = f"Hello, \nStaff Recruitment Request of id: {recruit.uid} for position: {recruit.position_title} has been {new_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nSRRS-AKHK"
@@ -650,6 +657,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     # Notify next office
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=forward_to)).values_list('email', flat=True))
+                    emails += forward_to_emails
                     subject = f"Recruitment Request: {recruit.uid} Pending Your Action.  [SRRS-AKHK]"
                     message = f"Hello. \nRecruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\nSRRS-AKHK"
 
