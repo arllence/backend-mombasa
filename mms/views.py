@@ -340,11 +340,11 @@ class MmsViewSet(viewsets.ViewSet):
                         elif "USER_MANAGER" in roles:
                             resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')
 
-                        elif "USER" in roles:
-                            resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')
+                        elif "HOD" in roles:
+                            resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(department=request.user.department)).order_by('-date_created')
 
                         else:
-                            resp = []
+                            resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()

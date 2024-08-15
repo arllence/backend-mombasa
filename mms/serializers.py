@@ -46,6 +46,7 @@ class FetchQuoteSerializer(serializers.ModelSerializer):
     assigned = serializers.SerializerMethodField()
     assignee = serializers.SerializerMethodField()
     tat = serializers.SerializerMethodField()
+    is_owner = serializers.SerializerMethodField()
     class Meta:
         model = models.Quote
         fields = '__all__'
@@ -76,6 +77,17 @@ class FetchQuoteSerializer(serializers.ModelSerializer):
             return models.QuoteAssignee.objects.filter(Q(assigned=user_id) & Q(quote=obj)).exists()
             
         except (ValidationError, ObjectDoesNotExist):
+            return False
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False
+        
+    def get_is_owner(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            if str(obj.uploader.id) == user_id:
+                return True
             return False
         except Exception as e:
             print(e)
