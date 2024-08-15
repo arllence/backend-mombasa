@@ -151,23 +151,56 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     models.StatusChange.objects.create(**raw)
 
+                    if str(authenticated_user.id) == str(department.slt.id): # checks if HOD is also SLT
+                        # Auto Approve for SLT
+                        recruit.is_slt_approved = True
+                        new_status = "SLT APPROVED"
+                        forward_to_emails = [recruit.department.hr_partner.email]
 
-                    # Notify SLT
-                    subject = f"New Recruitment Request {uid} Received [SRRS-AKHK]"
-                    message = f"Hello, \n\nA new recruit request of id: {uid}, from department: {department.name}, for position: {recruit.position_title}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nSRRS-AKHK"
+                        recruit.slt_comments = "**Auto System Approved**"
+                        recruit.status = new_status
+                        recruit.save()
 
-                    try:
-                        mail = {
-                            "email" : list(set(managers_emails)), 
-                            "subject" : subject,
-                            "message" : message,
+                        # track status change
+                        raw = {
+                            "recruit": recruit,
+                            "status": new_status,
+                            "status_for": '/'.join(roles),
+                            "action_by": authenticated_user
                         }
 
-                        Sendmail.objects.create(**mail)
+                        # Notify next office
+                        subject = f"Recruitment Request: {recruit.uid} Pending Your Action.  [SRRS-AKHK]"
+                        message = f"Hello. \nRecruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\nSRRS-AKHK"
 
-                    except Exception as e:
-                        logger.error(e)
-                        # send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
+                        try:
+                            if emails:
+                                mail = {
+                                    "email" : list(set(forward_to_emails)), 
+                                    "subject" : subject,
+                                    "message" : message,
+                                }
+                                
+                                Sendmail.objects.create(**mail)
+                        except Exception as e:
+                            logger.error(e)
+
+                    else:
+                        # Notify SLT
+                        subject = f"New Recruitment Request {uid} Received [SRRS-AKHK]"
+                        message = f"Hello, \n\nA new recruit request of id: {uid}, from department: {department.name}, for position: {recruit.position_title}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nSRRS-AKHK"
+
+                        try:
+                            mail = {
+                                "email" : list(set(managers_emails)), 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+
+                            Sendmail.objects.create(**mail)
+
+                        except Exception as e:
+                            logger.error(e)
 
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Recruitment Request created", f"Recruitment Request Id: {recruit.id}")
@@ -556,7 +589,7 @@ class SrrsViewSet(viewsets.ViewSet):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
 
-        allowed = ["HOF","SLT","HHR","CEO", "HR"]
+        allowed = ["HOF","SLT","HHR","CEO"]
 
         if not any(role in allowed for role in roles):
             return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
