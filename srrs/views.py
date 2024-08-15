@@ -185,6 +185,23 @@ class SrrsViewSet(viewsets.ViewSet):
                         except Exception as e:
                             logger.error(e)
 
+                        # Notify HR
+                        emails = list(get_user_model().objects.filter(Q(groups__name__in=['HHR'])).values_list('email', flat=True))
+                        subject = f"Recruitment Request: {recruit.uid} Assigning.  [SRRS-AKHK]"
+                        message = f"Hello. \nRecruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} \nhas been assigned to HR Partner: {recruit.department.hr_partner.first_name} {recruit.department.hr_partner.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
+
+                        try:
+                            if emails:
+                                mail = {
+                                    "email" : list(set(emails)), 
+                                    "subject" : subject,
+                                    "message" : message,
+                                }
+                                
+                                Sendmail.objects.create(**mail)
+                        except Exception as e:
+                            logger.error(e)
+
                     else:
                         # Notify SLT
                         subject = f"New Recruitment Request {uid} Received [SRRS-AKHK]"
@@ -620,17 +637,20 @@ class SrrsViewSet(viewsets.ViewSet):
                     previous_office = []
                     forward_to_emails = []
                     previous_office_emails = []
+                    notify_hhr = False
 
                     if 'SLT' in roles:
                         if recruit.department.slt == authenticated_user and not recruit.is_slt_approved:
                             recruit.is_slt_approved = True
                             new_status = "SLT APPROVED"
-                            # forward_to = ["HR","HHR"]
+                            forward_to = ["HHR"]
                             previous_office = []
                             forward_to_emails = [recruit.department.hr_partner.email]
 
                             if comments:
                                 recruit.slt_comments = comments
+
+                            notify_hhr = True
 
                     if 'HHR' in roles or 'HR' in roles:
                         if recruit.is_slt_approved:
@@ -718,6 +738,24 @@ class SrrsViewSet(viewsets.ViewSet):
                             Sendmail.objects.create(**mail)
                     except Exception as e:
                         logger.error(e)
+
+                    # Notify HHR
+                    if notify_hhr:
+                        emails = list(get_user_model().objects.filter(Q(groups__name__in=['HHR'])).values_list('email', flat=True))
+                        subject = f"Recruitment Request: {recruit.uid} Assigning.  [SRRS-AKHK]"
+                        message = f"Hello. \nRecruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} \nhas been assigned to HR Partner: {recruit.department.hr_partner.first_name} {recruit.department.hr_partner.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
+
+                        try:
+                            if emails:
+                                mail = {
+                                    "email" : list(set(emails)), 
+                                    "subject" : subject,
+                                    "message" : message,
+                                }
+                                
+                                Sendmail.objects.create(**mail)
+                        except Exception as e:
+                            logger.error(e)
 
 
                 user_util.log_account_activity(
