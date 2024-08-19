@@ -3,9 +3,9 @@ from sss import views
 
 router = DefaultRouter(trailing_slash=False)
 
-router.register('sss', views.SSSViewSet, basename='sss')
-router.register('sss-reports',views.ReportsViewSet, basename='sss-reports')
-router.register('sss-analytics',views.ASAAnalyticsViewSet, basename='sss-analytics')
+router.register('s3', views.S3ViewSet, basename='s3')
+router.register('s3-reports',views.ReportsViewSet, basename='s3-reports')
+router.register('s3-analytics',views.ASAAnalyticsViewSet, basename='s3-analytics')
    
                          
 urlpatterns = router.urls

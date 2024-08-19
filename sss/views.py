@@ -31,7 +31,7 @@ from rest_framework.pagination import PageNumberPagination
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
-class SSSViewSet(viewsets.ViewSet):
+class S3ViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     search_fields = ['id', ]
     
@@ -41,9 +41,9 @@ class SSSViewSet(viewsets.ViewSet):
     
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
-            url_path="application",
-            url_name="application")
-    def application(self, request):
+            url_path="applications",
+            url_name="applications")
+    def applications(self, request):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
 
