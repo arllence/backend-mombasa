@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'srrs',
     'asa',
     'ams',
+    'sss'
 ]
 
 MIDDLEWARE = [
@@ -118,6 +119,7 @@ TRAVEL_REQUEST_SYSTEM = 'trs'
 STAFF_REQUISITION_SYSTEM = 'srrs'
 ACCESS_SERVICE_AGREEMENT = 'asa'
 ASSET_MANAGEMENT_SYSTEM = 'ams'
+STAFF_SICK_SHEET = 'sss'
 
 
 

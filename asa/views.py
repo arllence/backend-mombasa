@@ -499,7 +499,7 @@ class ASAViewSet(viewsets.ViewSet):
 
                     accessInstance.agreement_accepted = True
                     accessInstance.agreement_details = details
-                    accessInstance.status = 'USER APPROVED'
+                    accessInstance.status = 'STAFF APPROVED'
                     accessInstance.save()
 
                     # Notify ICT
@@ -522,7 +522,7 @@ class ASAViewSet(viewsets.ViewSet):
                     try:
                         raw = {
                             "access": accessInstance,
-                            "status": 'USER APPROVED',
+                            "status": 'STAFF APPROVED',
                             "status_for": 'USER',
                             "action_by": request.user
                         }
