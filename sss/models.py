@@ -38,7 +38,7 @@ class Medical(models.Model):
         related_name="sss_medical_staff"
     )
 
-    is_fit_to_work = models.BooleanField(default=False)
+    is_fit_to_work = models.CharField(default='YES')
     days = models.IntegerField()
     start_date = models.DateField()
     end_date = models.DateField()

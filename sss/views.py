@@ -86,7 +86,7 @@ class S3ViewSet(viewsets.ViewSet):
                 return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
                         
 
-            if str(department.id) != str(authenticated_user.srrs_department.id):
+            if authenticated_user.srrs_department and str(department.id) != str(authenticated_user.srrs_department.id):
                 return Response({"details": "Request Must be within your department"}, status=status.HTTP_400_BAD_REQUEST)
 
 
