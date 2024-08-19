@@ -21,7 +21,6 @@ class Staff(models.Model):
     email = models.EmailField(max_length=255)
     payroll_no = models.CharField(max_length=255)
     supervisor_name = models.CharField(max_length=255)
-    time_of_leaving_dept = models.TimeField()
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
