@@ -19,7 +19,6 @@ class StaffSerializer(serializers.Serializer):
     payroll_no = serializers.CharField(max_length=255)
     supervisor_name = serializers.CharField(max_length=255)
     department = serializers.CharField(max_length=255)
-    time_of_leaving_dept = serializers.CharField(max_length=10)
 
 class MedicalSerializer(serializers.Serializer):
     days = serializers.IntegerField()
