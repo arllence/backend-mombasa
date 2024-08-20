@@ -674,7 +674,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         if recruit.is_hhr_approved:
                             recruit.is_hof_approved = True
                             new_status = "FINANCE APPROVED"
-                            forward_to = ["CEO"]
+                            forward_to = ["CEO","HHR"]
                             # previous_office = ["SLT","HR","HHR"]
                             previous_office_emails = [recruit.department.slt.email, recruit.department.hr_partner.email]
                             if comments:
@@ -685,7 +685,7 @@ class SrrsViewSet(viewsets.ViewSet):
                             recruit.is_ceo_approved = True
                             new_status = "CEO APPROVED"
                             forward_to = []
-                            previous_office = ["HOF","FINANCE"]
+                            previous_office = ["HOF","FINANCE","HHR"]
                             previous_office_emails = [recruit.department.slt.email, recruit.department.hr_partner.email]
                             if comments:
                                 recruit.ceo_comments = comments
