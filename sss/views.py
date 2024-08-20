@@ -57,6 +57,9 @@ class S3ViewSet(viewsets.ViewSet):
 
             uid = shared_fxns.generate_unique_identifier()
 
+            is_fit = True if medical.get('is_fit_to_work') == 'YES' else False
+            
+
             # serialize staff payload
             staff_serializer = serializers.StaffSerializer(
                     data=staff, many=False)
@@ -76,7 +79,22 @@ class S3ViewSet(viewsets.ViewSet):
                     data=refer, many=False)
             if not refer_serializer.is_valid():
                 return Response({"details": refer_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-        
+            
+
+            # validate input if not fit
+            if not is_fit:
+                for key, value in medical.items():
+                    if not value:
+                        return Response({"details": "Fill all blanks under Medical Officer's Recommendation"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                # validate off period
+                start_date = medical.get('start_date')
+                end_date = medical.get('end_date')
+                off_period = shared_fxns.find_date_difference(start_date,end_date,'days')
+                if off_period > 45:
+                    return Response({"details": "Days off cannot be more than 45"}, status=status.HTTP_400_BAD_REQUEST)
+                medical.update({"days": off_period})
+
            
             department = staff['department']
             try:
@@ -84,12 +102,12 @@ class S3ViewSet(viewsets.ViewSet):
                 staff['department'] = department
             except Exception as e:
                 return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
-                        
+            
 
-            if authenticated_user.srrs_department and str(department.id) != str(authenticated_user.srrs_department.id):
-                return Response({"details": "Request Must be within your department"}, status=status.HTTP_400_BAD_REQUEST)
+            # if authenticated_user.srrs_department and str(department.id) != str(authenticated_user.srrs_department.id):
+            #     return Response({"details": "Request Must be within your department"}, status=status.HTTP_400_BAD_REQUEST)
 
-
+                    
             with transaction.atomic():
                 # create staff instance
                 staff.update({'created_by': request.user, "uid":uid})
@@ -141,6 +159,22 @@ class S3ViewSet(viewsets.ViewSet):
                     data=refer, many=False)
             if not refer_serializer.is_valid():
                 return Response({"details": refer_serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+            # validate input if not fit
+            if medical.get('is_fit_to_work') == "NO":
+                for key, value in medical.items():
+                    if not value:
+                        return Response({"details": "Fill all blanks under Medical Officer's Recommendation"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+
+                # validate off period
+                start_date = medical.get('start_date')
+                end_date = medical.get('end_date')
+                off_period = shared_fxns.find_date_difference(start_date,end_date,'days')
+                if off_period > 45:
+                    return Response({"details": "Days off cannot be more than 45"}, status=status.HTTP_400_BAD_REQUEST)
+                medical.update({"days": off_period})
         
            
             department = staff['department']

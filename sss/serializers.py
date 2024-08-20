@@ -21,16 +21,16 @@ class StaffSerializer(serializers.Serializer):
     department = serializers.CharField(max_length=255)
 
 class MedicalSerializer(serializers.Serializer):
-    days = serializers.IntegerField()
-    start_date = serializers.CharField(max_length=255)
-    end_date = serializers.CharField(max_length=255)
-    resume_work_on = serializers.CharField(max_length=255)
-    reason = serializers.CharField(max_length=5000)
+    days = serializers.IntegerField(allow_null=True)
+    start_date = serializers.CharField(max_length=255, allow_null=True)
+    end_date = serializers.CharField(max_length=255, allow_null=True)
+    resume_work_on = serializers.CharField(max_length=255, allow_null=True)
+    reason = serializers.CharField(style={'type': 'textarea'})
 
 class ReferSerializer(serializers.Serializer):
-    consultant_name = serializers.CharField(max_length=255)
-    date = serializers.CharField(max_length=255)
-    time = serializers.CharField(max_length=255)
+    consultant_name = serializers.CharField(max_length=255, allow_null=True)
+    date = serializers.CharField(max_length=255, allow_null=True)
+    time = serializers.CharField(max_length=255, allow_null=True)
 
 
 class SlimFetchStaffSerializer(serializers.ModelSerializer):
