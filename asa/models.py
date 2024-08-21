@@ -129,6 +129,7 @@ class ModuleAccess(models.Model):
         related_name="asa_module_employee"
     )
     modules = models.JSONField()
+    remarks = models.TextField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 

@@ -155,6 +155,7 @@ class ASAViewSet(viewsets.ViewSet):
                         # current_modules = is_existing.modules
                         # current_modules += modules
                         is_existing.modules = modules
+                        is_existing.remarks = module_access.get('remarks')
                         is_existing.save()
                     else:
                         module_access = models.ModuleAccess.objects.create(
