@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sss', '0002_remove_staff_time_of_leaving_dept'),
+        ('sls', '0002_remove_staff_time_of_leaving_dept'),
     ]
 
     operations = [

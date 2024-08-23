@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sss', '0001_initial'),
+        ('sls', '0001_initial'),
     ]
 
     operations = [

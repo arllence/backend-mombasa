@@ -1,7 +1,7 @@
 from datetime import datetime
 import string
 import random
-from sss.models import Staff
+from sls.models import Staff
 import json
 from collections import OrderedDict
 from uuid import UUID

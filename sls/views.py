@@ -15,12 +15,12 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.contrib.auth import get_user_model
 from django.db.models import  Q
 from django.db import transaction
-from sss import models
-from sss import serializers
+from sls import models
+from sls import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
 from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
-from sss.utils import shared_fxns
+from sls.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
 from django.conf import settings
@@ -244,7 +244,6 @@ class S3ViewSet(viewsets.ViewSet):
             
 
             with transaction.atomic():
-                print(staff)
                 # update staff instance
                 models.Staff.objects.filter(Q(id=request_id)).update(**staff)
 
@@ -364,16 +363,16 @@ class ReportsViewSet(viewsets.ViewSet):
 
     @action(methods=["GET",],
             detail=False,
-            url_path="requisitions",
-            url_name="requisitions")
-    def requisitions(self, request):
+            url_path="applications",
+            url_name="applications")
+    def applications(self, request):
                     
         department = request.query_params.get('department')
-        position_type = request.query_params.get('position_type')
-        access = request.query_params.get('access')
+        location = request.query_params.get('location')
+        ohc = request.query_params.get('ohc')
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
-        r_status = request.query_params.get('status')
+        # r_status = request.query_params.get('status')
         date = False
 
         if date_to and date_from:
@@ -392,70 +391,6 @@ class ReportsViewSet(viewsets.ViewSet):
         q_filters = Q()
 
         if department:
-            q_filters &= Q(employee__department=department)
-
-        if date_from or date_to:
-            if not date:
-                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
-            q_filters &= create_date_range(date_from,date_to)
-            
-        if r_status:
-            q_filters &= Q(status=r_status)
-
-        if position_type:
-            q_filters &= Q(employee__employee_type=position_type)
-
-        if access:
-            q_filters &= Q(employee__status=access)
-
-
-        if q_filters:
-
-            resp = models.Access.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-            resp = [x.employee for x in resp]
-            
-        else:
-            roles = user_util.fetchusergroups(request.user.id)  
-
-            if "HOD" in roles:
-                resp = models.Access.objects.filter(Q(is_deleted=False) & Q(created_by=request.user)).order_by('-date_created')[:50]
-
-            else:
-                resp = models.Access.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
-
-            resp = [x.employee for x in resp]
-
-        resp = serializers.FetchRequestSerializer(resp, many=True, context={"user_id":request.user.id}).data
-
-        return Response(resp, status=status.HTTP_200_OK)
-        
-    @action(methods=["GET",],
-            detail=False,
-            url_path="replacements",
-            url_name="replacements")
-    def replacements(self, request):
-                    
-        department = request.query_params.get('department')
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
-        # quote_status = request.query_params.get('status')
-        date = False
-
-        if date_to and date_from:
-            date = True
-
-        def create_date_range(date_from,date_to):
-            # Convert the string dates to datetime objects
-            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
-            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
-
-            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
-
-            return q_filters
-
-        q_filters = Q(nature_of_hiring='Replacement')
-
-        if department:
             q_filters &= Q(department=department)
 
         if date_from or date_to:
@@ -463,70 +398,36 @@ class ReportsViewSet(viewsets.ViewSet):
                 return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
             q_filters &= create_date_range(date_from,date_to)
             
-        # if quote_status:
-        #     q_filters &= Q(status=quote_status)
+        # if r_status:
+        #     q_filters &= Q(status=r_status)
+
+        if location:
+            q_filters &= Q(location=location)
+
+        if ohc:
+            q_filters &= Q(ohc=ohc)
 
 
         if q_filters:
 
-            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-            
+            resp = models.Staff.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+
         else:
             roles = user_util.fetchusergroups(request.user.id)  
 
-            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')[:50]
+            if "OSH" in roles or "SUPERUSER" in roles:
+                resp = models.Staff.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+                
+            else:
+                resp = models.Staff.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('-date_created')[:50]
 
-        resp = serializers.FetchRecruitSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+        resp = serializers.FetchStaffSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
     
-    @action(methods=["GET",],
-            detail=False,
-            url_path="hires",
-            url_name="hires")
-    def hires(self, request):
-                    
-        department = request.query_params.get('department')
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
-        type = request.query_params.get('type')
-        date = False
-
-        if date_to and date_from:
-            date = True
-
-        def create_date_range(date_from,date_to):
-            # Convert the string dates to datetime objects
-            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
-            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
-
-            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
-
-            return q_filters
-
-        q_filters = Q(status='ACTIVE')
-        q_filters &= Q(recruit__status='HIRED')
-
-        if department:
-            q_filters &= Q(recruit__department=department)
-
-        if type:
-            q_filters &= Q(recruit__position_type=type)
-
-        if date_from or date_to:
-            if not date:
-                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
-            q_filters &= create_date_range(date_from,date_to)
-
-
-        resp = models.Employee.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-            
-        resp = serializers.FullFetchEmployeeSerializer(resp, many=True, context={"user_id":request.user.id}).data
-
-        return Response(resp, status=status.HTTP_200_OK)
         
-        
-class ASAAnalyticsViewSet(viewsets.ViewSet):
+class AnalyticsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
@@ -537,30 +438,20 @@ class ASAAnalyticsViewSet(viewsets.ViewSet):
             url_path="general",
             url_name="general")
     def general(self, request):
-        roles = user_util.fetchusergroups(request.user.id)
-        active_status = ['REQUESTED','HOD APPROVED','CLOSED']
+        # roles = user_util.fetchusergroups(request.user.id)
+        # active_status = ['REQUESTED','HOD APPROVED','CLOSED']
 
-        if 'HOD' in roles:
-            requests = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
-            approved = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) |  Q(created_by=request.user), status="ICT APPROVED", is_deleted=False).count()
-            rejected = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) |  Q(created_by=request.user), status="REJECTED", is_deleted=False).count()
-            pending = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) |  Q(created_by=request.user), status__in=active_status, is_deleted=False).count()
-        elif 'ICT' in roles or 'SUPERUSER' in roles:
-            requests = models.Access.objects.filter(is_deleted=False).count()
-            approved = models.Access.objects.filter(status="ICT APPROVED", is_deleted=False).count()
-            rejected = models.Access.objects.filter(status="REJECTED", is_deleted=False).count()
-            pending = models.Access.objects.filter(status__in=active_status, is_deleted=False).count()
-        else:
-            requests = models.Access.objects.filter(Q(created_by=request.user) & Q(is_deleted=False)).count()
-            approved = models.Access.objects.filter(Q(created_by=request.user) & Q(status="ICT APPROVED"), is_deleted=False).count()
-            rejected = models.Access.objects.filter(Q(created_by=request.user) & Q(status="REJECTED"), is_deleted=False).count()
-            pending = models.Access.objects.filter(Q(created_by=request.user) & Q(status__in=active_status), is_deleted=False).count()
+        applications = models.Medical.objects.filter( Q(is_deleted=False)).count()
+        is_fit = models.Medical.objects.filter(Q(is_fit_to_work='YES') & Q(is_deleted=False)).count()
+        un_fit = models.Medical.objects.filter(Q(is_fit_to_work='NO') & Q(is_deleted=False)).count()
+        # approved = models.Medical.objects.aggregate(total=Sum('days'))['total']
+        referred = models.Refer.objects.filter(consultant_name__isnull=False).exclude(consultant_name="").count()
 
         resp = {
-            "requests": requests,
-            "rejected": rejected,
-            "approved": approved,
-            "pending": pending,
+            "applications": applications,
+            "is_fit": is_fit,
+            "un_fit": un_fit,
+            "referred": referred,
         }
 
         return Response(resp, status=status.HTTP_200_OK)

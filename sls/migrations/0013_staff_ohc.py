@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('acl', '0016_srrsdepartment_hr_partner'),
-        ('sss', '0012_remove_staff_ohc'),
+        ('sls', '0012_remove_staff_ohc'),
     ]
 
     operations = [

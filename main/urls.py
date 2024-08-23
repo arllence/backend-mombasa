@@ -13,7 +13,7 @@ urlpatterns = [
     path(API_VERSION, include('srrs.urls')),
     path(API_VERSION, include('asa.urls')),
     path(API_VERSION, include('ams.urls')),
-    path(API_VERSION, include('sss.urls')),
+    path(API_VERSION, include('sls.urls')),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
 

@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sss', '0006_alter_medical_days_alter_medical_end_date_and_more'),
+        ('sls', '0006_alter_medical_days_alter_medical_end_date_and_more'),
     ]
 
     operations = [

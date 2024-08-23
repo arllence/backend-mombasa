@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
                 ('department', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, related_name='sss_staff_department', to='acl.srrsdepartment')),
             ],
             options={
-                'db_table': '"sss"."staffs"',
+                'db_table': '"sls"."staffs"',
             },
         ),
         migrations.CreateModel(
@@ -44,10 +44,10 @@ class Migration(migrations.Migration):
                 ('time', models.TimeField()),
                 ('is_deleted', models.BooleanField(default=False)),
                 ('date_created', models.DateTimeField(auto_now_add=True)),
-                ('staff', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, related_name='sss_refer_staff', to='sss.staff')),
+                ('staff', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, related_name='sss_refer_staff', to='sls.staff')),
             ],
             options={
-                'db_table': '"sss"."refers"',
+                'db_table': '"sls"."refers"',
             },
         ),
         migrations.CreateModel(
@@ -63,10 +63,10 @@ class Migration(migrations.Migration):
                 ('reason', models.TextField()),
                 ('is_deleted', models.BooleanField(default=False)),
                 ('date_created', models.DateTimeField(auto_now_add=True)),
-                ('staff', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, related_name='sss_medical_staff', to='sss.staff')),
+                ('staff', models.ForeignKey(on_delete=django.db.models.deletion.DO_NOTHING, related_name='sss_medical_staff', to='sls.staff')),
             ],
             options={
-                'db_table': '"sss"."medical"',
+                'db_table': '"sls"."medical"',
             },
         ),
     ]

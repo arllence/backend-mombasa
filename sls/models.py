@@ -32,8 +32,6 @@ class Staff(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField(max_length=255)
     payroll_no = models.CharField(max_length=255)
-    # location = models.CharField(max_length=255, null=True, blank=True)
-    # ohc = models.CharField(max_length=255, null=True, blank=True)
     supervisor_name = models.CharField(max_length=255)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)

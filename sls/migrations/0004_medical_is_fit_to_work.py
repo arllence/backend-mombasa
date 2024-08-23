@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('sss', '0003_remove_medical_is_fit_to_work'),
+        ('sls', '0003_remove_medical_is_fit_to_work'),
     ]
 
     operations = [
