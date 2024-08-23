@@ -1,5 +1,6 @@
 from django.db.models import  Q
 from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, SlimFetchSRRSDepartmentSerializer
+from srrs.serializers import FetchOHCSerializer, FetchSubDepartmentSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
 from sss import models
 from rest_framework import serializers
@@ -19,6 +20,7 @@ class StaffSerializer(serializers.Serializer):
     payroll_no = serializers.CharField(max_length=255)
     supervisor_name = serializers.CharField(max_length=255)
     department = serializers.CharField(max_length=255)
+    location = serializers.CharField(max_length=255)
 
 class MedicalSerializer(serializers.Serializer):
     days = serializers.IntegerField(allow_null=True)
@@ -52,6 +54,8 @@ class FetchStaffSerializer(serializers.ModelSerializer):
     department = FetchSRRSDepartmentSerializer()
     medical = serializers.SerializerMethodField()
     refer = serializers.SerializerMethodField()
+    location = FetchSubDepartmentSerializer()
+    ohc = FetchOHCSerializer()
     
     class Meta:
         model = models.Staff

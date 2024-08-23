@@ -1,5 +1,5 @@
 import uuid
-from acl.models import User, SRRSDepartment
+from acl.models import User, SRRSDepartment, SubDepartment, OHC
 from django.db import models
 from django.conf import settings
 
@@ -12,6 +12,18 @@ class Staff(models.Model):
         related_name="sss_staff_department"
     )
 
+    location = models.ForeignKey(
+        SubDepartment, on_delete=models.DO_NOTHING,
+        related_name="sss_staff_location",
+        null=True, blank=True
+    )
+
+    ohc = models.ForeignKey(
+        OHC, on_delete=models.DO_NOTHING,
+        related_name="sss_staff_location_ohc",
+        null=True, blank=True
+    )
+
     created_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
        related_name="sss_created_by"
@@ -20,6 +32,8 @@ class Staff(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField(max_length=255)
     payroll_no = models.CharField(max_length=255)
+    # location = models.CharField(max_length=255, null=True, blank=True)
+    # ohc = models.CharField(max_length=255, null=True, blank=True)
     supervisor_name = models.CharField(max_length=255)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)

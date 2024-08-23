@@ -19,7 +19,7 @@ from sss import models
 from sss import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
-from acl.models import User, Sendmail, SRRSDepartment
+from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
 from sss.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
@@ -93,6 +93,8 @@ class S3ViewSet(viewsets.ViewSet):
                 off_period = shared_fxns.find_date_difference(start_date,end_date,'days')
                 if off_period > 45:
                     return Response({"details": "Days off cannot be more than 45"}, status=status.HTTP_400_BAD_REQUEST)
+                if off_period < 0:
+                    return Response({"details": "Invalid off period dates"}, status=status.HTTP_400_BAD_REQUEST)
                 medical.update({"days": off_period})
 
            
@@ -102,6 +104,23 @@ class S3ViewSet(viewsets.ViewSet):
                 staff['department'] = department
             except Exception as e:
                 return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                location = staff['location']
+                location = SubDepartment.objects.get(id=location)
+                staff['location'] = location
+            except Exception as e:
+                return Response({"details": "Unknown location"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                ohc = staff['ohc']
+                if ohc:
+                    ohc = OHC.objects.get(id=ohc)
+                    staff['ohc'] = ohc
+                else:
+                    staff['ohc'] = None
+            except Exception as e:
+                return Response({"details": "Unknown ohc"}, status=status.HTTP_400_BAD_REQUEST)
             
 
             # if authenticated_user.srrs_department and str(department.id) != str(authenticated_user.srrs_department.id):
@@ -174,6 +193,8 @@ class S3ViewSet(viewsets.ViewSet):
                 off_period = shared_fxns.find_date_difference(start_date,end_date,'days')
                 if off_period > 45:
                     return Response({"details": "Days off cannot be more than 45"}, status=status.HTTP_400_BAD_REQUEST)
+                if off_period < 0:
+                    return Response({"details": "Invalid off period dates"}, status=status.HTTP_400_BAD_REQUEST)
                 medical.update({"days": off_period})
         
            
@@ -183,6 +204,23 @@ class S3ViewSet(viewsets.ViewSet):
                 staff['department'] = department
             except Exception as e:
                 return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                location = staff['location']
+                location = SubDepartment.objects.get(id=location)
+                staff['location'] = location
+            except Exception as e:
+                return Response({"details": "Unknown location"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                ohc = staff['ohc']
+                if ohc:
+                    ohc = OHC.objects.get(id=ohc)
+                    staff['ohc'] = ohc
+                else:
+                    staff['ohc'] = None
+            except Exception as e:
+                return Response({"details": "Unknown ohc"}, status=status.HTTP_400_BAD_REQUEST)
                         
 
             if authenticated_user.srrs_department and str(department.id) != str(authenticated_user.srrs_department.id):
@@ -206,6 +244,7 @@ class S3ViewSet(viewsets.ViewSet):
             
 
             with transaction.atomic():
+                print(staff)
                 # update staff instance
                 models.Staff.objects.filter(Q(id=request_id)).update(**staff)
 

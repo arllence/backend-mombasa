@@ -140,6 +140,43 @@ class ModuleAccess(models.Model):
         db_table = u'"{}\".\"module_access"'.format(settings.ACCESS_SERVICE_AGREEMENT)
 
 
+class AdditionalSystemAccess(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(
+        Employee, on_delete=models.DO_NOTHING,
+        related_name="asa_additional_employee_system_access"
+    )
+    system = models.ForeignKey(
+        System, on_delete=models.DO_NOTHING,
+        related_name="asa_additional_system"
+    )
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.employee.name} -- {self.system.name}"
+
+    class Meta:
+        db_table = u'"{}\".\"additional_system_access"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+
+
+class AdditionalModuleAccess(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(
+        Employee, on_delete=models.DO_NOTHING,
+        related_name="asa_additional_module_employee"
+    )
+    modules = models.JSONField()
+    remarks = models.TextField(null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.employee.name}"
+
+    class Meta:
+        db_table = u'"{}\".\"additional_module_access"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+
 class RequestApprover(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
