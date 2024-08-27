@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django_crontab',
     'rest_framework',
     'corsheaders',
+    'intranet',
     'acl',
     'mms',
     'trs',
@@ -120,6 +121,7 @@ STAFF_REQUISITION_SYSTEM = 'srrs'
 ACCESS_SERVICE_AGREEMENT = 'asa'
 ASSET_MANAGEMENT_SYSTEM = 'ams'
 STAFF_SICK_SHEET = 'sls'
+INTRANET = 'intranet'
 
 
 
