@@ -507,6 +507,8 @@ class SrrsViewSet(viewsets.ViewSet):
             else:
                 try:
 
+                    final_resp = []
+
                     if "HOD" in roles:
 
                         if query == 'pending':
@@ -515,59 +517,68 @@ class SrrsViewSet(viewsets.ViewSet):
                         else:
                             resp = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).order_by('-date_created')
 
-                    elif "USER_MANAGER" in roles:
+                        final_resp += list(resp)
+
+                    if "USER_MANAGER" in roles:
                         resp = models.Recruit.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
 
-                    elif "SLT" in roles:
-                        resp = []
-                        if "HOF" in roles:
+                        final_resp += list(resp)
 
-                            if query == 'pending':
-                                resp = models.Recruit.objects.filter((Q(department__slt=authenticated_user) & Q(is_slt_approved=False)) |(Q(is_hof_approved=False) & Q(is_hhr_approved=True)), is_deleted=False).order_by('-date_created')
+                    if "SLT" in roles:
+                        # resp = []
+                        # if "HOF" in roles:
 
-                            else:
-                                resp = models.Recruit.objects.filter((Q(department__slt=authenticated_user) & Q(is_slt_approved=False)) |(Q(is_hof_approved=False) & Q(is_hhr_approved=True)), is_deleted=False).order_by('-date_created')
+                        #     if query == 'pending':
+                        #         resp = models.Recruit.objects.filter((Q(department__slt=authenticated_user) & Q(is_slt_approved=False)) |(Q(is_hof_approved=False) & Q(is_hhr_approved=True)), is_deleted=False).order_by('-date_created')
 
-                        else:
-                            resp = models.Recruit.objects.filter(Q(is_deleted=False) & Q(department__slt=authenticated_user) & Q(is_slt_approved=False)).order_by('-date_created')
+                        #     else:
+                        #         resp = models.Recruit.objects.filter((Q(department__slt=authenticated_user) & Q(is_slt_approved=False)) |(Q(is_hof_approved=False) & Q(is_hhr_approved=True)), is_deleted=False).order_by('-date_created')
 
-                    elif "HR" in roles:
+                        # else:
+                        resp = models.Recruit.objects.filter(Q(is_deleted=False) & Q(department__slt=authenticated_user) & Q(is_slt_approved=False)).order_by('-date_created')
+
+                        final_resp += list(resp)
+
+                    if "HR" in roles:
                         if not query:
                             resp = models.Recruit.objects.filter((Q(is_slt_approved=True) & Q(department__hr_partner=request.user)),is_deleted=False).order_by('-date_created')
 
                         elif query == 'pending':
                             resp = models.Recruit.objects.filter((Q(is_slt_approved=True) & Q(is_hhr_approved=False) & Q(department__hr_partner=request.user)),is_deleted=False).order_by('-date_created')
 
-                    elif "HHR" in roles:
+                        final_resp += list(resp)
+
+                    if "HHR" in roles:
                         if not query:
                             resp = models.Recruit.objects.filter((Q(is_slt_approved=True)),is_deleted=False).order_by('-date_created')
 
                         elif query == 'pending':
                             resp = models.Recruit.objects.filter((Q(is_slt_approved=True) & Q(is_hhr_approved=False)),is_deleted=False).order_by('-date_created')
 
-                        # resp = []
+                        final_resp += list(resp)
 
-                    elif "HOF" in roles:
+                    if "HOF" in roles:
                         if not query:
                             resp = models.Recruit.objects.filter((Q(is_hof_approved=False) & Q(is_hhr_approved=True)),is_deleted=False).order_by('-date_created')
 
                         elif query == 'pending':
                             resp = models.Recruit.objects.filter((Q(is_hof_approved=False) & Q(is_hhr_approved=True)),is_deleted=False).order_by('-date_created')
+                            
+                        final_resp += list(resp)
                     
-                    elif "CEO" in roles:
+                    if "CEO" in roles:
                         if not query:
                             resp = models.Recruit.objects.filter((Q(is_hof_approved=True) & Q(is_hhr_approved=True) & Q(is_ceo_approved=False)),is_deleted=False).order_by('-date_created')
 
                         elif query == 'pending':
                             resp = models.Recruit.objects.filter((Q(is_hof_approved=True) & Q(is_hhr_approved=True) & Q(is_ceo_approved=False)),is_deleted=False).order_by('-date_created')
 
-                    else:
-                        resp = []
+                        final_resp += list(resp)
 
 
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
-                    result_page = paginator.paginate_queryset(resp, request)
+                    result_page = paginator.paginate_queryset(set(final_resp), request)
                     serializer = serializers.SlimFetchRecruitSerializer(
                         result_page, many=True, context={"user_id":request.user.id})
                     return paginator.get_paginated_response(serializer.data)
