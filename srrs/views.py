@@ -575,10 +575,9 @@ class SrrsViewSet(viewsets.ViewSet):
 
                         final_resp += list(resp)
 
-
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
-                    result_page = paginator.paginate_queryset(set(final_resp), request)
+                    result_page = paginator.paginate_queryset(list(set(final_resp)), request)
                     serializer = serializers.SlimFetchRecruitSerializer(
                         result_page, many=True, context={"user_id":request.user.id})
                     return paginator.get_paginated_response(serializer.data)
