@@ -150,6 +150,7 @@ class AdditionalSystemAccess(models.Model):
         System, on_delete=models.DO_NOTHING,
         related_name="asa_additional_system"
     )
+    status = models.CharField(max_length=20, default='REQUESTED')
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
@@ -167,6 +168,7 @@ class AdditionalModuleAccess(models.Model):
         related_name="asa_additional_module_employee"
     )
     modules = models.JSONField()
+    status = models.CharField(max_length=20, default='REQUESTED')
     remarks = models.TextField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)

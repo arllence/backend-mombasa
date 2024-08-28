@@ -59,7 +59,9 @@ class FetchRequestSerializer(serializers.ModelSerializer):
     access = serializers.SerializerMethodField()
     doctor_info = serializers.SerializerMethodField()
     system_access = serializers.SerializerMethodField()
+    additional_system_access = serializers.SerializerMethodField()
     module_access = serializers.SerializerMethodField()
+    additional_module_access = serializers.SerializerMethodField()
     approvals = serializers.SerializerMethodField()
     
     class Meta:
@@ -101,11 +103,35 @@ class FetchRequestSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return {} 
+    
+    def get_additional_system_access(self, obj):
+        try:
+            request = models.AdditionalSystemAccess.objects.filter(employee=obj,status='REQUESTED')
+            serializer = SlimFetchAdditionalSystemAccessSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
         
     def get_module_access(self, obj):
         try:
             request = models.ModuleAccess.objects.get(employee=obj)
             serializer = SlimFetchModuleAccessSerializer(request, many=False)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {}
+
+    def get_additional_module_access(self, obj):
+        try:
+            request = models.AdditionalModuleAccess.objects.filter(employee=obj,status='REQUESTED')
+            serializer = SlimFetchAdditionalModuleAccessSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return {}
@@ -176,9 +202,20 @@ class SlimFetchSystemAccessSerializer(serializers.ModelSerializer):
         model = models.SystemAccess
         fields = '__all__'
 
+class SlimFetchAdditionalSystemAccessSerializer(serializers.ModelSerializer):
+    system = SlimFetchSystemsSerializer()
+    class Meta:
+        model = models.AdditionalSystemAccess
+        fields = '__all__'
+
 class SlimFetchModuleAccessSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ModuleAccess
+        fields = '__all__'
+
+class SlimFetchAdditionalModuleAccessSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.AdditionalModuleAccess
         fields = '__all__'
 
 class FetchApproverSerializer(serializers.ModelSerializer):
