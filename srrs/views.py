@@ -595,12 +595,20 @@ class SrrsViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             if not request_id:
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+        
             
             with transaction.atomic():
                 try:
 
-                    raw = {"is_deleted" : True}
-                    models.Recruit.objects.filter(Q(id=request_id)).update(**raw)
+                    # raw = {"is_deleted" : True}
+                    # models.Recruit.objects.filter(Q(id=request_id)).update(**raw)
+                    try:
+                        recordInstance = models.Recruit.objects.get(id=request_id,created_by=request.user)
+                        recordInstance.is_deleted = True
+                        recordInstance.save()
+                    except:
+                        return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
+
                     return Response('200', status=status.HTTP_200_OK)    
                  
                 except Exception as e:
