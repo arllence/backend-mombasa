@@ -33,4 +33,24 @@ class FetchDocumentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
  
-        
+class QuickLinkSerializer(serializers.Serializer):
+    link = serializers.CharField(max_length=500)
+    title = serializers.CharField(max_length=100)
+
+class UpdateQuickLinkSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    link = serializers.CharField(max_length=500)
+    title = serializers.CharField(max_length=100)
+
+class SlimFetchQuickLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.QuickLink
+        fields = '__all__'
+
+
+class FetchQuickLinkSerializer(serializers.ModelSerializer):
+    created_by = UsersSerializer()
+    
+    class Meta:
+        model = models.QuickLink
+        fields = '__all__'

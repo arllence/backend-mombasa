@@ -13,6 +13,7 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.contrib.auth import get_user_model
 from django.db.models import  Q
 from django.db import transaction
+from acl.serializers import SlimFetchSRRSDepartmentSerializer
 from intranet import models
 from intranet import serializers
 from django.db import IntegrityError, DatabaseError
@@ -28,6 +29,76 @@ from rest_framework.pagination import PageNumberPagination
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
+
+class GenericsViewSet(viewsets.ViewSet):
+    permission_classes = (AllowAny,)
+    search_fields = ['id', ]
+    
+
+    def get_queryset(self):
+        return []
+    
+    @action(methods=["GET"], detail=False, url_path="links",url_name="links")
+    def links(self, request):
+
+        resp = models.QuickLink.objects.filter(Q(is_deleted=False))
+        
+        paginator = PageNumberPagination()
+        paginator.page_size = 50
+        result_page = paginator.paginate_queryset(resp, request)
+        serializer = serializers.SlimFetchQuickLinkSerializer(
+            result_page, many=True, context={"user_id":request.user.id})
+        
+        return paginator.get_paginated_response(serializer.data)
+    
+    
+    @action(methods=["GET"], detail=False, url_path="departments",url_name="departments")
+    def departments(self, request):
+
+        resp = models.SRRSDepartment.objects.all().order_by('name')
+        serializer = SlimFetchSRRSDepartmentSerializer(
+            resp, many=True, context={"user_id":request.user.id})
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    
+    @action(methods=["GET"], detail=False, url_path="files",url_name="files")
+    def files(self, request):
+        department_id = request.query_params.get('department_id')
+        if department_id:
+            documents = models.Document.objects.filter(Q(department=department_id) & Q(is_deleted=False))
+        else:
+            documents = []
+        
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 50
+        result_page = paginator.paginate_queryset(documents, request)
+        serializer = serializers.SlimFetchDocumentSerializer(
+            result_page, many=True)
+        
+        return paginator.get_paginated_response(serializer.data)
+    
+    @action(methods=["POST"], detail=False, url_path="downloads",url_name="downloads")
+    def downloads(self, request):
+        payload = request.data
+        try:
+            request_id = payload['request_id']
+            document = models.Document.objects.get(id=request_id)
+        except:
+            return Response({"details": "Unknown request id"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        count = int(document.downloads)
+        count += 1
+        
+        with transaction.atomic():
+            try:
+                document.downloads = count
+                document.save()  
+                return Response("200", status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+       
 
 class DocumentManagerViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
@@ -104,7 +175,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
 
             elif department_id:
             
-                documents = models.Document.objects.get(Q(department=department_id) & Q(is_deleted=False))
+                documents = models.Document.objects.filter(Q(department=department_id) & Q(is_deleted=False))
             
             else:
                 if "SUPERUSER" in roles or "ICT" in roles:
@@ -154,12 +225,111 @@ class DocumentManagerViewSet(viewsets.ViewSet):
         with transaction.atomic():
             try:
                 document.downloads = count
-                document.save()  
+                # document.save()  
                 return Response("200", status=status.HTTP_200_OK)
             except Exception as e:
                 return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
                        
+class QuickLinksViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    search_fields = ['id', ]
+    
+
+    def get_queryset(self):
+        return []
+    
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="links",url_name="links")
+    def links(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.QuickLinkSerializer(
+                    data=payload, many=False)
             
+            if serializer.is_valid():
+                title = payload['title']
+                link = payload['link']
+
+                
+                with transaction.atomic():
+                    models.QuickLink.objects.create(
+                        title=title,
+                        link=link,
+                        created_by=request.user
+                    )
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateQuickLinkSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                title = payload['title']
+                link = payload['link']
+
+                try:
+                    quickLink = models.QuickLink.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    quickLink.title = title
+                    quickLink.link = link
+
+                    quickLink.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+
+            if request_id:
+                resp = models.QuickLink.objects.get(Q(id=request_id) & Q(is_deleted=False))
+            
+            else:
+                resp = models.QuickLink.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            serializer = serializers.SlimFetchQuickLinkSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.QuickLink.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
+       
 
 class ReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]
