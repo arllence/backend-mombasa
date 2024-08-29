@@ -609,7 +609,16 @@ class SrrsViewSet(viewsets.ViewSet):
                     try:
                         recordInstance = models.Recruit.objects.get(id=request_id,created_by=request.user)
                         recordInstance.is_deleted = True
+                        recordInstance.status = "DELETED"
                         recordInstance.save()
+                        # track status change
+                        raw = {
+                            "recruit": recruit,
+                            "status": "DELETED",
+                            "status_for": '/'.join(roles),
+                            "action_by": authenticated_user,
+                        }
+                        models.StatusChange.objects.create(**raw)
                     except:
                         return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
 
