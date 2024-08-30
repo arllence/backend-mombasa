@@ -690,7 +690,7 @@ class SrrsViewSet(viewsets.ViewSet):
                             recruit.is_hhr_approved = True
                             new_status = "HR APPROVED"
                             forward_to = ["HOF","FINANCE"]
-                            previous_office = ["SLT"]
+                            previous_office = []
                             previous_office_emails = [recruit.department.slt.email]
 
                             if comments:
