@@ -41,7 +41,7 @@ class GenericsViewSet(viewsets.ViewSet):
     @action(methods=["GET"], detail=False, url_path="links",url_name="links")
     def links(self, request):
 
-        resp = models.QuickLink.objects.filter(Q(is_deleted=False))
+        resp = models.QuickLink.objects.filter(Q(is_deleted=False)).order_by('title')
         
         paginator = PageNumberPagination()
         paginator.page_size = 50
