@@ -253,6 +253,9 @@ class SrrsViewSet(viewsets.ViewSet):
                 filling_date = payload['filling_date']
                 temporary_task_assignment_to = payload['temporary_task_assignment_to']
                 ohc = payload.get('ohc')
+                replacement = payload.get('replacement_details')
+
+
 
                 # Check temporary hire period
                 if position_type == 'Temporary':
@@ -263,6 +266,13 @@ class SrrsViewSet(viewsets.ViewSet):
                     years = shared_fxns.find_date_difference(period_from,period_to,'years')
                     if years > 1:
                         return Response({"details": "Temporary hire period cannot be more than one year"},
+                                status=status.HTTP_400_BAD_REQUEST)
+                    
+                if nature_of_hiring == 'Replacement':
+                    if replacement:
+                        for key, value in replacement.items():
+                            if not value:
+                                return Response({"details": "Staff Replacement Details Required"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
 
                 try:
@@ -332,6 +342,10 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     if job_description_file:
                         recruit.job_description = job_description_file
+                        recruit.save()
+
+                    if nature_of_hiring == 'Replacement':
+                        recruit.replacement_details = replacement
                         recruit.save()
 
                     # create track status change
