@@ -147,7 +147,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                             if total_files > 1:
                                 title = f"{title} - {str(total_files)}"
 
-                            original_file_name = f.name                            
+                            original_file_name = f.name.split('.')[0]                            
                             models.Document.objects.create(
                                 document=f,
                                 original_file_name=original_file_name, 

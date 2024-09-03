@@ -14,7 +14,7 @@ class UpdateGeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
 
 class UploadDocumentSerializer(serializers.Serializer):
-    title = serializers.CharField(max_length=500)
+    # title = serializers.CharField(max_length=500)
     department = serializers.CharField(max_length=500)
 
 
