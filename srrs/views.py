@@ -723,8 +723,11 @@ class SrrsViewSet(viewsets.ViewSet):
                             new_status = "FINANCE APPROVED"
                             # check if ceo is also slt
                             try:
-                                ceo = get_user_model().objects.filter(Q(groups__name__in=['CEO'])).first()
-                                if ceo.email == recruit.department.slt.email:
+                                ceo_exists = User.objects.filter(
+                                    Q(groups__name='CEO') & Q(email=recruit.department.slt.email)
+                                ).exists()
+
+                                if ceo_exists:
                                     # track hof actions first
                                     raw = {
                                         "recruit": recruit,
@@ -740,7 +743,7 @@ class SrrsViewSet(viewsets.ViewSet):
                                     previous_office = ["HHR"]
                                     previous_office_emails = [recruit.department.hr_partner.email]
                                     recruit.ceo_comments = "**Auto System Approved since CEO is also the SLT**"
-                                    authenticated_user = ceo
+                                    authenticated_user = recruit.department.slt
                                     ceo_is_slt = True
                                 else:
                                     forward_to = ["CEO","HHR"]
