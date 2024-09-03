@@ -17,7 +17,7 @@ class Document(models.Model):
     )
 
     document = models.FileField(upload_to='documents/intranet')
-    title = models.CharField(max_length=500)
+    title = models.CharField(max_length=500, null=True, blank=True)
     original_file_name = models.CharField(max_length=500)
     downloads = models.IntegerField(default=0)
     is_deleted = models.BooleanField(default=False)
