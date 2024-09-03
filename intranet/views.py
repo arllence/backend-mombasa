@@ -108,7 +108,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
     def get_queryset(self):
         return []
     
-    @action(methods=["POST","DELETE", "GET"], detail=False, url_path="files",url_name="files")
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="files",url_name="files")
     def files(self, request):
         roles = user_util.fetchusergroups(request.user.id) 
 
@@ -160,6 +160,31 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                             logger.error(e)
                             print(e)
                             return Response({"details": "Error saving files"}, status=status.HTTP_400_BAD_REQUEST)  
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateDocumentSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['id']
+                name = payload['name']
+
+                try:
+                    document = models.Document.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    document.original_file_name = name
+                    document.save()
                     
                     return Response("Success", status=status.HTTP_200_OK)
             else:

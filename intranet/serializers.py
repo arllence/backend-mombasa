@@ -32,6 +32,9 @@ class FetchDocumentSerializer(serializers.ModelSerializer):
         model = models.Document
         fields = '__all__'
 
+class UpdateDocumentSerializer(serializers.Serializer):
+    id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=500)
  
 class QuickLinkSerializer(serializers.Serializer):
     link = serializers.CharField(max_length=500)
