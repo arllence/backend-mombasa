@@ -770,12 +770,17 @@ class SrrsViewSet(viewsets.ViewSet):
                                     forward_to = []
                                     previous_office = ["HHR"]
                                     previous_office_emails = [recruit.department.hr_partner.email]
+                                    if recruit.hr_partner:
+                                        previous_office_emails.append(recruit.hr_partner.email)
                                     recruit.ceo_comments = "**Auto System Approved since CEO is also the SLT**"
                                     authenticated_user = recruit.department.slt
                                     ceo_is_slt = True
                                 else:
                                     forward_to = ["CEO","HHR"]
                                     previous_office_emails = [recruit.department.slt.email, recruit.department.hr_partner.email]
+
+                                    if recruit.hr_partner:
+                                        previous_office_emails.append(recruit.hr_partner.email)
 
                             except Exception as e:
                                 logger.error(e)
@@ -790,6 +795,8 @@ class SrrsViewSet(viewsets.ViewSet):
                             forward_to = []
                             previous_office = ["HOF","FINANCE","HHR"]
                             previous_office_emails = [recruit.department.slt.email, recruit.department.hr_partner.email]
+                            if recruit.hr_partner:
+                                        previous_office_emails.append(recruit.hr_partner.email)
                             if comments:
                                 recruit.ceo_comments = comments
 
