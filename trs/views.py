@@ -983,7 +983,7 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify the requestor
                     if is_hod:
                         subject = f"Travel Request {traveler.tid} Status  [TRF-AKHK]"
-                        message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by HOD.\nPending SLT Approval.\n\nRegards\nTRS-AKHK"
+                        message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by HOD.\nPending other approvals.\n\nRegards\nTRS-AKHK"
                     elif is_slt:
                         subject = f"Travel Request {traveler.tid} Status  [TRF-AKHK]"
                         message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been Approved by SLT.\nPending Finance Approval.\n\nRegards\nTRS-AKHK"

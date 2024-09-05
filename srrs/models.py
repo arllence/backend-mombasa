@@ -37,6 +37,11 @@ class Recruit(models.Model):
        related_name="srrs_ohc",
        null=True, blank=True
     )
+    hr_partner = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="srrs_hr_partner",
+       null=True, blank=True
+    )
     uid = models.CharField(max_length=50, unique=True)
     status = models.CharField(max_length=255, default='REQUESTED')
     position_title = models.CharField(max_length=255)

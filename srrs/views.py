@@ -74,6 +74,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 temporary_task_assignment_to = payload['temporary_task_assignment_to']
                 justification = payload['justification']
                 ohc = payload.get('ohc') or None
+                hr_partner = payload.get('hr_partner') or None
 
                 uid = shared_fxns.generate_unique_identifier()
 
@@ -103,6 +104,12 @@ class SrrsViewSet(viewsets.ViewSet):
                         ohc = OHC.objects.get(id=ohc)
                     except Exception as e:
                         return Response({"details": "Unknown OHC "}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if hr_partner:
+                    try:
+                        hr_partner = get_user_model().objects.get(id=hr_partner)
+                    except Exception as e:
+                        return Response({"details": "Unknown HR partner "}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 if not qualifications:
@@ -132,6 +139,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         "period_to": period_to,
                         "filling_date": filling_date,
                         "ohc": ohc,
+                        "hr_partner": hr_partner,
                         "justification": justification,
                         "temporary_task_assignment_to": temporary_task_assignment_to,
                         "uid": uid
@@ -252,7 +260,8 @@ class SrrsViewSet(viewsets.ViewSet):
                 period_to = payload['period_to']
                 filling_date = payload['filling_date']
                 temporary_task_assignment_to = payload['temporary_task_assignment_to']
-                ohc = payload.get('ohc')
+                ohc = payload.get('ohc') or None
+                hr_partner = payload.get('hr_partner') or None
                 replacement = payload.get('replacement_details')
 
 
@@ -296,6 +305,12 @@ class SrrsViewSet(viewsets.ViewSet):
                         ohc = OHC.objects.get(id=ohc)
                     except Exception as e:
                         return Response({"details": "Unknown OHC "}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if hr_partner:
+                    try:
+                        hr_partner = get_user_model().objects.get(id=hr_partner)
+                    except Exception as e:
+                        return Response({"details": "Unknown HR partner "}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 if not qualifications:
@@ -334,6 +349,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         "period_from": period_from,
                         "period_to": period_to,
                         "ohc": ohc,
+                        "hr_partner": hr_partner,
                         "filling_date": filling_date,
                         "temporary_task_assignment_to": temporary_task_assignment_to,
                     }  
@@ -555,10 +571,19 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     if "HR" in roles:
                         if not query:
-                            resp = models.Recruit.objects.filter((Q(is_slt_approved=True) & Q(department__hr_partner=request.user)),is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(
+                                Q(hr_partner=request.user) | Q(department__hr_partner=request.user),
+                                is_slt_approved=True,
+                                is_deleted=False
+                            ).order_by('-date_created')
 
                         elif query == 'pending':
-                            resp = models.Recruit.objects.filter((Q(is_slt_approved=True) & Q(is_hhr_approved=False) & Q(department__hr_partner=request.user)),is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(
+                                Q(is_slt_approved=True),
+                                Q(is_hhr_approved=False),
+                                Q(department__hr_partner=request.user) | Q(hr_partner=request.user),
+                                is_deleted=False
+                            ).order_by('-date_created')
 
                         final_resp += list(resp)
 
@@ -606,7 +631,7 @@ class SrrsViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     logger.error(e)
-                    print(e)
+                    # print(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
         
         elif request.method == "DELETE":
@@ -693,6 +718,9 @@ class SrrsViewSet(viewsets.ViewSet):
                             forward_to = ["HHR"]
                             previous_office = []
                             forward_to_emails = [recruit.department.hr_partner.email]
+
+                            if recruit.hr_partner:
+                                forward_to_emails.append(recruit.hr_partner.email)
 
                             if comments:
                                 recruit.slt_comments = comments
