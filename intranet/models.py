@@ -28,7 +28,97 @@ class Document(models.Model):
     
     class Meta:
         db_table = u'"{}\".\"documents"'.format(settings.INTRANET)
+
+
+class Qips(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="qips_created_by"
+    )
+
+    topic = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title}"
+    
+    class Meta:
+        db_table = u'"{}\".\"qips"'.format(settings.INTRANET)
+
+class QipsSubTopic(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    qips = models.ForeignKey(
+       Qips, on_delete=models.DO_NOTHING, 
+       related_name="qips_topic"
+    )
+
+    sub_topic = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title}"
+    
+    class Meta:
+        db_table = u'"{}\".\"qips_sub_topic"'.format(settings.INTRANET)
+
+
+class QipsCategory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    sub_topic = models.ForeignKey(
+       QipsSubTopic, on_delete=models.DO_NOTHING, 
+       related_name="qips_sub_topic"
+    )
+
+    category = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.category}"
+    
+    class Meta:
+        db_table = u'"{}\".\"qips_category"'.format(settings.INTRANET)   
+
+
+class QipsDocument(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    qips = models.ForeignKey(
+        Qips, on_delete=models.DO_NOTHING, 
+        related_name='qips_document')
+    
+    qips_sub_topic = models.ForeignKey(
+        QipsSubTopic, on_delete=models.DO_NOTHING, 
+        related_name='qips_subtopic_document', null=True, blank=True)
+    
+    category = models.ForeignKey(
+        QipsCategory, on_delete=models.DO_NOTHING, 
+        related_name='qips_category_document', null=True, blank=True)
+    
+    uploaded_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="qips_document_uploaded_by"
+    )
+
+    document = models.FileField(upload_to='documents/intranet/qips')
+    title = models.CharField(max_length=500, null=True, blank=True)
+    original_file_name = models.CharField(max_length=500)
+    downloads = models.IntegerField(default=0)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.original_file_name}"
+    
+    class Meta:
+        db_table = u'"{}\".\"qips_documents"'.format(settings.INTRANET)
+        
 
 class QuickLink(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

@@ -57,3 +57,41 @@ class FetchQuickLinkSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.QuickLink
         fields = '__all__'
+
+class QipsSerializer(serializers.Serializer):
+    topic = serializers.CharField(max_length=500)
+
+class UpdateQipsSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    topic = serializers.CharField(max_length=500)
+
+class SlimFetchQipsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Qips
+        fields = '__all__'
+
+class QipsSubTopicSerializer(serializers.Serializer):
+    qips = serializers.CharField(max_length=500)
+    sub_topic = serializers.CharField(max_length=500)
+
+class UpdateQipsSubTopicSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    sub_topic = serializers.CharField(max_length=500)
+
+class SlimFetchQipsSubTopicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.QipsSubTopic
+        fields = '__all__'
+
+class QipsCategorySerializer(serializers.Serializer):
+    category = serializers.CharField(max_length=500)
+    sub_topic = serializers.CharField(max_length=500)
+
+class UpdateQipsCategorySerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    category = serializers.CharField(max_length=500)
+
+class SlimFetchQipsCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.QipsCategory
+        fields = '__all__'

@@ -124,7 +124,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
-                title = payload['title']
+                title = payload.get('title')
                 department = payload['department']
 
                 try:
@@ -232,7 +232,133 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="qips-files",url_name="qips-files")
+    def qips_files(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            uploaded_files = request.FILES
+            if not uploaded_files:
+                return Response({"details": f"No files attached"}, status=status.HTTP_400_BAD_REQUEST)
+
+            payload = json.loads(request.data['payload'])
+
+            serializer = serializers.UploadDocumentSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                title = payload.get('title')
+                department = payload['department']
+
+                try:
+                    department = SRRSDepartment.objects.get(id=department)
+                except Exception as e:
+                    return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+                exts = ['pdf']
+                for f in request.FILES.getlist('documents'):
+                    original_file_name = f.name
+                    ext = original_file_name.split('.')[1].strip().lower()
+                    if ext not in exts:
+                        return Response({"details": f"{original_file_name} not allowed. Only Images, PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
                 
+                with transaction.atomic():
+                    total_files = 1
+                    for f in request.FILES.getlist('documents'):
+                        try:
+                            if total_files > 1:
+                                title = f"{title} - {str(total_files)}"
+
+                            original_file_name = f.name.split('.')[0]                            
+                            models.Document.objects.create(
+                                document=f,
+                                original_file_name=original_file_name, 
+                                title=title, 
+                                department=department,
+                                uploaded_by=request.user
+                            )
+                            total_files += 1
+                        except Exception as e:
+                            logger.error(e)
+                            print(e)
+                            return Response({"details": "Error saving files"}, status=status.HTTP_400_BAD_REQUEST)  
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateDocumentSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['id']
+                name = payload['name']
+
+                try:
+                    document = models.Document.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    document.original_file_name = name
+                    document.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+            department_id = request.query_params.get('department_id')
+
+            if request_id:
+                documents = models.Document.objects.get(Q(id=request_id) & Q(is_deleted=False))
+
+            elif department_id:
+            
+                documents = models.Document.objects.filter(Q(department=department_id) & Q(is_deleted=False))
+            
+            else:
+                if "SUPERUSER" in roles or "ICT" in roles:
+                    documents = models.Document.objects.filter(Q(is_deleted=False))
+                else:
+                    documents = models.Document.objects.filter(Q(department=request.user.srrs_department) & Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(documents, request)
+            serializer = serializers.FetchDocumentSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.Document.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                            
     
     @action(methods=["POST"], detail=False, url_path="downloads",url_name="downloads")
     def downloads(self, request):
@@ -354,7 +480,287 @@ class QuickLinksViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
                 
-       
+
+class QipsViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    search_fields = ['id', ]
+    
+
+    def get_queryset(self):
+        return []
+    
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="topics",url_name="topics")
+    def topics(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.QipsSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                topic = payload['topic']
+                
+                with transaction.atomic():
+                    models.Qips.objects.create(
+                        topic=topic,
+                        created_by=request.user
+                    )
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateQipsSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                topic = payload['topic']
+
+                try:
+                    topicInstance = models.Qips.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    topicInstance.topic = topic
+                    topicInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+
+            if request_id:
+                resp = models.Qips.objects.get(Q(id=request_id) & Q(is_deleted=False))
+            
+            else:
+                resp = models.Qips.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            serializer = serializers.SlimFetchQipsSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.Qips.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="sub-topics",url_name="sub-topics")
+    def sub_topics(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.QipsSubTopicSerializer(
+                    data=payload, many=False)
+            
+
+            if serializer.is_valid():
+                qips = payload['qips']
+                sub_topic = payload['sub_topic']
+
+                try:
+                    qipsInstance = models.Qips.objects.get(id=qips)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    models.QipsSubTopic.objects.create(
+                        qips=qipsInstance,
+                        sub_topic=sub_topic
+                    )
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateQipsSubTopicSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                sub_topic = payload['topic']
+
+                try:
+                    topicInstance = models.QipsSubTopic.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    topicInstance.sub_topic = sub_topic
+                    topicInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+
+            if request_id:
+                resp = models.QipsSubTopic.objects.get(Q(id=request_id) & Q(is_deleted=False))
+            
+            else:
+                resp = models.QipsSubTopic.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            serializer = serializers.SlimFetchQipsSubTopicSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.QipsSubTopic.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="categories",url_name="categories")
+    def categories(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.QipsCategorySerializer(
+                    data=payload, many=False)
+            
+
+            if serializer.is_valid():
+                category = payload['category']
+                sub_topic = payload['sub_topic']
+
+                try:
+                    sub_topicInstance = models.QipsSubTopic.objects.get(id=sub_topic)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    models.QipsCategory.objects.create(
+                        category=category,
+                        sub_topic=sub_topicInstance
+                    )
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateQipsCategorySerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                category = payload['category']
+                sub_topic = payload['topic']
+
+                try:
+                    categoryInstance = models.QipsCategory.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    categoryInstance.category = category
+                    categoryInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+
+            if request_id:
+                resp = models.QipsCategory.objects.get(Q(id=request_id) & Q(is_deleted=False))
+            
+            else:
+                resp = models.QipsCategory.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            serializer = serializers.SlimFetchQipsCategorySerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.QipsCategory.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                             
 
 class ReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]
