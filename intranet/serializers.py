@@ -83,6 +83,12 @@ class SlimFetchQipsSubTopicSerializer(serializers.ModelSerializer):
         model = models.QipsSubTopic
         fields = '__all__'
 
+class FetchQipsSubTopicSerializer(serializers.ModelSerializer):
+    qips = SlimFetchQipsSerializer()
+    class Meta:
+        model = models.QipsSubTopic
+        fields = '__all__'
+
 class QipsCategorySerializer(serializers.Serializer):
     category = serializers.CharField(max_length=500)
     sub_topic = serializers.CharField(max_length=500)
@@ -92,6 +98,12 @@ class UpdateQipsCategorySerializer(serializers.Serializer):
     category = serializers.CharField(max_length=500)
 
 class SlimFetchQipsCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.QipsCategory
+        fields = '__all__'
+
+class FetchQipsCategorySerializer(serializers.ModelSerializer):
+    sub_topic = SlimFetchQipsSubTopicSerializer()
     class Meta:
         model = models.QipsCategory
         fields = '__all__'
