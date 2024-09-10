@@ -59,7 +59,7 @@ class FetchQuickLinkSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class QipsSerializer(serializers.Serializer):
-    topic = serializers.CharField(max_length=500)
+    topic = serializers.ListField(min_length=1)
 
 class UpdateQipsSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
@@ -71,8 +71,8 @@ class SlimFetchQipsSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class QipsSubTopicSerializer(serializers.Serializer):
-    qips = serializers.CharField(max_length=500)
-    sub_topic = serializers.CharField(max_length=500)
+    topic = serializers.CharField(max_length=500)
+    sub_topic = serializers.ListField(min_length=1)
 
 class UpdateQipsSubTopicSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)

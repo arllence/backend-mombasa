@@ -501,13 +501,14 @@ class QipsViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
-                topic = payload['topic']
+                topics = payload['topic']
                 
                 with transaction.atomic():
-                    models.Qips.objects.create(
-                        topic=topic,
-                        created_by=request.user
-                    )
+                    for topic in topics:
+                        models.Qips.objects.create(
+                            topic=topic,
+                            created_by=request.user
+                        )
                     
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -588,8 +589,8 @@ class QipsViewSet(viewsets.ViewSet):
             
 
             if serializer.is_valid():
-                qips = payload['qips']
-                sub_topic = payload['sub_topic']
+                qips = payload['topic']
+                sub_topics = payload['sub_topic']
 
                 try:
                     qipsInstance = models.Qips.objects.get(id=qips)
@@ -597,10 +598,11 @@ class QipsViewSet(viewsets.ViewSet):
                     return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
-                    models.QipsSubTopic.objects.create(
-                        qips=qipsInstance,
-                        sub_topic=sub_topic
-                    )
+                    for sub_topic in sub_topics:
+                        models.QipsSubTopic.objects.create(
+                            qips=qipsInstance,
+                            sub_topic=sub_topic
+                        )
                     
                     return Response("Success", status=status.HTTP_200_OK)
             else:
