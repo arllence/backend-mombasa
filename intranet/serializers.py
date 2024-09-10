@@ -70,6 +70,24 @@ class SlimFetchQipsSerializer(serializers.ModelSerializer):
         model = models.Qips
         fields = '__all__'
 
+class FullFetchQipsSerializer(serializers.ModelSerializer):
+    sub_topics = serializers.SerializerMethodField()
+    class Meta:
+        model = models.Qips
+        fields = '__all__'
+
+    def get_sub_topics(self, obj):
+        try:
+            request = models.QipsSubTopic.objects.filter(qips=obj)
+            serializer = FetchQipsSubTopicSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+
 class QipsSubTopicSerializer(serializers.Serializer):
     topic = serializers.CharField(max_length=500)
     sub_topic = serializers.ListField(min_length=1)
@@ -85,12 +103,25 @@ class SlimFetchQipsSubTopicSerializer(serializers.ModelSerializer):
 
 class FetchQipsSubTopicSerializer(serializers.ModelSerializer):
     qips = SlimFetchQipsSerializer()
+    categories = serializers.SerializerMethodField()
     class Meta:
         model = models.QipsSubTopic
         fields = '__all__'
 
+    def get_categories(self, obj):
+        try:
+            request = models.QipsCategory.objects.filter(sub_topic=obj)
+            serializer = SlimFetchQipsCategorySerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+
 class QipsCategorySerializer(serializers.Serializer):
-    category = serializers.CharField(max_length=500)
+    category = serializers.ListField(min_length=1)
     sub_topic = serializers.CharField(max_length=500)
 
 class UpdateQipsCategorySerializer(serializers.Serializer):

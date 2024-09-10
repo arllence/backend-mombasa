@@ -543,6 +543,7 @@ class QipsViewSet(viewsets.ViewSet):
         elif request.method == "GET":
 
             request_id = request.query_params.get('request_id')
+            serializer = request.query_params.get('serializer')
 
             if request_id:
                 resp = models.Qips.objects.get(Q(id=request_id) & Q(is_deleted=False))
@@ -554,8 +555,12 @@ class QipsViewSet(viewsets.ViewSet):
             paginator = PageNumberPagination()
             paginator.page_size = 50
             result_page = paginator.paginate_queryset(resp, request)
-            serializer = serializers.SlimFetchQipsSerializer(
-                result_page, many=True, context={"user_id":request.user.id})
+            if serializer == 'full':
+                serializer = serializers.FullFetchQipsSerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            else:
+                serializer = serializers.SlimFetchQipsSerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
             
             return paginator.get_paginated_response(serializer.data)
             
@@ -617,7 +622,7 @@ class QipsViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 request_id = payload['request_id']
-                sub_topic = payload['topic']
+                sub_topic = payload['sub_topic']
 
                 try:
                     topicInstance = models.QipsSubTopic.objects.get(id=request_id)
@@ -637,6 +642,7 @@ class QipsViewSet(viewsets.ViewSet):
         elif request.method == "GET":
 
             request_id = request.query_params.get('request_id')
+            serializer = request.query_params.get('serializer')
 
             if request_id:
                 resp = models.QipsSubTopic.objects.get(Q(id=request_id) & Q(is_deleted=False))
@@ -648,8 +654,12 @@ class QipsViewSet(viewsets.ViewSet):
             paginator = PageNumberPagination()
             paginator.page_size = 50
             result_page = paginator.paginate_queryset(resp, request)
-            serializer = serializers.SlimFetchQipsSubTopicSerializer(
-                result_page, many=True, context={"user_id":request.user.id})
+            if serializer == 'full':
+                serializer = serializers.FetchQipsSubTopicSerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            else: 
+                serializer = serializers.SlimFetchQipsSubTopicSerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
             
             return paginator.get_paginated_response(serializer.data)
             
@@ -683,7 +693,7 @@ class QipsViewSet(viewsets.ViewSet):
             
 
             if serializer.is_valid():
-                category = payload['category']
+                categories = payload['category']
                 sub_topic = payload['sub_topic']
 
                 try:
@@ -692,10 +702,11 @@ class QipsViewSet(viewsets.ViewSet):
                     return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
-                    models.QipsCategory.objects.create(
-                        category=category,
-                        sub_topic=sub_topicInstance
-                    )
+                    for category in categories:
+                        models.QipsCategory.objects.create(
+                            category=category,
+                            sub_topic=sub_topicInstance
+                        )
                     
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -711,7 +722,7 @@ class QipsViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 category = payload['category']
-                sub_topic = payload['topic']
+                # sub_topic = payload['topic']
 
                 try:
                     categoryInstance = models.QipsCategory.objects.get(id=request_id)
@@ -731,6 +742,7 @@ class QipsViewSet(viewsets.ViewSet):
         elif request.method == "GET":
 
             request_id = request.query_params.get('request_id')
+            serializer = request.query_params.get('serializer')
 
             if request_id:
                 resp = models.QipsCategory.objects.get(Q(id=request_id) & Q(is_deleted=False))
@@ -742,8 +754,12 @@ class QipsViewSet(viewsets.ViewSet):
             paginator = PageNumberPagination()
             paginator.page_size = 50
             result_page = paginator.paginate_queryset(resp, request)
-            serializer = serializers.SlimFetchQipsCategorySerializer(
-                result_page, many=True, context={"user_id":request.user.id})
+            if serializer == 'full':
+                serializer = serializers.FetchQipsCategorySerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            else:
+                serializer = serializers.SlimFetchQipsCategorySerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
             
             return paginator.get_paginated_response(serializer.data)
             

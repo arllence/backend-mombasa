@@ -61,7 +61,7 @@ class QipsSubTopic(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.title}"
+        return f"{self.sub_topic}"
     
     class Meta:
         db_table = u'"{}\".\"qips_sub_topic"'.format(settings.INTRANET)
