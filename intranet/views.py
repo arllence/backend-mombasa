@@ -91,7 +91,7 @@ class GenericsViewSet(viewsets.ViewSet):
         paginator = PageNumberPagination()
         paginator.page_size = 50
         result_page = paginator.paginate_queryset(documents, request)
-        serializer = serializers.FetchQipsDocumentSerializer(
+        serializer = serializers.SlimFetchQipsDocumentSerializer(
             result_page, many=True)
         
         return paginator.get_paginated_response(serializer.data)
@@ -103,7 +103,7 @@ class GenericsViewSet(viewsets.ViewSet):
             request_id = payload['request_id']
             document = models.Document.objects.get(id=request_id)
         except:
-            return Response({"details": "Unknown request id"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response("200", status=status.HTTP_200_OK)
         
         count = int(document.downloads)
         count += 1
@@ -123,7 +123,7 @@ class GenericsViewSet(viewsets.ViewSet):
             request_id = payload['request_id']
             document = models.QipsDocument.objects.get(id=request_id)
         except:
-            return Response({"details": "Unknown request id"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response("200", status=status.HTTP_200_OK)
         
         count = int(document.downloads)
         count += 1
