@@ -437,7 +437,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
         with transaction.atomic():
             try:
                 document.downloads = count
-                # document.save()  
+                document.save()  
                 return Response("200", status=status.HTTP_200_OK)
             except Exception as e:
                 return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
