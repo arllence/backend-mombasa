@@ -301,7 +301,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                                 category=category,
                                 uploaded_by=request.user
                             )
-                            
+
                         except Exception as e:
                             logger.error(e)
                             print(e)
@@ -339,26 +339,30 @@ class DocumentManagerViewSet(viewsets.ViewSet):
         elif request.method == "GET":
 
             request_id = request.query_params.get('request_id')
-            department_id = request.query_params.get('department_id')
+            topic_id = request.query_params.get('topic_id')
+            sub_topic_id = request.query_params.get('sub_topic_id')
+            category_id = request.query_params.get('category_id')
 
             if request_id:
-                documents = models.Document.objects.get(Q(id=request_id) & Q(is_deleted=False))
+                documents = models.QipsDocument.objects.get(Q(id=request_id) & Q(is_deleted=False))
 
-            elif department_id:
+            elif topic_id:
+                documents = models.QipsDocument.objects.filter(Q(topic=topic_id) & Q(is_deleted=False))
+
+            elif sub_topic_id:
+                documents = models.QipsDocument.objects.filter(Q(sub_topic=sub_topic_id) & Q(is_deleted=False))
             
-                documents = models.Document.objects.filter(Q(department=department_id) & Q(is_deleted=False))
-            
+            elif category_id:
+                documents = models.QipsDocument.objects.filter(Q(category=category_id) & Q(is_deleted=False))
+
             else:
-                if "SUPERUSER" in roles or "ICT" in roles:
-                    documents = models.Document.objects.filter(Q(is_deleted=False))
-                else:
-                    documents = models.Document.objects.filter(Q(department=request.user.srrs_department) & Q(is_deleted=False))
+                documents = models.QipsDocument.objects.filter(Q(is_deleted=False))
             
 
             paginator = PageNumberPagination()
             paginator.page_size = 50
             result_page = paginator.paginate_queryset(documents, request)
-            serializer = serializers.FetchDocumentSerializer(
+            serializer = serializers.FetchQipsDocumentSerializer(
                 result_page, many=True, context={"user_id":request.user.id})
             
             return paginator.get_paginated_response(serializer.data)

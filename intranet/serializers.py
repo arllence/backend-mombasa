@@ -141,3 +141,13 @@ class FetchQipsCategorySerializer(serializers.ModelSerializer):
 
 class UploadQipsDocumentSerializer(serializers.Serializer):
     topic = serializers.CharField(max_length=500)
+
+class FetchQipsDocumentSerializer(serializers.ModelSerializer):
+    topic = SlimFetchQipsSerializer()
+    sub_topic = SlimFetchQipsSubTopicSerializer()
+    category = SlimFetchQipsCategorySerializer()
+    uploaded_by = SlimUsersSerializer()
+    
+    class Meta:
+        model = models.QipsDocument
+        fields = '__all__'
