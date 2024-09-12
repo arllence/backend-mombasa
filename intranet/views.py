@@ -384,13 +384,13 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
                             
     
-    @action(methods=["POST"], detail=False, url_path="downloads",url_name="downloads")
-    def downloads(self, request):
+    @action(methods=["POST"], detail=False, url_path="qips-downloads",url_name="qips-downloads")
+    def qips_downloads(self, request):
         roles = user_util.fetchusergroups(request.user.id) 
         payload = request.data
         try:
             request_id = payload['request_id']
-            document = models.Document.objects.get(id=request_id)
+            document = models.QipsDocument.objects.get(id=request_id)
         except:
             return Response({"details": "Unknown request id"}, status=status.HTTP_400_BAD_REQUEST)
         
