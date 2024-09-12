@@ -151,3 +151,8 @@ class FetchQipsDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.QipsDocument
         fields = '__all__'
+
+class SlimFetchQipsDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.QipsDocument
+        fields = '__all__'
