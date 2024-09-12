@@ -256,42 +256,52 @@ class DocumentManagerViewSet(viewsets.ViewSet):
 
             payload = json.loads(request.data['payload'])
 
-            serializer = serializers.UploadDocumentSerializer(
+            serializer = serializers.UploadQipsDocumentSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
-                title = payload.get('title')
-                department = payload['department']
+                category = payload.get('category') or None
+                sub_topic = payload.get('sub_topic') or None
+                topic = payload['topic']
 
                 try:
-                    department = SRRSDepartment.objects.get(id=department)
+                    topic = models.Qips.objects.get(id=topic)
                 except Exception as e:
-                    return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown topic"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if sub_topic:
+                    try:
+                        sub_topic = models.QipsSubTopic.objects.get(id=sub_topic)
+                    except Exception as e:
+                        return Response({"details": "Unknown sub topic"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if category:
+                    try:
+                        category = models.QipsCategory.objects.get(id=category)
+                    except Exception as e:
+                        return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
             
-
                 exts = ['pdf']
                 for f in request.FILES.getlist('documents'):
                     original_file_name = f.name
                     ext = original_file_name.split('.')[1].strip().lower()
                     if ext not in exts:
-                        return Response({"details": f"{original_file_name} not allowed. Only Images, PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
-                    total_files = 1
                     for f in request.FILES.getlist('documents'):
                         try:
-                            if total_files > 1:
-                                title = f"{title} - {str(total_files)}"
 
                             original_file_name = f.name.split('.')[0]                            
-                            models.Document.objects.create(
+                            models.QipsDocument.objects.create(
                                 document=f,
-                                original_file_name=original_file_name, 
-                                title=title, 
-                                department=department,
+                                file_name=original_file_name, 
+                                topic=topic, 
+                                sub_topic=sub_topic, 
+                                category=category,
                                 uploaded_by=request.user
                             )
-                            total_files += 1
+                            
                         except Exception as e:
                             logger.error(e)
                             print(e)

@@ -138,3 +138,6 @@ class FetchQipsCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.QipsCategory
         fields = '__all__'
+
+class UploadQipsDocumentSerializer(serializers.Serializer):
+    topic = serializers.CharField(max_length=500)
