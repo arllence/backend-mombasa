@@ -138,3 +138,53 @@ class QuickLink(models.Model):
     
     class Meta:
         db_table = u'"{}\".\"quick_links"'.format(settings.INTRANET)
+
+
+class SubDepartment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    department = models.ForeignKey(
+       SRRSDepartment, on_delete=models.DO_NOTHING, 
+       related_name="srrs_main_department"
+    )
+
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="sub_department_created_by"
+    )
+
+    name = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name}"
+    
+    class Meta:
+        db_table = u'"{}\".\"sub_departments"'.format(settings.INTRANET)
+
+
+class SubDepartmentCategory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    sub_department = models.ForeignKey(
+       SubDepartment, on_delete=models.DO_NOTHING, 
+       related_name="sub_department"
+    )
+
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="category_created_by"
+    )
+
+    name = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name}"
+    
+    class Meta:
+        db_table = u'"{}\".\"sub_department_categories"'.format(settings.INTRANET)
