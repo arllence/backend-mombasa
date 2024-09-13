@@ -56,7 +56,7 @@ class GenericsViewSet(viewsets.ViewSet):
     def departments(self, request):
 
         resp = models.SRRSDepartment.objects.all().order_by('name')
-        serializer = SlimFetchSRRSDepartmentSerializer(
+        serializer = serializers.FullFetchDepartmentSerializer(
             resp, many=True, context={"user_id":request.user.id})
         
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -145,8 +145,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     resp, many=True)
         
         return Response(serializer.data, status=status.HTTP_200_OK)
-       
-
+    
 class DocumentManagerViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     search_fields = ['id', ]
