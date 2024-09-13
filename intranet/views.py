@@ -171,12 +171,26 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 title = payload.get('title')
+                category = payload.get('category') or None
+                sub_department = payload.get('sub_department') or None
                 department = payload['department']
 
                 try:
                     department = SRRSDepartment.objects.get(id=department)
                 except Exception as e:
                     return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if sub_department:
+                    try:
+                        sub_department = models.SubDepartment.objects.get(id=sub_department)
+                    except Exception as e:
+                        return Response({"details": "Unknown sub department"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if category:
+                    try:
+                        category = models.SubDepartmentCategory.objects.get(id=category)
+                    except Exception as e:
+                        return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
             
 
                 exts = ['pdf']
@@ -199,6 +213,8 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                                 original_file_name=original_file_name, 
                                 title=title, 
                                 department=department,
+                                sub_department=sub_department,
+                                category=category,
                                 uploaded_by=request.user
                             )
                             total_files += 1
