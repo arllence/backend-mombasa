@@ -66,7 +66,7 @@ class GenericsViewSet(viewsets.ViewSet):
     def files(self, request):
         department_id = request.query_params.get('department_id')
         if department_id:
-            documents = models.Document.objects.filter(Q(department=department_id) & Q(is_deleted=False))
+            documents = models.Document.objects.filter(Q(department=department_id) | Q(sub_department=department_id) | Q(category=department_id), is_deleted=False)
         else:
             documents = []
         

@@ -11,6 +11,16 @@ class Document(models.Model):
         SRRSDepartment, on_delete=models.DO_NOTHING, 
         related_name='intranet_document_department')
     
+    sub_department = models.ForeignKey(
+        'SubDepartment', on_delete=models.DO_NOTHING, 
+        related_name='intranet_document_sub_department',
+        null=True, blank=True)
+    
+    category = models.ForeignKey(
+        'SubDepartmentCategory', on_delete=models.DO_NOTHING, 
+        related_name='intranet_document_category',
+        null=True, blank=True)
+    
     uploaded_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
        related_name="document_uploaded_by"
