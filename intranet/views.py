@@ -839,7 +839,212 @@ class QipsViewSet(viewsets.ViewSet):
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
-                             
+
+class DepartmentsViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    search_fields = ['id', ]
+    
+
+    def get_queryset(self):
+        return []
+    
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="sub-departments",url_name="sub-departments")
+    def sub_departments(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.SubDepartmentSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                department_id = payload['department_id']
+                sub_departments = payload['sub_departments']
+
+                try:
+                    departmentInstance = models.SRRSDepartment.objects.get(id=department_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid department'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    for sub_department in sub_departments:
+                        models.SubDepartment.objects.create(
+                            name=sub_department,
+                            department=departmentInstance,
+                            created_by=request.user
+                        )
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateSubDepartmentSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                sub_department = payload['sub_department']
+
+                try:
+                    sub_departmentInstance = models.SubDepartment.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid sub department'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    sub_departmentInstance.name = sub_department
+                    sub_departmentInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+            serializer = request.query_params.get('serializer')
+
+            if request_id:
+                resp = models.SubDepartment.objects.get(Q(id=request_id) & Q(is_deleted=False))
+            
+            else:
+                resp = models.SubDepartment.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            if serializer == 'full':
+                serializer = serializers.SubSlimFetchSubDepartmentSerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            else:
+                serializer = serializers.SlimFetchSubDepartmentSerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.SubDepartment.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="sub-department-categories",url_name="sub-department-categories")
+    def sub_department_categories(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.SubDepartmentCategoriesSerializer(
+                data=payload, many=False)
+            
+
+            if serializer.is_valid():
+                sub_department_id = payload['sub_department_id']
+                categories = payload['categories']
+
+                try:
+                    sub_departmentInstance = models.SubDepartment.objects.get(id=sub_department_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    for category in categories:
+                        models.SubDepartmentCategory.objects.create(
+                            sub_department=sub_departmentInstance,
+                            name=category
+                        )
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateSubDepartmentCategoriesSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                category = payload['category']
+
+                try:
+                    categoryInstance = models.SubDepartmentCategory.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    categoryInstance.name = category
+                    categoryInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+            serializer = request.query_params.get('serializer')
+
+            if request_id:
+                resp = models.SubDepartmentCategory.objects.get(Q(id=request_id) & Q(is_deleted=False))
+            
+            else:
+                resp = models.SubDepartmentCategory.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            if serializer == 'full':
+                serializer = serializers.FetchSubDepartmentCategorySerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            else: 
+                serializer = serializers.SlimFetchSubDepartmentCategorySerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.SubDepartmentCategory.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
 
 class ReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]

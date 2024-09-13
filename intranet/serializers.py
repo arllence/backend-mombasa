@@ -158,11 +158,26 @@ class SlimFetchQipsDocumentSerializer(serializers.ModelSerializer):
         model = models.QipsDocument
         fields = '__all__'
 
+class SubDepartmentSerializer(serializers.Serializer):
+    department_id = serializers.CharField(max_length=255)
+    sub_departments = serializers.ListField(min_length=1)
+
+class UpdateSubDepartmentSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    sub_department = serializers.CharField(max_length=500)
+
+class SubDepartmentCategoriesSerializer(serializers.Serializer):
+    sub_department_id = serializers.CharField(max_length=255)
+    categories = serializers.ListField(min_length=1)
+
+class UpdateSubDepartmentCategoriesSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    category = serializers.CharField(max_length=500)  
+
 class SlimFetchSubDepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.SubDepartment
         fields = '__all__'
-
 
 class SubSlimFetchSubDepartmentSerializer(serializers.ModelSerializer):
     categories = serializers.SerializerMethodField()
