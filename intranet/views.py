@@ -922,7 +922,7 @@ class DepartmentsViewSet(viewsets.ViewSet):
             paginator.page_size = 50
             result_page = paginator.paginate_queryset(resp, request)
             if serializer == 'full':
-                serializer = serializers.SubSlimFetchSubDepartmentSerializer(
+                serializer = serializers.FetchSubDepartmentSerializer(
                     result_page, many=True, context={"user_id":request.user.id})
             else:
                 serializer = serializers.SlimFetchSubDepartmentSerializer(
