@@ -204,9 +204,6 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                     total_files = 1
                     for f in request.FILES.getlist('documents'):
                         try:
-                            if total_files > 1:
-                                title = f"{title} - {str(total_files)}"
-
                             original_file_name = f.name.split('.')[0]                            
                             models.Document.objects.create(
                                 document=f,
@@ -217,7 +214,6 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                                 category=category,
                                 uploaded_by=request.user
                             )
-                            total_files += 1
                         except Exception as e:
                             logger.error(e)
                             print(e)
