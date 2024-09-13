@@ -1,6 +1,7 @@
 from django.db.models import  Q
 from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, SlimFetchSRRSDepartmentSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
+from acl.models import SRRSDepartment
 from intranet import models
 from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -156,3 +157,75 @@ class SlimFetchQipsDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.QipsDocument
         fields = '__all__'
+
+class SlimFetchSubDepartmentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.SubDepartment
+        fields = '__all__'
+
+
+class SubSlimFetchSubDepartmentSerializer(serializers.ModelSerializer):
+    categories = serializers.SerializerMethodField()
+
+    def get_categories(self, obj):
+        try:
+            request = models.SubDepartmentCategory.objects.filter(sub_department=obj)
+            serializer = SlimFetchSubDepartmentCategorySerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+    class Meta:
+        model = models.SubDepartment
+        fields = '__all__'
+
+class FetchSubDepartmentSerializer(serializers.ModelSerializer):
+    department = SlimFetchSRRSDepartmentSerializer()
+    categories = serializers.SerializerMethodField()
+
+    def get_categories(self, obj):
+        try:
+            request = models.SubDepartmentCategory.objects.filter(sub_department=obj)
+            serializer = SlimFetchSubDepartmentCategorySerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+    class Meta:
+        model = models.SubDepartment
+        fields = '__all__'
+
+class SlimFetchSubDepartmentCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.SubDepartmentCategory
+        fields = '__all__'
+
+class FetchSubDepartmentCategorySerializer(serializers.ModelSerializer):
+    sub_department = SlimFetchSubDepartmentSerializer()
+    class Meta:
+        model = models.SubDepartmentCategory
+        fields = '__all__'
+
+class FullFetchDepartmentSerializer(serializers.ModelSerializer):
+    sub_departments = serializers.SerializerMethodField()
+    class Meta:
+        model = models.SRRSDepartment
+        fields = '__all__'
+
+    def get_sub_departments(self, obj):
+        try:
+            request = models.SubDepartment.objects.filter(department=obj)
+            serializer = SubSlimFetchSubDepartmentSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
