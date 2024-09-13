@@ -961,7 +961,7 @@ class DepartmentsViewSet(viewsets.ViewSet):
 
             if serializer.is_valid():
                 sub_department_id = payload['sub_department_id']
-                categories = payload['categories']
+                categories = payload['category']
 
                 try:
                     sub_departmentInstance = models.SubDepartment.objects.get(id=sub_department_id)

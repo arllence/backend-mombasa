@@ -168,7 +168,7 @@ class UpdateSubDepartmentSerializer(serializers.Serializer):
 
 class SubDepartmentCategoriesSerializer(serializers.Serializer):
     sub_department_id = serializers.CharField(max_length=255)
-    categories = serializers.ListField(min_length=1)
+    category = serializers.ListField(min_length=1)
 
 class UpdateSubDepartmentCategoriesSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
