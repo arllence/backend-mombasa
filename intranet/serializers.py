@@ -224,8 +224,8 @@ class FullFetchDepartmentSerializer(serializers.ModelSerializer):
             serializer = SubSlimFetchSubDepartmentSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
-            return {}
+            return []
         except Exception as e:
             print(e)
             # logger.error(e)
-            return {} 
+            return []
