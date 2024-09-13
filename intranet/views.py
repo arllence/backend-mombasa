@@ -972,7 +972,8 @@ class DepartmentsViewSet(viewsets.ViewSet):
                     for category in categories:
                         models.SubDepartmentCategory.objects.create(
                             sub_department=sub_departmentInstance,
-                            name=category
+                            name=category,
+                            created_by=request.user
                         )
                     
                     return Response("Success", status=status.HTTP_200_OK)
