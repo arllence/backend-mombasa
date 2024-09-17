@@ -146,6 +146,15 @@ class GenericsViewSet(viewsets.ViewSet):
         
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+    @action(methods=["GET"], detail=False, url_path="surveys",url_name="surveys")
+    def surveys(self, request):
+
+        resp = models.Survey.objects.filter(Q(is_deleted=False)).order_by('topic')
+        serializer = serializers.FullFetchSurveySerializer(
+                    resp, many=True)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
 class DocumentManagerViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     search_fields = ['id', ]
