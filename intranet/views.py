@@ -1058,6 +1058,311 @@ class DepartmentsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
                 
 
+class SurveyViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    search_fields = ['id', ]
+    
+
+    def get_queryset(self):
+        return []
+    
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="topics",url_name="topics")
+    def topics(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.SurveySerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                topics = payload['topic']
+                
+                with transaction.atomic():
+                    for topic in topics:
+                        models.Survey.objects.create(
+                            topic=topic,
+                            created_by=request.user
+                        )
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateSurveySerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                topic = payload['topic']
+
+                try:
+                    topicInstance = models.Survey.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    topicInstance.topic = topic
+                    topicInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+            serializer = request.query_params.get('serializer')
+
+            if request_id:
+                resp = models.Survey.objects.get(Q(id=request_id) & Q(is_deleted=False))
+            else:
+                resp = models.Survey.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            if serializer == 'full':
+                serializer = serializers.FullFetchSurveySerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            else:
+                serializer = serializers.SlimFetchSurveySerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.Survey.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="sub-topics",url_name="sub-topics")
+    def sub_topics(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.SurveySubTopicSerializer(
+                    data=payload, many=False)
+            
+
+            if serializer.is_valid():
+                survey = payload['topic']
+                sub_topics = payload['sub_topic']
+
+                try:
+                    surveyInstance = models.Survey.objects.get(id=survey)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    for sub_topic in sub_topics:
+                        models.SurveySubTopic.objects.create(
+                            survey=surveyInstance,
+                            sub_topic=sub_topic
+                        )
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateSurveySubTopicSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                sub_topic = payload['sub_topic']
+
+                try:
+                    topicInstance = models.SurveySubTopic.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    topicInstance.sub_topic = sub_topic
+                    topicInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+            serializer = request.query_params.get('serializer')
+
+            if request_id:
+                resp = models.SurveySubTopic.objects.get(Q(id=request_id) & Q(is_deleted=False))
+            
+            else:
+                resp = models.SurveySubTopic.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            if serializer == 'full':
+                serializer = serializers.FetchSurveySubTopicSerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            else: 
+                serializer = serializers.SlimFetchSurveySubTopicSerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.SurveySubTopic.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="categories",url_name="categories")
+    def categories(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.SurveyCategorySerializer(
+                    data=payload, many=False)
+            
+
+            if serializer.is_valid():
+                categories = payload['category']
+                sub_topic = payload['sub_topic']
+
+                try:
+                    sub_topicInstance = models.SurveySubTopic.objects.get(id=sub_topic)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    for category in categories:
+                        models.SurveyCategory.objects.create(
+                            category=category,
+                            sub_topic=sub_topicInstance
+                        )
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateSurveyCategorySerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                category = payload['category']
+                # sub_topic = payload['topic']
+
+                try:
+                    categoryInstance = models.SurveyCategory.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    categoryInstance.category = category
+                    categoryInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+            serializer = request.query_params.get('serializer')
+
+            if request_id:
+                resp = models.SurveyCategory.objects.get(Q(id=request_id) & Q(is_deleted=False))
+            
+            else:
+                resp = models.SurveyCategory.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            if serializer == 'full':
+                serializer = serializers.FetchSurveyCategorySerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            else:
+                serializer = serializers.SlimFetchSurveyCategorySerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.SurveyCategory.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+
+
+
+
 class ReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]
 
