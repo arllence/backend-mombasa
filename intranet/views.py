@@ -1363,6 +1363,133 @@ class SurveyViewSet(viewsets.ViewSet):
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="links",url_name="links")
+    def links(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.SurveyLinkSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                category = payload.get('category') or None
+                sub_topic = payload.get('sub_topic') or None
+                topic = payload['topic']
+                link = payload['link']
+
+                try:
+                    topic = models.Survey.objects.get(id=topic)
+                except Exception as e:
+                    return Response({"details": "Unknown topic"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if sub_topic:
+                    try:
+                        sub_topic = models.SurveySubTopic.objects.get(id=sub_topic)
+                    except Exception as e:
+                        return Response({"details": "Unknown sub topic"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if category:
+                    try:
+                        category = models.SurveyCategory.objects.get(id=category)
+                    except Exception as e:
+                        return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+                with transaction.atomic():
+                    try:                         
+                        models.SurveyLink.objects.create(
+                            topic=topic, 
+                            sub_topic=sub_topic, 
+                            category=category,
+                            link=link,
+                            created_by=request.user
+                        )
+
+                    except Exception as e:
+                        logger.error(e)
+                        # print(e)
+                        return Response({"details": "Error saving link"}, status=status.HTTP_400_BAD_REQUEST)  
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateSurveySerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['id']
+                link = payload['link']
+
+                try:
+                    targetInstance = models.SurveyLink.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    targetInstance.link = link
+                    targetInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+            topic_id = request.query_params.get('topic_id')
+            sub_topic_id = request.query_params.get('sub_topic_id')
+            category_id = request.query_params.get('category_id')
+
+            if request_id:
+                links = models.SurveyLink.objects.get(Q(id=request_id) & Q(is_deleted=False))
+
+            elif topic_id:
+                links = models.SurveyLink.objects.filter(Q(topic=topic_id) & Q(is_deleted=False))
+
+            elif sub_topic_id:
+                links = models.SurveyLink.objects.filter(Q(sub_topic=sub_topic_id) & Q(is_deleted=False))
+            
+            elif category_id:
+                links = models.SurveyLink.objects.filter(Q(category=category_id) & Q(is_deleted=False))
+
+            else:
+                links = models.SurveyLink.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(links, request)
+            serializer = serializers.FetchSurveyLinkSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.SurveyLink.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
