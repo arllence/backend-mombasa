@@ -198,3 +198,60 @@ class SubDepartmentCategory(models.Model):
     
     class Meta:
         db_table = u'"{}\".\"sub_department_categories"'.format(settings.INTRANET)
+
+
+
+class Survey(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="survey_created_by"
+    )
+
+    topic = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title}"
+    
+    class Meta:
+        db_table = u'"{}\".\"survey"'.format(settings.INTRANET)
+
+class SurveySubTopic(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    qips = models.ForeignKey(
+       Survey, on_delete=models.DO_NOTHING, 
+       related_name="survey_topic"
+    )
+
+    sub_topic = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.sub_topic}"
+    
+    class Meta:
+        db_table = u'"{}\".\"survey_sub_topic"'.format(settings.INTRANET)
+
+
+class SurveyCategory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    sub_topic = models.ForeignKey(
+       QipsSubTopic, on_delete=models.DO_NOTHING, 
+       related_name="qips_sub_topic"
+    )
+
+    category = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.category}"
+    
+    class Meta:
+        db_table = u'"{}\".\"survey_category"'.format(settings.INTRANET)  
