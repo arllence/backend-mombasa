@@ -267,7 +267,7 @@ class FullFetchSurveySerializer(serializers.ModelSerializer):
 
     def get_sub_topics(self, obj):
         try:
-            request = models.SurveySubTopic.objects.filter(qips=obj)
+            request = models.SurveySubTopic.objects.filter(survey=obj)
             serializer = FetchSurveySubTopicSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
@@ -322,8 +322,8 @@ class SlimFetchSurveyCategorySerializer(serializers.ModelSerializer):
         model = models.SurveyCategory
         fields = '__all__'
 
-class FetchQipsCategorySerializer(serializers.ModelSerializer):
-    sub_topic = SlimFetchQipsSubTopicSerializer()
+class FetchSurveyCategorySerializer(serializers.ModelSerializer):
+    sub_topic = SlimFetchSurveySubTopicSerializer()
     class Meta:
         model = models.SurveyCategory
         fields = '__all__'
