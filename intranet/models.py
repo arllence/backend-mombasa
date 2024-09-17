@@ -241,10 +241,10 @@ class SurveySubTopic(models.Model):
 class SurveyCategory(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    sub_topic = models.ForeignKey(
-       QipsSubTopic, on_delete=models.DO_NOTHING, 
-       related_name="survey_sub_topic"
-    )
+    # sub_topic = models.ForeignKey(
+    #    QipsSubTopic, on_delete=models.DO_NOTHING, 
+    #    related_name="survey_sub_topic"
+    # )
 
     category = models.CharField(max_length=500)
     is_deleted = models.BooleanField(default=False)
