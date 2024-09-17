@@ -243,7 +243,7 @@ class SurveyCategory(models.Model):
     
     sub_topic = models.ForeignKey(
        QipsSubTopic, on_delete=models.DO_NOTHING, 
-       related_name="qips_sub_topic"
+       related_name="survey_sub_topic"
     )
 
     category = models.CharField(max_length=500)
