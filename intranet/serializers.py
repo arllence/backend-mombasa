@@ -271,11 +271,11 @@ class FullFetchSurveySerializer(serializers.ModelSerializer):
             serializer = FetchSurveySubTopicSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
-            return {}
+            return []
         except Exception as e:
             print(e)
             # logger.error(e)
-            return {} 
+            return [] 
 
 class SurveySubTopicSerializer(serializers.Serializer):
     topic = serializers.CharField(max_length=500)
@@ -303,11 +303,11 @@ class FetchSurveySubTopicSerializer(serializers.ModelSerializer):
             serializer = SlimFetchSurveyCategorySerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
-            return {}
+            return []
         except Exception as e:
             print(e)
             # logger.error(e)
-            return {} 
+            return [] 
 
 class SurveyCategorySerializer(serializers.Serializer):
     category = serializers.ListField(min_length=1)
