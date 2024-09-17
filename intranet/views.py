@@ -1444,7 +1444,7 @@ class SurveyViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
-                request_id = payload['id']
+                request_id = payload['request_id']
                 link = payload['link']
 
                 try:
