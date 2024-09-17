@@ -155,6 +155,23 @@ class GenericsViewSet(viewsets.ViewSet):
         
         return Response(serializer.data, status=status.HTTP_200_OK)
     
+    @action(methods=["GET"], detail=False, url_path="survey-links",url_name="survey-links")
+    def survey_links(self, request):
+        request_id = request.query_params.get('request_id')
+        if request_id:
+            links = models.SurveyLink.objects.filter(Q(topic=request_id) | Q(sub_topic=request_id) | Q(category=request_id) ,is_deleted=False)
+        else:
+            links = []
+        
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 50
+        result_page = paginator.paginate_queryset(links, request)
+        serializer = serializers.SlimFetchSurveyLinkSerializer(
+            result_page, many=True)
+        
+        return paginator.get_paginated_response(serializer.data)
+    
 class DocumentManagerViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     search_fields = ['id', ]
