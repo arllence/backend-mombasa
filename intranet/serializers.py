@@ -252,7 +252,7 @@ class SurveySerializer(serializers.Serializer):
 
 class UpdateSurveySerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
-    topic = serializers.CharField(max_length=500)
+    # topic = serializers.CharField(max_length=500)
     link = serializers.CharField(max_length=500)
 
 class SlimFetchSurveySerializer(serializers.ModelSerializer):

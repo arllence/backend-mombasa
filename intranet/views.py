@@ -1384,7 +1384,7 @@ class SurveyViewSet(viewsets.ViewSet):
                 
     @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="links",url_name="links")
     def links(self, request):
-        roles = user_util.fetchusergroups(request.user.id) 
+        # roles = user_util.fetchusergroups(request.user.id) 
 
         if request.method == "POST":
 
