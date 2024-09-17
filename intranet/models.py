@@ -222,7 +222,7 @@ class Survey(models.Model):
 class SurveySubTopic(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    qips = models.ForeignKey(
+    survey = models.ForeignKey(
        Survey, on_delete=models.DO_NOTHING, 
        related_name="survey_topic"
     )
