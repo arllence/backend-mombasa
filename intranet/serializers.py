@@ -244,3 +244,105 @@ class FullFetchDepartmentSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return []
+        
+
+# survey
+class SurveySerializer(serializers.Serializer):
+    topic = serializers.ListField(min_length=1)
+
+class UpdateSurveySerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    topic = serializers.CharField(max_length=500)
+
+class SlimFetchSurveySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Survey
+        fields = '__all__'
+
+class FullFetchSurveySerializer(serializers.ModelSerializer):
+    sub_topics = serializers.SerializerMethodField()
+    class Meta:
+        model = models.Survey
+        fields = '__all__'
+
+    def get_sub_topics(self, obj):
+        try:
+            request = models.SurveySubTopic.objects.filter(qips=obj)
+            serializer = FetchSurveySubTopicSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+
+class SurveySubTopicSerializer(serializers.Serializer):
+    topic = serializers.CharField(max_length=500)
+    sub_topic = serializers.ListField(min_length=1)
+
+class UpdateSurveySubTopicSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    sub_topic = serializers.CharField(max_length=500)
+
+class SlimFetchSurveySubTopicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.SurveySubTopic
+        fields = '__all__'
+
+class FetchSurveySubTopicSerializer(serializers.ModelSerializer):
+    survey = SlimFetchSurveySerializer()
+    categories = serializers.SerializerMethodField()
+    class Meta:
+        model = models.SurveySubTopic
+        fields = '__all__'
+
+    def get_categories(self, obj):
+        try:
+            request = models.SurveyCategory.objects.filter(sub_topic=obj)
+            serializer = SlimFetchSurveyCategorySerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+
+class SurveyCategorySerializer(serializers.Serializer):
+    category = serializers.ListField(min_length=1)
+    sub_topic = serializers.CharField(max_length=500)
+
+class UpdateSurveyCategorySerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    category = serializers.CharField(max_length=500)
+
+class SlimFetchSurveyCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.SurveyCategory
+        fields = '__all__'
+
+class FetchQipsCategorySerializer(serializers.ModelSerializer):
+    sub_topic = SlimFetchQipsSubTopicSerializer()
+    class Meta:
+        model = models.SurveyCategory
+        fields = '__all__'
+
+class SurveyLinkSerializer(serializers.Serializer):
+    topic = serializers.CharField(max_length=500)
+    link = serializers.CharField(max_length=500)
+
+class FetchSurveyLinkSerializer(serializers.ModelSerializer):
+    topic = SlimFetchSurveySerializer()
+    sub_topic = SlimFetchSurveySubTopicSerializer()
+    category = SlimFetchSurveyCategorySerializer()
+    created_by = SlimUsersSerializer()
+    
+    class Meta:
+        model = models.SurveyLink
+        fields = '__all__'
+
+class SlimFetchSurveyLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.SurveyLink
+        fields = '__all__'

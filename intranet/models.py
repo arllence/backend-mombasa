@@ -255,3 +255,34 @@ class SurveyCategory(models.Model):
     
     class Meta:
         db_table = u'"{}\".\"survey_category"'.format(settings.INTRANET)  
+
+
+class SurveyLink(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    topic = models.ForeignKey(
+        Survey, on_delete=models.DO_NOTHING, 
+        related_name='survey_link')
+    
+    sub_topic = models.ForeignKey(
+        SurveySubTopic, on_delete=models.DO_NOTHING, 
+        related_name='survey_subtopic_link', null=True, blank=True)
+    
+    category = models.ForeignKey(
+        SurveyCategory, on_delete=models.DO_NOTHING, 
+        related_name='survey_category_link', null=True, blank=True)
+    
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="survey_link_created_by"
+    )
+
+    link = models.URLField(max_length=200)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.link}"
+    
+    class Meta:
+        db_table = u'"{}\".\"survey_links"'.format(settings.INTRANET)
