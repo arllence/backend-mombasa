@@ -262,6 +262,7 @@ class SlimFetchSurveySerializer(serializers.ModelSerializer):
 
 class FullFetchSurveySerializer(serializers.ModelSerializer):
     sub_topics = serializers.SerializerMethodField()
+    link = serializers.SerializerMethodField()
     class Meta:
         model = models.Survey
         fields = '__all__'
@@ -276,7 +277,20 @@ class FullFetchSurveySerializer(serializers.ModelSerializer):
         except Exception as e:
             print(e)
             # logger.error(e)
-            return [] 
+            return []
+        
+    def get_link(self, obj):
+        try:
+            request = models.SurveyLink.objects.get(topic=obj)
+            if request.link:
+                return request.link 
+            return ""
+        except (ValidationError, ObjectDoesNotExist):
+            return ""
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return ""
 
 class SurveySubTopicSerializer(serializers.Serializer):
     topic = serializers.CharField(max_length=500)
@@ -294,6 +308,7 @@ class SlimFetchSurveySubTopicSerializer(serializers.ModelSerializer):
 class FetchSurveySubTopicSerializer(serializers.ModelSerializer):
     survey = SlimFetchSurveySerializer()
     categories = serializers.SerializerMethodField()
+    link = serializers.SerializerMethodField()
     class Meta:
         model = models.SurveySubTopic
         fields = '__all__'
@@ -309,6 +324,19 @@ class FetchSurveySubTopicSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return [] 
+        
+    def get_link(self, obj):
+        try:
+            request = models.SurveyLink.objects.get(sub_topic=obj)
+            if request.link:
+                return request.link 
+            return ""
+        except (ValidationError, ObjectDoesNotExist):
+            return ""
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return "" 
 
 class SurveyCategorySerializer(serializers.Serializer):
     category = serializers.ListField(min_length=1)
@@ -319,6 +347,19 @@ class UpdateSurveyCategorySerializer(serializers.Serializer):
     category = serializers.CharField(max_length=500)
 
 class SlimFetchSurveyCategorySerializer(serializers.ModelSerializer):
+    link = serializers.SerializerMethodField()
+    def get_link(self, obj):
+        try:
+            request = models.SurveyLink.objects.get(category=obj)
+            if request.link:
+                return request.link 
+            return ""
+        except (ValidationError, ObjectDoesNotExist):
+            return ""
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return "" 
     class Meta:
         model = models.SurveyCategory
         fields = '__all__'
