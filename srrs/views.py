@@ -264,6 +264,8 @@ class SrrsViewSet(viewsets.ViewSet):
                 hr_partner = payload.get('hr_partner') or None
                 replacement = payload.get('replacement_details')
 
+                default_status = "EDITED"
+
 
 
                 # Check temporary hire period
@@ -364,10 +366,91 @@ class SrrsViewSet(viewsets.ViewSet):
                         recruit.replacement_details = replacement
                         recruit.save()
 
+                    # current status
+                    current_status = recruit.status
+                    if current_status == "REFERRED":
+                        default_status = "RESUBMITTED"
+                        recruit.status = default_status
+                        recruit.is_slt_approved = False
+                        recruit.is_hhr_approved = False
+                        recruit.is_hof_approved = False
+                        recruit.is_ceo_approved = False
+                        recruit.save()
+
+                        if str(authenticated_user.id) == str(department.slt.id): # checks if HOD is also SLT
+                            # Auto Approve for SLT
+                            recruit.is_slt_approved = True
+                            new_status = "SLT APPROVED"
+                            forward_to_emails = [recruit.department.hr_partner.email]
+                            if recruit.hr_partner:
+                                forward_to_emails.append(recruit.hr_partner.email)
+
+                            recruit.slt_comments = "**Auto System Approved**"
+                            recruit.status = new_status
+                            recruit.save()
+
+                            # track status change
+                            raw = {
+                                "recruit": recruit,
+                                "status": new_status,
+                                "status_for": '/'.join(roles),
+                                "action_by": authenticated_user
+                            }
+
+                            # Notify next office
+                            subject = f"Recruitment Request: {recruit.uid} Pending Your Action.  [SRRS-AKHK]"
+                            message = f"Hello. \nRecruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\nSRRS-AKHK"
+
+                            try:
+                                if emails:
+                                    mail = {
+                                        "email" : list(set(forward_to_emails)), 
+                                        "subject" : subject,
+                                        "message" : message,
+                                    }
+                                    
+                                    Sendmail.objects.create(**mail)
+                            except Exception as e:
+                                logger.error(e)
+
+                            # Notify HR
+                            emails = list(get_user_model().objects.filter(Q(groups__name__in=['HHR'])).values_list('email', flat=True))
+                            subject = f"Recruitment Request: {recruit.uid} Assigning.  [SRRS-AKHK]"
+                            message = f"Hello. \nRecruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} \nhas been assigned to HR Partner: {recruit.department.hr_partner.first_name} {recruit.department.hr_partner.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
+
+                            try:
+                                if emails:
+                                    mail = {
+                                        "email" : list(set(emails)), 
+                                        "subject" : subject,
+                                        "message" : message,
+                                    }
+                                    
+                                    Sendmail.objects.create(**mail)
+                            except Exception as e:
+                                logger.error(e)
+
+                        else:
+                            # Notify SLT
+                            subject = f"Recruitment Request {recruit.uid} Resubmitted [SRRS-AKHK]"
+                            message = f"Hello, \n\nA recruit request of id: {recruit.uid}, from department: {department.name}, for position: {recruit.position_title}\nhas been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nSRRS-AKHK"
+
+                            try:
+                                mail = {
+                                    "email" : [department.slt.email], 
+                                    "subject" : subject,
+                                    "message" : message,
+                                }
+
+                                Sendmail.objects.create(**mail)
+
+                            except Exception as e:
+                                logger.error(e)
+
                     # create track status change
                     raw = {
                         "recruit": recruit,
-                        "status": "EDITED",
+                        "status": default_status,
                         "status_for": '/'.join(roles),
                         "action_by": authenticated_user
                     }
@@ -386,7 +469,8 @@ class SrrsViewSet(viewsets.ViewSet):
                             "message" : message,
                         }
 
-                        Sendmail.objects.create(**mail)
+                        if authenticated_user.id != recruit.created_by.id:
+                            Sendmail.objects.create(**mail)
 
                     except Exception as e:
                         print(e)

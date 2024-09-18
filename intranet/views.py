@@ -1415,22 +1415,35 @@ class SurveyViewSet(viewsets.ViewSet):
                         category = models.SurveyCategory.objects.get(id=category)
                     except Exception as e:
                         return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                # check if already existing
+                try:
+                    existingLink = models.SurveyLink.objects.get(topic=topic,sub_topic=sub_topic,category=category)
+                except (ValidationError, ObjectDoesNotExist):
+                    existingLink = None
+                except Exception as e:
+                    print(e)
+                    # logger.error(e)
+                    existingLink = None
             
 
                 with transaction.atomic():
-                    try:                         
-                        models.SurveyLink.objects.create(
-                            topic=topic, 
-                            sub_topic=sub_topic, 
-                            category=category,
-                            link=link,
-                            created_by=request.user
-                        )
-
-                    except Exception as e:
-                        logger.error(e)
-                        # print(e)
-                        return Response({"details": "Error saving link"}, status=status.HTTP_400_BAD_REQUEST)  
+                    if existingLink:
+                        existingLink.link = link
+                        existingLink.save()
+                    else:
+                        try:                         
+                            models.SurveyLink.objects.create(
+                                topic=topic, 
+                                sub_topic=sub_topic, 
+                                category=category,
+                                link=link,
+                                created_by=request.user
+                            )
+                        except Exception as e:
+                            logger.error(e)
+                            # print(e)
+                            return Response({"details": "Error saving link"}, status=status.HTTP_400_BAD_REQUEST)  
                     
                     return Response("Success", status=status.HTTP_200_OK)
             else:
