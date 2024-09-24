@@ -1057,6 +1057,8 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
+                        emails.append("ksm.logistics@akhskenya.org")
+
                         try:
                             mail = {
                                 "email" : list(set(emails)), 
