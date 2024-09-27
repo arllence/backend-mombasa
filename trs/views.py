@@ -249,27 +249,27 @@ class TrsViewSet(viewsets.ViewSet):
                     if send_to == 'HOD':
                         managers_emails = list(get_user_model().objects.filter(Q(groups__name='HOD') & Q(srrs_department=department) ).values_list('email', flat=True))
 
-                    elif send_to == 'SLT':
+                    if send_to == 'SLT':
                         if department.slt:
                             managers_emails = [department.slt.lead.email]
                         else:
                             return Response({"details": "Selected Department has no SLT assigned !"}, status=status.HTTP_400_BAD_REQUEST)
                         
-                    elif send_to == 'HOF':
+                    if send_to == 'HOF':
                         managers_emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
 
-                    elif send_to == 'CEO':
+                    if send_to == 'CEO':
                         managers_emails = list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
                         
 
                     # Notify selected send to
                     subject = f"Travel Request {tid} Received [TRF-AKHK]"
                     message = f"Hello, \nA new travel request: {tid} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
-                    emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
+                    # emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
 
                     try:
                         mail = {
-                            "email" : list(set(emails)), 
+                            "email" : list(set(managers_emails)), 
                             "subject" : subject,
                             "message" : message,
                         }
@@ -281,11 +281,12 @@ class TrsViewSet(viewsets.ViewSet):
 
                     # Notify transport department
                     subject = f"Travel Request {tid} Has Been Initiated [TRF-AKHK]"
-                    message = f"Hello, \nA new travel request: {tid} of mode {mode_of_transport.capitalize()}\nhas been initiated by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
+                    message = f"Hello. \nA new travel request: {tid} of mode: {mode_of_transport.capitalize()}\nhas been initiated by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
+                    emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
 
                     try:
                         mail = {
-                            "email" : list(set(managers_emails)), 
+                            "email" : list(set(emails)), 
                             "subject" : subject,
                             "message" : message,
                         }
@@ -582,7 +583,7 @@ class TrsViewSet(viewsets.ViewSet):
                     if "HOD" in roles:
 
                         if query == 'salary-advance':
-                            print("in advance")
+                            # print("in advance")
                             targets = models.AdvanceSalaryRequests.objects.filter(
                                 Q(traveler__department=request.user.srrs_department),is_deleted=False).order_by('-date_created')
                             resp = [x.traveler for x in targets]
