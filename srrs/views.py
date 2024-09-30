@@ -2060,7 +2060,7 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
         active_status = ['REQUESTED','CEO APPROVED','HR APPROVED','SLT APPROVED','CLOSED']
 
         
-        if any(role in ['HHR', 'HR', 'HOF', 'CEO'] for role in roles):
+        if any(role in ['HHR', 'HR', 'HOF', 'CEO', 'SUPERUSER'] for role in roles):
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
             declined = models.Recruit.objects.filter(status="DECLINED", is_deleted=False).count()
