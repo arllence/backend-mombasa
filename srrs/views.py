@@ -2059,22 +2059,23 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
         roles = user_util.fetchusergroups(request.user.id)
         active_status = ['REQUESTED','CEO APPROVED','HR APPROVED','SLT APPROVED','CLOSED']
 
-        if 'HOD' in roles:
+        
+        if any(role in ['HHR', 'HR', 'HOF', 'CEO'] for role in roles):
+            requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
+            canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
+            declined = models.Recruit.objects.filter(status="DECLINED", is_deleted=False).count()
+            pending = models.Recruit.objects.filter(Q(status__in=active_status), is_ceo_approved=False, is_deleted=False).count()
+        else:
             requests = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
             canceled = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="REFERRED", is_deleted=False).count()
             declined = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="DECLINED", is_deleted=False).count()
             pending = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status__in=active_status, is_ceo_approved=False, is_deleted=False).count()
-        else:
-            requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
-            canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
-            declined = models.Recruit.objects.filter(Q(created_by=request.user), status="DECLINED", is_deleted=False).count()
-            pending = models.Recruit.objects.filter(Q(status__in=active_status), is_ceo_approved=False, is_deleted=False).count()
 
         resp = {
             "requests": requests,
             "canceled": canceled,
             "declined": declined,
-            "pending": pending,
+            "pending": pending
         }
 
         return Response(resp, status=status.HTTP_200_OK)
