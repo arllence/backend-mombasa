@@ -44,7 +44,7 @@ class Traveler(models.Model):
     description = models.TextField()
     budget_code = models.CharField(max_length=255, null=True, blank=True)
     travel_order_no = models.CharField(max_length=255, null=True, blank=True)
-    travel_cost = models.BigIntegerField(default=0)
+    travel_cost = models.BigIntegerField(default=0, null=True, blank=True)
     travel_cost_items = models.JSONField(null=True, blank=True)
     advance_requests = models.JSONField(null=True, blank=True)
     salary_advance_required = models.BooleanField(default=False)
