@@ -105,6 +105,14 @@ class TrsViewSet(viewsets.ViewSet):
                 if travel_cost and not travel_cost_items:
                     return Response({"details": "Travel Cost Breakdown Required !"}, status=status.HTTP_400_BAD_REQUEST)
 
+                try:
+                    if not travel_cost:
+                        travel_cost = 0
+                        for item in travel_cost_items:
+                            travel_cost += int(item['cost'])
+                except:
+                    pass
+
                 if not salary_advance_required:
                     salary_amount_required = 0
                 else:
