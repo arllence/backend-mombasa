@@ -620,16 +620,22 @@ class SrrsViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-
+                    exclude_status = ['DECLINED','HIRED','REFERRED']
                     final_resp = []
 
                     if "HOD" in roles:
 
                         if query == 'pending':
-                            resp = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_ceo_approved=False, is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(
+                                    Q(department=request.user.srrs_department) | 
+                                    Q(created_by=request.user), is_ceo_approved=False, is_deleted=False
+                                ).order_by('-date_created')
 
                         else:
-                            resp = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(
+                                Q(department=request.user.srrs_department) | 
+                                Q(created_by=request.user), is_deleted=False
+                            ).order_by('-date_created')
 
                         final_resp += list(resp)
 
@@ -659,7 +665,7 @@ class SrrsViewSet(viewsets.ViewSet):
                                 Q(hr_partner=request.user) | Q(department__hr_partner=request.user),
                                 is_slt_approved=True,
                                 is_deleted=False
-                            ).order_by('-date_created')
+                            ).exclude(status__in=exclude_status).order_by('-date_created')
 
                         elif query == 'pending':
                             resp = models.Recruit.objects.filter(
@@ -667,13 +673,15 @@ class SrrsViewSet(viewsets.ViewSet):
                                 Q(is_hhr_approved=False),
                                 Q(department__hr_partner=request.user) | Q(hr_partner=request.user),
                                 is_deleted=False
-                            ).order_by('-date_created')
+                            ).exclude(status__in=exclude_status).order_by('-date_created')
 
                         final_resp += list(resp)
 
                     if "HHR" in roles:
                         if not query:
-                            resp = models.Recruit.objects.filter((Q(is_slt_approved=True)),is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(
+                                (Q(is_slt_approved=True)),is_deleted=False
+                            ).exclude(status__in=exclude_status).order_by('-date_created')
 
                         elif query == 'pending':
                             resp = models.Recruit.objects.filter((Q(is_slt_approved=True) & Q(is_hhr_approved=False)),is_deleted=False).order_by('-date_created')
@@ -682,19 +690,33 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     if "HOF" in roles:
                         if not query:
-                            resp = models.Recruit.objects.filter((Q(is_hof_approved=False) & Q(is_hhr_approved=True)),is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(
+                                (Q(is_hof_approved=False) & 
+                                 Q(is_hhr_approved=True)),
+                                 is_deleted=False).exclude(status__in=exclude_status).order_by('-date_created')
 
                         elif query == 'pending':
-                            resp = models.Recruit.objects.filter((Q(is_hof_approved=False) & Q(is_hhr_approved=True)),is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(
+                                (Q(is_hof_approved=False) & 
+                                 Q(is_hhr_approved=True)),
+                                 is_deleted=False).exclude(status__in=exclude_status).order_by('-date_created')
                             
                         final_resp += list(resp)
                     
                     if "CEO" in roles:
                         if not query:
-                            resp = models.Recruit.objects.filter((Q(is_hof_approved=True) & Q(is_hhr_approved=True) & Q(is_ceo_approved=False)),is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(
+                                (Q(is_hof_approved=True) & 
+                                 Q(is_hhr_approved=True) & 
+                                 Q(is_ceo_approved=False))
+                                 ,is_deleted=False).exclude(status__in=exclude_status).order_by('-date_created')
 
                         elif query == 'pending':
-                            resp = models.Recruit.objects.filter((Q(is_hof_approved=True) & Q(is_hhr_approved=True) & Q(is_ceo_approved=False)),is_deleted=False).order_by('-date_created')
+                            resp = models.Recruit.objects.filter(
+                                (Q(is_hof_approved=True) & 
+                                 Q(is_hhr_approved=True) & 
+                                 Q(is_ceo_approved=False)),
+                                 is_deleted=False).exclude(status__in=exclude_status).order_by('-date_created')
 
                         final_resp += list(resp)
 
