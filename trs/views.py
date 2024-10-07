@@ -58,6 +58,7 @@ class TrsViewSet(viewsets.ViewSet):
                 route = payload['route']
                 estimated_distance = payload['estimated_distance']
                 departure_date = payload['departure_date']
+                departure_time = payload['departure_time']
                 return_date = payload['return_date']
                 mode_of_transport = payload['mode_of_transport']
                 type_of_travel = payload['type_of_travel']
@@ -200,6 +201,7 @@ class TrsViewSet(viewsets.ViewSet):
                         "traveler": traveler,
                         "route": route,
                         "departure_date": departure_date,
+                        "departure_time": departure_time,
                         "return_date": return_date,
                         "accommodation": accommodation,
                         "estimated_distance": estimated_distance
@@ -343,6 +345,7 @@ class TrsViewSet(viewsets.ViewSet):
                 route = payload['route']
                 estimated_distance = payload['estimated_distance']
                 departure_date = payload['departure_date']
+                departure_time = payload['departure_time']
                 return_date = payload['return_date']
                 mode_of_transport = payload['mode_of_transport']
                 type_of_travel = payload['type_of_travel']
@@ -423,7 +426,6 @@ class TrsViewSet(viewsets.ViewSet):
                         "type_of_travel": type_of_travel,
                         "requesting_for": requesting_for,
                         "salary_advance_required": salary_advance_required,
-                        "status": 'RESUBMITTED',
                         "travel_cost": travel_cost,
                         "travel_cost_items": travel_cost_items
                     }  
@@ -449,6 +451,7 @@ class TrsViewSet(viewsets.ViewSet):
                         "traveler": traveler,
                         "route": route,
                         "departure_date": departure_date,
+                        "departure_time": departure_time,
                         "return_date": return_date,
                         "accommodation": accommodation,
                         "estimated_distance": estimated_distance,
@@ -462,7 +465,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     raw = {
                         "traveler": traveler,
-                        "status": 'RESUBMITTED',
+                        "status": 'EDITED',
                         "status_for": 'Requestor',
                         "action_by": authenticated_user,
                     }
@@ -477,10 +480,7 @@ class TrsViewSet(viewsets.ViewSet):
                     # Notify selected send to
                     subject = f"Travel Request {traveler.tid} Resubmitted [TRF-AKHK]"
                     message = f"Hello, \nTravel request: {traveler.tid} has been resubmitted by\n{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
-                    # try:
-                    #     send_mail(subject, message, 'notification@akhskenya.org', managers_emails)
-                    # except Exception as e:
-                    #     pass
+
                     try:
                         mail = {
                             "email" :  list(set(managers_emails)), 

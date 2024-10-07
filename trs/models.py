@@ -80,6 +80,7 @@ class Trip(models.Model):
     )
     route = models.TextField()
     departure_date = models.DateField()
+    departure_time = models.CharField(null=True, blank=True)
     return_date = models.DateField()
     estimated_distance = models.IntegerField(default=0)
     accommodation = models.BooleanField(default=False)
