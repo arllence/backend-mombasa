@@ -557,7 +557,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             last_name = payload['last_name']
             account_id = payload['account_id']
             # phone_number = payload['phone_number']
-            # email = payload['email']
+            email = payload['email']
 
 
             # phoneexists = get_user_model().objects.filter(phone_number=phone_number).exists()
@@ -575,6 +575,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
 
             record_instance.first_name = first_name
             record_instance.last_name = last_name
+            record_instance.email = email
 
             record_instance.save()
 
