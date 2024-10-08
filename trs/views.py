@@ -90,10 +90,12 @@ class TrsViewSet(viewsets.ViewSet):
                         send_to = 'HOD'
 
                 if requesting_for == 'OTHERS':
-                    employees = list(payload.get('employees'))
+                    route = list(payload.get('employees'))
 
                     if not employees:
                         return Response({"details": "Target Employees Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    no_of_travelers = len(employees)
                     
                     is_individual = False
                 else:
@@ -102,6 +104,8 @@ class TrsViewSet(viewsets.ViewSet):
                         employee_no = payload['employee_no']
                     except Exception as e:
                         return Response({"details": "Employee No / Position Title Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    no_of_travelers = 1
                 
                 if travel_cost and not travel_cost_items:
                     return Response({"details": "Travel Cost Breakdown Required !"}, status=status.HTTP_400_BAD_REQUEST)
@@ -291,7 +295,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     # Notify transport department
                     subject = f"Travel Request {tid} Has Been Initiated [TRF-AKHK]"
-                    message = f"Hello. \nA new travel request: {tid} of mode: {mode_of_transport.capitalize()}\nhas been initiated by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
+                    message = f"Hello. \nA new travel request: {tid} of mode: {mode_of_transport.capitalize()}\nhas been initiated by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nDeparture date: {departure_date}-{departure_time}. Route: {route}. Number of people: {str(no_of_travelers)} \n\nRegards\nTRS-AKHK"
                     emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
 
                     try:

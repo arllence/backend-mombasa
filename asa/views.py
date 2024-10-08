@@ -868,6 +868,100 @@ class ASAViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="modules",
+            url_name="modules")
+    def modules(self, request):
+        # roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.ModuleSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                system_id = payload['system']
+                modules = payload['modules']
+
+                try:
+                    system = models.System.objects.get(id=system_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown System"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    for module in modules:
+                        module_name = module['name']
+                        rights = module['rights']
+
+                        raw = {
+                            "name": module_name,
+                            "system": system
+                        }
+
+                        moduleInstance = models.Module.objects.create(**raw)
+
+                        bulkRights = [
+                            models.Right(
+                                module = moduleInstance, 
+                                name = right
+                            )
+                            for right in rights
+                        ]
+                        models.Right.objects.bulk_create(bulkRights)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateGeneralNameSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                name = payload['name']
+
+                try:
+                    system = models.System.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown System"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+
+                    system.name = name
+                    system.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.Module.objects.get(Q(id=request_id))
+                    resp = serializers.FetchModuleSerializer(resp, many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+
+                    resp = models.Module.objects.filter(Q(is_deleted=False)).order_by('name')
+                    resp = serializers.FetchModuleSerializer(resp, many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
     @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
             url_path="request-approver",

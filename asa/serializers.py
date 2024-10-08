@@ -235,3 +235,30 @@ class FetchStatusChangeSerializer(serializers.ModelSerializer):
 class IdNumberSerializer(serializers.Serializer):
     id_number = serializers.IntegerField()
     request_id = serializers.CharField(max_length=255)
+
+class SlimFetchRightSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Right
+        fields = '__all__'       
+class ModuleSerializer(serializers.Serializer):
+    system = serializers.CharField(max_length=255)
+    modules = serializers.ListField(min_length=1)
+
+class FetchModuleSerializer(serializers.ModelSerializer):
+    system = SlimFetchSystemsSerializer()
+    rights = serializers.SerializerMethodField()
+    class Meta:
+        model = models.Module
+        fields = '__all__'
+
+    def get_rights(self, obj):
+        try:
+            request = models.Right.objects.filter(module=obj)
+            serializer = SlimFetchRightSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 

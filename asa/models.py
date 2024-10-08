@@ -243,3 +243,37 @@ class RequestHistory(models.Model):
 
     class Meta:
         db_table = u'"{}\".\"request_history"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+
+
+
+class Module(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    system = models.ForeignKey(
+        System, on_delete=models.DO_NOTHING,
+        related_name="asa_module_system"
+    )
+    name = models.CharField(max_length=255)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} -- {self.system.name}"
+
+    class Meta:
+        db_table = u'"{}\".\"modules"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+
+class Right(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    module = models.ForeignKey(
+        Module, on_delete=models.DO_NOTHING,
+        related_name="asa_module"
+    )
+    name = models.CharField(max_length=255)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} -- {self.module.name}"
+
+    class Meta:
+        db_table = u'"{}\".\"rights"'.format(settings.ACCESS_SERVICE_AGREEMENT)
