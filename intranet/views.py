@@ -339,7 +339,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             q_filters &= Q(category=category)
 
         if title:
-            q_filters &= Q(title__icontains=title)
+            q_filters &= Q(original_file_name__icontains=title)
 
 
         if q_filters:
