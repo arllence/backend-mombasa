@@ -288,9 +288,9 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             
             else:
                 if "SUPERUSER" in roles or "ICT" in roles:
-                    documents = models.Document.objects.filter(Q(is_deleted=False))
+                    documents = models.Document.objects.filter(Q(is_deleted=False)).order_by('original_file_name')
                 else:
-                    documents = models.Document.objects.filter(Q(department=request.user.srrs_department) & Q(is_deleted=False))
+                    documents = models.Document.objects.filter(Q(department=request.user.srrs_department) & Q(is_deleted=False)).order_by('original_file_name')
             
 
             paginator = PageNumberPagination()
@@ -343,9 +343,9 @@ class DocumentManagerViewSet(viewsets.ViewSet):
 
 
         if q_filters:
-            resp = models.Document.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            resp = models.Document.objects.filter(Q(is_deleted=False) & q_filters).order_by('original_file_name')
         else:
-            resp = models.Document.objects.filter(Q(is_deleted=False)).order_by('-date_created')
+            resp = models.Document.objects.filter(Q(is_deleted=False)).order_by('original_file_name')
 
 
         paginator = PageNumberPagination()
