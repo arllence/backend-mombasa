@@ -678,6 +678,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         final_resp += list(resp)
 
                     if "HHR" in roles:
+                        exclude_status.append('HR APPROVED')
                         if not query:
                             resp = models.Recruit.objects.filter(
                                 (Q(is_slt_approved=True)),is_deleted=False
