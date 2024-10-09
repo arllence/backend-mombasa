@@ -926,9 +926,9 @@ class SrrsViewSet(viewsets.ViewSet):
                         new_status = "FINANCE APPROVED then CEO APPROVED"
 
                     # Notify the requestor & previous offices
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=previous_office)).values_list('email', flat=True))
-                    emails += previous_office_emails
-                    emails.append(recruit.created_by.email)
+                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=previous_office)).values_list('email', flat=True))
+                    # emails += previous_office_emails
+                    emails = [recruit.created_by.email]
                     subject = f"Recruitment Request: {recruit.uid} Status  [SRRS-AKHK]"
                     message = f"Hello, \nStaff Recruitment Request of id: {recruit.uid} for position: {recruit.position_title} has been {new_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nSRRS-AKHK"
                     
