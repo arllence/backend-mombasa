@@ -300,8 +300,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 result_page, many=True, context={"user_id":request.user.id})
             
             return paginator.get_paginated_response(serializer.data)
-            
-            
+                 
         elif request.method == "DELETE":
 
             request_id = request.query_params.get('request_id')
@@ -317,6 +316,45 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(methods=["GET",],
+            detail=False,
+            url_path="search-files",
+            url_name="search-files")
+    def search_files(self, request):
+                    
+        department = request.query_params.get('department')
+        sub_department = request.query_params.get('sub_department')
+        title = request.query_params.get('title')
+        category = request.query_params.get('category')
+
+        q_filters = Q()
+
+        if department:
+            q_filters &= Q(department=department)
+
+        if sub_department:
+            q_filters &= Q(sub_department=sub_department)
+
+        if category:
+            q_filters &= Q(category=category)
+
+        if title:
+            q_filters &= Q(title__icontains=title)
+
+
+        if q_filters:
+            resp = models.Document.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+        else:
+            resp = models.Document.objects.filter(Q(is_deleted=False)).order_by('-date_created')
+
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 50
+        result_page = paginator.paginate_queryset(resp, request)
+        serializer = serializers.FetchDocumentSerializer(
+            result_page, many=True, context={"user_id":request.user.id})
+        
+        return paginator.get_paginated_response(serializer.data)
 
     @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="qips-files",url_name="qips-files")
     def qips_files(self, request):
