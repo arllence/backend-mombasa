@@ -79,7 +79,10 @@ class FetchRecruitSerializer(serializers.ModelSerializer):
             if "HHR" in  roles:
                 if obj.is_slt_approved:
                     if obj.is_hhr_approved:
-                        approve = False
+                        if obj.status == 'ONHOLD':
+                            approve = True
+                        else:
+                            approve = False
                     else: 
                         approve = True
 
