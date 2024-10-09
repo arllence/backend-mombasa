@@ -349,7 +349,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
 
 
         paginator = PageNumberPagination()
-        paginator.page_size = 50
+        paginator.page_size = 5000
         result_page = paginator.paginate_queryset(resp, request)
         serializer = serializers.FetchDocumentSerializer(
             result_page, many=True, context={"user_id":request.user.id})
