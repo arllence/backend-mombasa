@@ -522,9 +522,9 @@ class DocumentManagerViewSet(viewsets.ViewSet):
 
 
         if q_filters:
-            resp = models.QipsDocument.objects.filter(Q(is_deleted=False) & q_filters).order_by('original_file_name')
+            resp = models.QipsDocument.objects.filter(Q(is_deleted=False) & q_filters).order_by('file_name')
         else:
-            resp = models.QipsDocument.objects.filter(Q(is_deleted=False)).order_by('original_file_name')
+            resp = models.QipsDocument.objects.filter(Q(is_deleted=False)).order_by('file_name')
 
 
         paginator = PageNumberPagination()
