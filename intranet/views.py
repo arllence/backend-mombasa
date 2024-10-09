@@ -495,7 +495,46 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
                             
-    
+    @action(methods=["GET",],
+            detail=False,
+            url_path="search-qips-files",
+            url_name="search-qips-files")
+    def search_qips_files(self, request):
+                    
+        topic = request.query_params.get('topic')
+        sub_topic = request.query_params.get('sub_topic')
+        file_name = request.query_params.get('file_name')
+        category = request.query_params.get('category')
+
+        q_filters = Q()
+
+        if topic:
+            q_filters &= Q(topic=topic)
+
+        if sub_topic:
+            q_filters &= Q(sub_topic=sub_topic)
+
+        if category:
+            q_filters &= Q(category=category)
+
+        if file_name:
+            q_filters &= Q(file_name__icontains=file_name)
+
+
+        if q_filters:
+            resp = models.QipsDocument.objects.filter(Q(is_deleted=False) & q_filters).order_by('original_file_name')
+        else:
+            resp = models.QipsDocument.objects.filter(Q(is_deleted=False)).order_by('original_file_name')
+
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 5000
+        result_page = paginator.paginate_queryset(resp, request)
+        serializer = serializers.FetchQipsDocumentSerializer(
+            result_page, many=True, context={"user_id":request.user.id})
+        
+        return paginator.get_paginated_response(serializer.data)
+       
     @action(methods=["POST"], detail=False, url_path="qips-downloads",url_name="qips-downloads")
     def qips_downloads(self, request):
         roles = user_util.fetchusergroups(request.user.id) 
