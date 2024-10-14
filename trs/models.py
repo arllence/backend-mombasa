@@ -64,6 +64,7 @@ class Traveler(models.Model):
     requires_cash_office_approval = models.BooleanField(default=False)
     ceo_comments = models.TextField(null=True, blank=True)
     hod_comments = models.TextField(null=True, blank=True)
+    rejection_comments = models.TextField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
     date_closed = models.DateTimeField(null=True, blank=True)

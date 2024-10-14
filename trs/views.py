@@ -511,6 +511,7 @@ class TrsViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 traveler_id = payload['traveler_id']
                 traveler_status = payload['status'].upper()
+                comments = payload.get('comments') or None
                 # roles = user_util.fetchusergroups(request.user.id)  
 
                 try:
@@ -520,6 +521,11 @@ class TrsViewSet(viewsets.ViewSet):
             
                 
                 with transaction.atomic():
+                    rejection_statuses = ['REJECTED','INCOMPLETE']
+                    if traveler_status in rejection_statuses:
+                        if not comments:
+                            return Response({"details": "Reasons for selected action required"}, status=status.HTTP_400_BAD_REQUEST)
+                        traveler.rejection_comments = comments
 
                     if traveler_status == 'REJECTED':
                         traveler.rejected_by = authenticated_user
