@@ -757,6 +757,7 @@ class TrsViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 traveler = payload['traveler']
                 travel_status = payload['status']
+                comments = payload.get('comments') or None
                 budget_code = payload.get('budget_code')
 
                 try:
@@ -780,6 +781,7 @@ class TrsViewSet(viewsets.ViewSet):
                         is_hod = True
                         approval_for = "HOD"
                         traveler_status = "APPROVED"
+                        traveler.hod_comments = comments
                         
                     elif travel_status == "SLT":
                         is_slt = True
@@ -797,12 +799,12 @@ class TrsViewSet(viewsets.ViewSet):
                         traveler.status = 'APPROVED'
                         traveler.requires_cash_office_approval = True
                         traveler.requires_hof_approval = True
+                        traveler.ceo_comments = comments
 
                         if traveler.mode_of_transport == 'FLIGHT':
                             traveler.requires_administrator_approval = True
                         elif traveler.mode_of_transport == 'HOSPITAL VEHICLE':
                             traveler.requires_transport_approval = True
-
 
                         try:
                             salaryRequest = models.AdvanceSalaryRequests.objects.get(
