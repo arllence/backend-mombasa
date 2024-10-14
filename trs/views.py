@@ -558,10 +558,6 @@ class TrsViewSet(viewsets.ViewSet):
                     subject = f"Travel Request: {traveler.tid} Progress Update [TRF-AKHK]"
                     message = f"Hello, \nThe Request:{traveler.tid} has been marked as {traveler_status} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nTRS-AKHK"
 
-                    # try:
-                    #     logger.error(e)
-                    # except Exception as e:
-                    #     pass
                     try:
                         mail = {
                             "email" : list(set(emails)), 
