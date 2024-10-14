@@ -79,7 +79,7 @@ class FullFetchQipsSerializer(serializers.ModelSerializer):
 
     def get_sub_topics(self, obj):
         try:
-            request = models.QipsSubTopic.objects.filter(qips=obj)
+            request = models.QipsSubTopic.objects.filter(qips=obj,is_deleted=False)
             serializer = FetchQipsSubTopicSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
@@ -111,7 +111,7 @@ class FetchQipsSubTopicSerializer(serializers.ModelSerializer):
 
     def get_categories(self, obj):
         try:
-            request = models.QipsCategory.objects.filter(sub_topic=obj)
+            request = models.QipsCategory.objects.filter(sub_topic=obj,is_deleted=False)
             serializer = SlimFetchQipsCategorySerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
@@ -184,7 +184,7 @@ class SubSlimFetchSubDepartmentSerializer(serializers.ModelSerializer):
 
     def get_categories(self, obj):
         try:
-            request = models.SubDepartmentCategory.objects.filter(sub_department=obj)
+            request = models.SubDepartmentCategory.objects.filter(sub_department=obj,is_deleted=Fa)
             serializer = SlimFetchSubDepartmentCategorySerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
@@ -235,7 +235,7 @@ class FullFetchDepartmentSerializer(serializers.ModelSerializer):
 
     def get_sub_departments(self, obj):
         try:
-            request = models.SubDepartment.objects.filter(department=obj)
+            request = models.SubDepartment.objects.filter(department=obj,is_deleted=False)
             serializer = SubSlimFetchSubDepartmentSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
@@ -269,7 +269,7 @@ class FullFetchSurveySerializer(serializers.ModelSerializer):
 
     def get_sub_topics(self, obj):
         try:
-            request = models.SurveySubTopic.objects.filter(survey=obj)
+            request = models.SurveySubTopic.objects.filter(survey=obj,is_deleted=False)
             serializer = FetchSurveySubTopicSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
@@ -315,7 +315,7 @@ class FetchSurveySubTopicSerializer(serializers.ModelSerializer):
 
     def get_categories(self, obj):
         try:
-            request = models.SurveyCategory.objects.filter(sub_topic=obj)
+            request = models.SurveyCategory.objects.filter(sub_topic=obj,is_deleted=False)
             serializer = SlimFetchSurveyCategorySerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
@@ -327,7 +327,7 @@ class FetchSurveySubTopicSerializer(serializers.ModelSerializer):
         
     def get_link(self, obj):
         try:
-            request = models.SurveyLink.objects.get(sub_topic=obj)
+            request = models.SurveyLink.objects.get(sub_topic=obj,is_deleted=False)
             if request.link:
                 return request.link 
             return ""
