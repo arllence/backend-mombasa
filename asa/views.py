@@ -916,13 +916,16 @@ class ASAViewSet(viewsets.ViewSet):
         elif request.method == "PUT":
             payload = request.data
 
-            serializer = serializers.UpdateGeneralNameSerializer(
+            serializer = serializers.PutModuleSerializer(
                 data=payload, many=False)
             
             if serializer.is_valid():
                 request_id = payload['request_id']
-                name = payload['name']
-                rights = module['rights']
+                modules = payload['modules'][0]
+                # rights = module['rights']
+
+                module_name = modules.get('name')
+                rights = modules.get('rights')
 
                 try:
                     module = models.Module.objects.get(id=request_id)
@@ -932,7 +935,7 @@ class ASAViewSet(viewsets.ViewSet):
 
                 with transaction.atomic():
 
-                    module.name = name
+                    module.name = module_name
                     module.save()
 
                     bulkRights = [

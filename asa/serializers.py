@@ -244,6 +244,11 @@ class ModuleSerializer(serializers.Serializer):
     system = serializers.CharField(max_length=255)
     modules = serializers.ListField(min_length=1)
 
+class PutModuleSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    system = serializers.CharField(max_length=255)
+    modules = serializers.ListField(min_length=1)
+
 class FetchModuleSerializer(serializers.ModelSerializer):
     system = SlimFetchSystemsSerializer()
     rights = serializers.SerializerMethodField()
@@ -253,7 +258,7 @@ class FetchModuleSerializer(serializers.ModelSerializer):
 
     def get_rights(self, obj):
         try:
-            request = models.Right.objects.filter(module=obj)
+            request = models.Right.objects.filter(module=obj,is_deleted=False)
             serializer = SlimFetchRightSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
