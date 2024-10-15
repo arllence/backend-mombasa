@@ -922,17 +922,27 @@ class ASAViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 name = payload['name']
+                rights = module['rights']
 
                 try:
-                    system = models.System.objects.get(id=request_id)
+                    module = models.Module.objects.get(id=request_id)
                 except Exception as e:
                     logger.error(e)
-                    return Response({"details": "Unknown System"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown module"}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
 
-                    system.name = name
-                    system.save()
+                    module.name = name
+                    module.save()
+
+                    bulkRights = [
+                        models.Right(
+                            module = module, 
+                            name = right
+                        )
+                        for right in rights
+                    ]
+                    models.Right.objects.bulk_create(bulkRights)
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:

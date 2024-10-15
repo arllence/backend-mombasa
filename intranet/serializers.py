@@ -184,7 +184,7 @@ class SubSlimFetchSubDepartmentSerializer(serializers.ModelSerializer):
 
     def get_categories(self, obj):
         try:
-            request = models.SubDepartmentCategory.objects.filter(sub_department=obj,is_deleted=Fa)
+            request = models.SubDepartmentCategory.objects.filter(sub_department=obj,is_deleted=False)
             serializer = SlimFetchSubDepartmentCategorySerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):

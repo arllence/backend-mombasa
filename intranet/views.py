@@ -66,7 +66,10 @@ class GenericsViewSet(viewsets.ViewSet):
     def files(self, request):
         department_id = request.query_params.get('department_id')
         if department_id:
-            documents = models.Document.objects.filter(Q(department=department_id) | Q(sub_department=department_id) | Q(category=department_id), is_deleted=False)
+            documents = models.Document.objects.filter(
+                Q(department=department_id) | 
+                Q(sub_department=department_id) | 
+                Q(category=department_id), is_deleted=False)
         else:
             documents = []
         
@@ -83,7 +86,10 @@ class GenericsViewSet(viewsets.ViewSet):
     def qips_files(self, request):
         request_id = request.query_params.get('request_id')
         if request_id:
-            documents = models.QipsDocument.objects.filter(Q(topic=request_id) | Q(sub_topic=request_id) | Q(category=request_id) ,is_deleted=False)
+            documents = models.QipsDocument.objects.filter(
+                Q(topic=request_id) | 
+                Q(sub_topic=request_id) | 
+                Q(category=request_id) ,is_deleted=False)
         else:
             documents = []
         
