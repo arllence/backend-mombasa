@@ -311,21 +311,21 @@ class TrsViewSet(viewsets.ViewSet):
                         logger.error(e)
 
                     # Notify the hof
-                    if salary_advance_required:
-                        emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
+                    # if salary_advance_required:
+                    #     emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
 
-                        subject = f"Travel Advance Request {tid} Received [TRF-AKHK]"
-                        message = f"Hello, \nSalary Travel Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
+                    #     subject = f"Travel Advance Request {tid} Received [TRF-AKHK]"
+                    #     message = f"Hello, \nSalary Travel Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
 
-                        try:
-                            mail = {
-                                "email" : list(set(emails)), 
-                                "subject" : subject,
-                                "message" : message,
-                            }
-                            Sendmail.objects.create(**mail)
-                        except Exception as e:
-                            logger.error(e)
+                    #     try:
+                    #         mail = {
+                    #             "email" : list(set(emails)), 
+                    #             "subject" : subject,
+                    #             "message" : message,
+                    #         }
+                    #         Sendmail.objects.create(**mail)
+                    #     except Exception as e:
+                    #         logger.error(e)
 
    
                 user_util.log_account_activity(
