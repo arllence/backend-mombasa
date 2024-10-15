@@ -262,3 +262,7 @@ class FetchModuleSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return {} 
+        
+class PutRightSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)

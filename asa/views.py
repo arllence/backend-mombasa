@@ -961,6 +961,50 @@ class ASAViewSet(viewsets.ViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 
+    @action(methods=["DELETE", "PUT"],
+            detail=False,
+            url_path="rights",
+            url_name="rights")
+    def rights(self, request):
+ 
+        if request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.PutRightSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                name = payload['name']
+
+                try:
+                    right = models.Right.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown right"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+
+                    right.name = name
+                    right.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.Right.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)    
+                except Exception as e:
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
 
     @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
