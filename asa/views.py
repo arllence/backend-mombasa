@@ -953,6 +953,8 @@ class ASAViewSet(viewsets.ViewSet):
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
+            system_id = request.query_params.get('system_id')
+            system_ids = request.query_params.get('system_ids')
             if request_id:
                 try:
                     resp = models.Module.objects.get(Q(id=request_id))
@@ -963,6 +965,27 @@ class ASAViewSet(viewsets.ViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            elif system_id:
+                try:
+                    resp = models.Module.objects.filter(Q(system=system_id))
+                    resp = serializers.FetchModuleSerializer(resp, many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            elif system_ids:
+                system_ids = json.loads(system_ids)
+                try:
+                    resp = models.Module.objects.filter(Q(system__in=system_ids))
+                    resp = serializers.FetchModuleSerializer(resp, many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
 
