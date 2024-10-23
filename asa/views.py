@@ -90,8 +90,8 @@ class ASAViewSet(viewsets.ViewSet):
             except Exception as e:
                 return Response({"details": "Unknown selected system "}, status=status.HTTP_400_BAD_REQUEST)
             
-            if str(department.id) != str(authenticated_user.srrs_department.id):
-                return Response({"details": "Request Must be within your department"}, status=status.HTTP_400_BAD_REQUEST)
+            # if str(department.id) != str(authenticated_user.srrs_department.id):
+            #     return Response({"details": "Request Must be within your department"}, status=status.HTTP_400_BAD_REQUEST)
             
             user_exists = get_user_model().objects.filter(email=employee['email']).exists()
             if user_exists:
@@ -485,7 +485,6 @@ class ASAViewSet(viewsets.ViewSet):
         if request.method == "POST":
 
             payload = request.data
-            print(payload)
 
             try:
                 record_id = payload['record_id']
