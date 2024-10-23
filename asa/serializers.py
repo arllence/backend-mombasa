@@ -4,6 +4,7 @@ from acl.utils.user_util import fetchusergroups as get_user_roles
 from asa import models
 from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from asa.utils import shared_fxns
 
 
 class GeneralNameSerializer(serializers.Serializer):
@@ -119,8 +120,35 @@ class FetchRequestSerializer(serializers.ModelSerializer):
     def get_module_access(self, obj):
         try:
             request = models.ModuleAccess.objects.get(employee=obj)
+            
             serializer = SlimFetchModuleAccessSerializer(request, many=False)
-            return serializer.data
+
+            modules = serializer.data['modules']
+
+            serialized_modules = []
+            for module in modules:
+                selected_module = module['module']
+                selected_rights = module['rights']
+
+                selected_module = models.Module.objects.get(id=selected_module)
+                selected_module = SlimFetchModuleSerializer(selected_module, many=False).data
+                
+                rights = []
+                for right in selected_rights:
+                    right = models.Right.objects.get(id=right)
+                    right = SlimFetchRightSerializer(right,many=False).data
+                    rights.append(right)
+
+                module = {
+                    "module" : selected_module,
+                    "rights" : rights
+                }
+
+                serialized_modules.append(module)
+
+            serializer_data = serializer.data
+            serializer_data['modules'] = serialized_modules
+            return serializer_data
         except (ValidationError, ObjectDoesNotExist):
             return {}
         except Exception as e:
@@ -132,7 +160,40 @@ class FetchRequestSerializer(serializers.ModelSerializer):
         try:
             request = models.AdditionalModuleAccess.objects.filter(employee=obj,status='REQUESTED')
             serializer = SlimFetchAdditionalModuleAccessSerializer(request, many=True)
-            return serializer.data
+            # return serializer.data
+            # print(serializer.data)
+            requested = shared_fxns.convert_to_json_serializable(serializer.data)
+            print(requested)
+            # requested = requested['modules']
+
+            
+            for item in requested:
+                modules = item['modules']
+                serialized_modules = []
+                for module in modules:
+                    selected_module = module['module']
+                    selected_rights = module['rights']
+
+                    selected_module = models.Module.objects.get(id=selected_module)
+                    selected_module = SlimFetchModuleSerializer(selected_module, many=False).data
+                    
+                    rights = []
+                    for right in selected_rights:
+                        right = models.Right.objects.get(id=right)
+                        right = SlimFetchRightSerializer(right,many=False).data
+                        rights.append(right)
+
+                    module = {
+                        "module" : selected_module,
+                        "rights" : rights
+                    }
+
+                    serialized_modules.append(module)
+                item['modules'] = serialized_modules
+
+            # serializer_data = serializer.data
+            # serializer_data['modules'] = serialized_modules
+            return requested
         except (ValidationError, ObjectDoesNotExist):
             return {}
         except Exception as e:
@@ -267,6 +328,11 @@ class FetchModuleSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return {} 
+        
+class SlimFetchModuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Module
+        fields = '__all__'
         
 class PutRightSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
