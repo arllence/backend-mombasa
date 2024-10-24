@@ -90,7 +90,7 @@ class TrsViewSet(viewsets.ViewSet):
                         send_to = 'HOD'
 
                 if requesting_for == 'OTHERS':
-                    route = list(payload.get('employees'))
+                    employees = list(payload.get('employees'))
 
                     if not employees:
                         return Response({"details": "Target Employees Required !"}, status=status.HTTP_400_BAD_REQUEST)
@@ -1017,10 +1017,6 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request {traveler.tid} Status  [TRF-AKHK]"
                         message = f"Dear {traveler.created_by.first_name}, \n\nYour Travel Request has been\n Approved by Transport Office.\n\nRegards\nTRS-AKHK"
 
-                    # try:
-                    #     send_mail(subject, message, 'notification@akhskenya.org', [traveler.created_by.email])
-                    # except Exception as e:
-                    #     pass
                     try:
                         mail = {
                             "email" : [traveler.created_by.email], 
@@ -1031,21 +1027,6 @@ class TrsViewSet(viewsets.ViewSet):
                     except Exception as e:
                         logger.error(e)
 
-                    # # Notify HOF
-                    # if is_slt and traveler_status == 'APPROVED':
-                    #     emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
-                    #     subject = f"Request for Travel Budget Approval: {traveler.tid}.  [TRF-AKHK]"
-                    #     message = f"Hello. \n\nTravel Request: {traveler.tid} \nis pending budget approval by HOF.\n\nRegards\nTRS-AKHK"
-
-                    #     logger.error(e)
-
-                    # # Notify CEO
-                    # if is_hof and traveler.mode_of_transport == 'FLIGHT':
-                    #     emails = list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
-                    #     subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
-                    #     message = f"Hello. \n\nTravel Request: {traveler.tid} has been\n approved by Finance\nand is now pending your approval.\n\nRegards\nTRS-AKHK"
-
-                    #     logger.error(e)
 
                     # Notify ADMINISTRATOR
                     if is_ceo and traveler.mode_of_transport == 'FLIGHT':
@@ -1053,10 +1034,6 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO, and is now pending administration and costing\n\nRegards\nTRS-AKHK"
 
-                        # try:
-                        #     logger.error(e)
-                        # except Exception as e:
-                        #     pass
 
                         try:
                             mail = {
@@ -1074,7 +1051,7 @@ class TrsViewSet(viewsets.ViewSet):
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
                         message = f"Hello. \nTravel Request: {traveler.tid} has been approved by the CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
-                        emails.append("ksm.logistics@akhskenya.org")
+                        # emails.append("ksm.logistics@akhskenya.org")
 
                         try:
                             mail = {
@@ -1087,10 +1064,31 @@ class TrsViewSet(viewsets.ViewSet):
                             logger.error(e)
 
                     # # Notify TRANSPORT
-                    if is_ceo and traveler.mode_of_transport == 'HOSPITAL VEHICLE':
+                    # if is_ceo and traveler.mode_of_transport == 'HOSPITAL VEHICLE':
+                    #     emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
+                    #     subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
+                    #     message = f"Hello. \nTravel Request: {traveler.tid} has been approved by CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
+
+                    #     try:
+                    #         mail = {
+                    #             "email" : list(set(emails)), 
+                    #             "subject" : subject,
+                    #             "message" : message,
+                    #         }
+                    #         Sendmail.objects.create(**mail)
+                    #     except Exception as e:
+                    #         logger.error(e)
+
+                    # Notify transport department
+                    if is_ceo:
+                        Trip = models.Trip.objects.get(traveler=traveler)
+                        no_of_travelers = 1
+                        if traveler.requesting_for == 'OTHERS':
+                            no_of_travelers = len(traveler.employees)
+                        subject = f"Travel Request {traveler.tid} Approved by CEO [TRF-AKHK]"
+                        message = f"Hello. \nA new travel request: {traveler.tid} of mode: {traveler.mode_of_transport.capitalize()}\nis approved by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nDeparture date: {str(Trip.departure_date)}-{str(Trip.departure_time)}. Route: {Trip.route}. Number of people: {str(no_of_travelers)} \n\nRegards\nTRS-AKHK"
                         emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
-                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
-                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
+                        emails.append('ksm.logistics@akhskenya.org')
 
                         try:
                             mail = {
@@ -1098,7 +1096,11 @@ class TrsViewSet(viewsets.ViewSet):
                                 "subject" : subject,
                                 "message" : message,
                             }
+
+                            print(mail)
+
                             Sendmail.objects.create(**mail)
+
                         except Exception as e:
                             logger.error(e)
 

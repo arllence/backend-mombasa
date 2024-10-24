@@ -549,7 +549,7 @@ class ASAViewSet(viewsets.ViewSet):
             payload = request.data
 
             # serialize payload
-            serializer = serializers.UpdateRequestSerializer(
+            serializer = serializers.UpdateAdditionalRequestSerializer(
                     data=payload, many=False)
             if not serializer.is_valid():
                 return Response({"details": serializer.errors}, 
@@ -558,14 +558,43 @@ class ASAViewSet(viewsets.ViewSet):
             # extrapolate
             request_id = payload['request_id']
             request_status = payload['status']
+            option = payload['option']
             
-            try:
-                accessInstance = models.Access.objects.get(Q(id=request_id) | Q(employee=request_id))
-            except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
-            except Exception as e:
-                print(e)
-                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            if option == 'SYSTEM':
+                try:
+                    accessInstance = models.AdditionalSystemAccess.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                        return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                raw = {
+                    "employee": accessInstance.employee,
+                    "system": accessInstance.system
+                }
+                models.SystemAccess.objects.create(**raw)
+                accessInstance.status = 'APPROVED'
+                accessInstance.save()
+            
+            elif option == 'MODULE':
+                try:
+                    accessInstance = models.AdditionalModuleAccess.objects.get(Q(id=request_id))
+                except (ValidationError, ObjectDoesNotExist):
+                        return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                raw = {
+                    "employee": accessInstance.employee,
+                    "modules": accessInstance.modules,
+                    "remarks": accessInstance.remarks
+                }
+                models.ModuleAccess.objects.create(**raw)
+                accessInstance.status = 'APPROVED'
+                accessInstance.save()
+            
             
             if 'ICT' in roles:
                 if request_status == 'APPROVED':

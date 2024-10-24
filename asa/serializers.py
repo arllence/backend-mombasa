@@ -334,3 +334,8 @@ class SlimFetchModuleSerializer(serializers.ModelSerializer):
 class PutRightSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
     name = serializers.CharField(max_length=255)
+
+class UpdateAdditionalRequestSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    status = serializers.CharField(max_length=255)
+    option = serializers.CharField(max_length=255)
