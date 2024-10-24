@@ -1097,8 +1097,6 @@ class TrsViewSet(viewsets.ViewSet):
                                 "message" : message,
                             }
 
-                            print(mail)
-
                             Sendmail.objects.create(**mail)
 
                         except Exception as e:
