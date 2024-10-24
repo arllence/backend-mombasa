@@ -1197,7 +1197,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     # Notify the HR / FINANCE
                     recipients = list(get_user_model().objects.filter(
-                        Q(groups__name__in=['HR','HOF', 'CEO'])).values_list('email', flat=True))
+                        Q(groups__name__in=['HHR'])).values_list('email', flat=True))
                     recipients.append(recruit.created_by.email)
                     recipients.append(recruit.department.slt.email)
                     subject = f"Candidate hired [SRRS-AKHK]"
