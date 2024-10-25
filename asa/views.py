@@ -505,9 +505,12 @@ class ASAViewSet(viewsets.ViewSet):
             with transaction.atomic():
                 # create system access
                 for system in systems:
-                    models.AdditionalSystemAccess.objects.create(
-                        employee=employeeInstance, system=system
-                    )
+                    is_exists = models.SystemAccess.objects.filter(
+                        employee=employeeInstance, system=system).exists()
+                    if not is_exists:
+                        models.AdditionalSystemAccess.objects.create(
+                            employee=employeeInstance, system=system
+                        )
 
                 # module access
                 modules = module_access.get('modules')
@@ -573,8 +576,9 @@ class ASAViewSet(viewsets.ViewSet):
                     "employee": accessInstance.employee,
                     "system": accessInstance.system
                 }
-                models.SystemAccess.objects.create(**raw)
-                accessInstance.status = 'APPROVED'
+                if request_status == 'APPROVED':
+                    models.SystemAccess.objects.create(**raw)
+                accessInstance.status = request_status
                 accessInstance.save()
             
             elif option == 'MODULE':
@@ -591,63 +595,68 @@ class ASAViewSet(viewsets.ViewSet):
                     "modules": accessInstance.modules,
                     "remarks": accessInstance.remarks
                 }
-                models.ModuleAccess.objects.create(**raw)
-                accessInstance.status = 'APPROVED'
+                if request_status == 'APPROVED':
+                    existing_modules = []
+                    current_modules = accessInstance.modules
+                    is_exists = models.ModuleAccess.objects.filter(employee=accessInstance.employee)
+                    if is_exists:
+                        for item in is_exists:
+                            existing_modules += item.modules
+                    
+                        for current_module in current_modules:
+                            current_module_id = current_module['module']    
+                            current_rights = current_module['rights']    
+                            for existing_module in existing_modules:
+                                existing_module_id = existing_module['module']
+                                existing_rights = existing_module['rights']
+                                if current_module_id == existing_module_id:
+                                    existing_rights += current_rights
+                                    existing_module['rights'] = list(set(existing_rights))
+                                else:
+                                    existingModuleInstance = is_exists.first()
+                                    existing_instance_modules = existingModuleInstance.modules
+                                    existing_instance_modules.append(current_module)
+                                    existingModuleInstance.modules = existing_instance_modules
+                                    existingModuleInstance.save()
+                        
+                    else:
+                        models.ModuleAccess.objects.create(**raw)
+                accessInstance.status = request_status
                 accessInstance.save()
             
-            
-            if 'ICT' in roles:
-                if request_status == 'APPROVED':
-                    accessInstance.is_ict_approved = True
-                    request_status = 'ICT APPROVED'
-                    accessInstance.status = request_status
-                    accessInstance.granted_by = authenticated_user
-                    accessInstance.employee.status = 'ACTIVE'
-                else:
-                    accessInstance.status = request_status
 
-                status_for = 'ICT'
-
-            else:
-                return Response({"details": "Permission denied"}, 
-                                status=status.HTTP_400_BAD_REQUEST)
-            
-            # update instance
-            accessInstance.save()
-            accessInstance.employee.save()
-            
             # Notify ICT
-            if status_for == 'HOD' and request_status == 'HOD APPROVED':
-                subject = f"New Access Request Received [ASA-AKHK]"
-                message = f"Hello, \n\nA new access request from department: {accessInstance.employee.department.name},\nhas been approved by {authenticated_user.first_name} {authenticated_user.last_name} for HOD on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nASA-AKHK"
-                # get emails
-                emails = list(models.RequestApprover.objects.all().values_list('approver__email', flat=True))
+            # if status_for == 'HOD' and request_status == 'HOD APPROVED':
+            #     subject = f"New Access Request Received [ASA-AKHK]"
+            #     message = f"Hello, \n\nA new access request from department: {accessInstance.employee.department.name},\nhas been approved by {authenticated_user.first_name} {authenticated_user.last_name} for HOD on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nASA-AKHK"
+            #     # get emails
+            #     emails = list(models.RequestApprover.objects.all().values_list('approver__email', flat=True))
                 
-                try:
-                    mail = {
-                        "email" : emails, 
-                        "subject" : subject,
-                        "message" : message
-                    }
-                    Sendmail.objects.create(**mail)
-                except Exception as e:
-                    logger.error(e)
-                    print("mail error: ", e)
+            #     try:
+            #         mail = {
+            #             "email" : emails, 
+            #             "subject" : subject,
+            #             "message" : message
+            #         }
+            #         Sendmail.objects.create(**mail)
+            #     except Exception as e:
+            #         logger.error(e)
+            #         print("mail error: ", e)
 
             
 
 
             # create track status change
-            try:
-                raw = {
-                    "access": accessInstance,
-                    "status": request_status,
-                    "status_for": status_for,
-                    "action_by": authenticated_user
-                }
-                models.StatusChange.objects.create(**raw)
-            except Exception as e:
-                print(e)
+            # try:
+            #     raw = {
+            #         "access": accessInstance,
+            #         "status": request_status,
+            #         "status_for": status_for,
+            #         "action_by": authenticated_user
+            #     }
+            #     models.StatusChange.objects.create(**raw)
+            # except Exception as e:
+            #     print(e)
 
             return Response('success', status=status.HTTP_200_OK)
      

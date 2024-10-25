@@ -496,7 +496,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             with transaction.atomic():
                 try:
                     raw = {"is_deleted" : True}
-                    models.Document.objects.filter(Q(id=request_id)).update(**raw)
+                    models.QipsDocument.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
