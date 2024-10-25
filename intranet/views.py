@@ -310,17 +310,24 @@ class DocumentManagerViewSet(viewsets.ViewSet):
         elif request.method == "DELETE":
 
             request_id = request.query_params.get('request_id')
-            if not request_id:
+            request_ids = request.query_params.get('request_ids')
+
+            if not request_id and not request_ids:
                 return Response({"details": "Cannot complete request !"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
             with transaction.atomic():
                 try:
                     raw = {"is_deleted" : True}
-                    models.Document.objects.filter(Q(id=request_id)).update(**raw)
+                    if request_ids:
+                        request_ids = json.loads(request_ids)
+                        models.Document.objects.filter(Q(id__in=request_ids)).update(**raw)
+                    else:
+                        models.Document.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
 
     @action(methods=["GET",],
             detail=False,
@@ -489,14 +496,20 @@ class DocumentManagerViewSet(viewsets.ViewSet):
         elif request.method == "DELETE":
 
             request_id = request.query_params.get('request_id')
-            if not request_id:
+            request_ids = request.query_params.get('request_ids')
+
+            if not request_id and not request_ids:
                 return Response({"details": "Cannot complete request !"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
-            
+
             with transaction.atomic():
                 try:
                     raw = {"is_deleted" : True}
-                    models.QipsDocument.objects.filter(Q(id=request_id)).update(**raw)
+                    if request_ids:
+                        request_ids = json.loads(request_ids)
+                        models.QipsDocument.objects.filter(Q(id__in=request_ids)).update(**raw)
+                    else:
+                        models.QipsDocument.objects.filter(Q(id=request_id)).update(**raw)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
