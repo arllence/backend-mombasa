@@ -1194,6 +1194,113 @@ class ASAViewSet(viewsets.ViewSet):
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+    @action(methods=["GET"],
+            detail=False,
+            url_path="verification",
+            url_name="verification")
+    def verification(self, request):
+        # roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.ApproverSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                approver = payload['approver']
+
+                try:
+                    approver = User.objects.get(id=approver)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown User"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # assign ICT role
+                assign_role = user_util.award_role('ICT', str(approver.id))
+                if not assign_role:
+                    return Response({"details": "Unable to assign role ICT"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "approver": approver,
+                        "created_by": request.user
+                    }
+
+                    models.RequestApprover.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateApproverSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                approver = payload['approver']
+
+                try:
+                    request = models.RequestApprover.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+
+                    request.approver = approver
+                    request.created_by = request.user
+                    request.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    request = models.RequestApprover.objects.get(Q(id=request_id))
+                    request = serializers.FetchRequestApproverSerializer(request, many=False).data
+                    return Response(request, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+
+                    request = models.RequestApprover.objects.filter(Q(is_deleted=False)).order_by('approver')
+                    request = serializers.FetchRequestApproverSerializer(request, many=True).data
+                    return Response(request, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    user = models.RequestApprover.objects.get(id=request_id)
+                    user_util.revoke_role('ICT', str(user.approver.id))
+                    user.delete()
+                    return Response('200', status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
+
 class ReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]
 
@@ -1269,52 +1376,27 @@ class ReportsViewSet(viewsets.ViewSet):
         
     @action(methods=["GET",],
             detail=False,
-            url_path="replacements",
-            url_name="replacements")
-    def replacements(self, request):
+            url_path="verifications",
+            url_name="verifications")
+    def verifications(self, request):
                     
-        department = request.query_params.get('department')
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
-        # quote_status = request.query_params.get('status')
-        date = False
+        employee_no = request.query_params.get('employee_no')
 
-        if date_to and date_from:
-            date = True
 
-        def create_date_range(date_from,date_to):
-            # Convert the string dates to datetime objects
-            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
-            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+        q_filters = Q()
 
-            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+        if employee_no:
+            q_filters &= Q(employee_no=employee_no)
 
-            return q_filters
-
-        q_filters = Q(nature_of_hiring='Replacement')
-
-        if department:
-            q_filters &= Q(department=department)
-
-        if date_from or date_to:
-            if not date:
-                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
-            q_filters &= create_date_range(date_from,date_to)
-            
-        # if quote_status:
-        #     q_filters &= Q(status=quote_status)
 
 
         if q_filters:
-
-            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-            
+            resp = models.Employee.objects.filter(q_filters).first() or []   
         else:
-            roles = user_util.fetchusergroups(request.user.id)  
+            resp = []
 
-            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')[:50]
-
-        resp = serializers.FetchRecruitSerializer(resp, many=True, context={"user_id":request.user.id}).data
+        if resp:
+            resp = serializers.FetchRequestSerializer(resp, many=False, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
     
