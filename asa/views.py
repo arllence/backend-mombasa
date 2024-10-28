@@ -598,29 +598,36 @@ class ASAViewSet(viewsets.ViewSet):
                 if request_status == 'APPROVED':
                     existing_modules = []
                     current_modules = accessInstance.modules
-                    is_exists = models.ModuleAccess.objects.filter(employee=accessInstance.employee)
-                    if is_exists:
-                        for item in is_exists:
-                            existing_modules += item.modules
-                    
+                    existing_module_access = models.ModuleAccess.objects.filter(employee=accessInstance.employee).first()
+
+                    if existing_module_access:
+                        # Collect existing modules and rights
+                        existing_modules = existing_module_access.modules
+
                         for current_module in current_modules:
-                            current_module_id = current_module['module']    
-                            current_rights = current_module['rights']    
+                            current_module_id = current_module['module']
+                            current_rights = set(current_module['rights'])
+
+                            # Check if the current module exists in the employee's modules
+                            module_exists = False
                             for existing_module in existing_modules:
-                                existing_module_id = existing_module['module']
-                                existing_rights = existing_module['rights']
-                                if current_module_id == existing_module_id:
-                                    existing_rights += current_rights
-                                    existing_module['rights'] = list(set(existing_rights))
-                                else:
-                                    existingModuleInstance = is_exists.first()
-                                    existing_instance_modules = existingModuleInstance.modules
-                                    existing_instance_modules.append(current_module)
-                                    existingModuleInstance.modules = existing_instance_modules
-                                    existingModuleInstance.save()
-                        
+                                if existing_module['module'] == current_module_id:
+                                    # Merge rights if the module already exists
+                                    existing_module['rights'] = list(set(existing_module['rights']) | current_rights)
+                                    module_exists = True
+                                    break
+
+                            # Add new module if it doesn't exist
+                            if not module_exists:
+                                existing_modules.append(current_module)
+
+                        # Update the modules and save the instance
+                        existing_module_access.modules = existing_modules
+                        existing_module_access.save()
                     else:
-                        models.ModuleAccess.objects.create(**raw)
+                        # Create new ModuleAccess entry if none exists
+                        models.ModuleAccess.objects.create(employee=accessInstance.employee, modules=current_modules)
+
                 accessInstance.status = request_status
                 accessInstance.save()
             
