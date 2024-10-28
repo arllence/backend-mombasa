@@ -1400,52 +1400,6 @@ class ReportsViewSet(viewsets.ViewSet):
 
         return Response(resp, status=status.HTTP_200_OK)
     
-    @action(methods=["GET",],
-            detail=False,
-            url_path="hires",
-            url_name="hires")
-    def hires(self, request):
-                    
-        department = request.query_params.get('department')
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
-        type = request.query_params.get('type')
-        date = False
-
-        if date_to and date_from:
-            date = True
-
-        def create_date_range(date_from,date_to):
-            # Convert the string dates to datetime objects
-            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
-            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
-
-            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
-
-            return q_filters
-
-        q_filters = Q(status='ACTIVE')
-        q_filters &= Q(recruit__status='HIRED')
-
-        if department:
-            q_filters &= Q(recruit__department=department)
-
-        if type:
-            q_filters &= Q(recruit__position_type=type)
-
-        if date_from or date_to:
-            if not date:
-                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
-            q_filters &= create_date_range(date_from,date_to)
-
-
-        resp = models.Employee.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-            
-        resp = serializers.FullFetchEmployeeSerializer(resp, many=True, context={"user_id":request.user.id}).data
-
-        return Response(resp, status=status.HTTP_200_OK)
-        
-        
 class ASAAnalyticsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
@@ -1458,7 +1412,7 @@ class ASAAnalyticsViewSet(viewsets.ViewSet):
             url_name="general")
     def general(self, request):
         roles = user_util.fetchusergroups(request.user.id)
-        active_status = ['REQUESTED','HOD APPROVED','CLOSED']
+        active_status = ['REQUESTED','HOD APPROVED','STAFF APPROVED']
 
         if 'HOD' in roles:
             requests = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
