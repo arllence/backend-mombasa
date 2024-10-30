@@ -15,6 +15,7 @@ urlpatterns = [
     path(API_VERSION, include('ams.urls')),
     path(API_VERSION, include('sls.urls')),
     path(API_VERSION, include('intranet.urls')),
+    path(API_VERSION, include('dbmanager.urls')),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
 

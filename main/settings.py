@@ -55,7 +55,8 @@ INSTALLED_APPS = [
     'srrs',
     'asa',
     'ams',
-    'sls'
+    'sls',
+    'dbmanager'
 ]
 
 MIDDLEWARE = [
@@ -122,6 +123,7 @@ ACCESS_SERVICE_AGREEMENT = 'asa'
 ASSET_MANAGEMENT_SYSTEM = 'ams'
 STAFF_SICK_SHEET = 'sls'
 INTRANET = 'intranet'
+DB_MANAGER = 'db_manager'
 
 
 
