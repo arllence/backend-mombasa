@@ -14,10 +14,19 @@ class UpdateGeneralNameSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
     name = serializers.CharField(max_length=255)
 
+class SlimFetchSystemsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.System
+        fields = '__all__'
 
+class SlimFetchRemoteLocationsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.RemoteLocations
+        fields = '__all__'
 
 class FetchBackupLogSerializer(serializers.ModelSerializer):
     action_by = UsersSerializer()
+    type = SlimFetchSystemsSerializer()
     
     class Meta:
         model = models.BackupLog
@@ -38,9 +47,10 @@ class BackupLogSerializer(serializers.Serializer):
     size = serializers.IntegerField()
     unit = serializers.CharField(max_length=100)
 
-
 class FetchRemoteBackupLogSerializer(serializers.ModelSerializer):
     action_by = UsersSerializer()
+    type = SlimFetchSystemsSerializer()
+    remote_location = SlimFetchRemoteLocationsSerializer()
     
     class Meta:
         model = models.RemoteBackupLog
@@ -60,7 +70,7 @@ class RemoteBackupLogSerializer(serializers.Serializer):
     status = serializers.CharField(max_length=500)
     size = serializers.IntegerField()
     unit = serializers.CharField(max_length=100)
-
+    remote_location = serializers.CharField(max_length=500)
 
 class FetchSystemRecoveryVerificationSerializer(serializers.ModelSerializer):
     verified_by = UsersSerializer()
@@ -79,4 +89,3 @@ class SystemRecoveryVerificationSerializer(serializers.Serializer):
     module_verified = serializers.CharField(max_length=500)
     date = serializers.CharField(max_length=500)
     comments = serializers.CharField(style={'type': 'textarea'})
-

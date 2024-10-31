@@ -12,7 +12,12 @@ class BackupLog(models.Model):
        related_name="log_added_by"
     )
 
-    type = models.CharField(max_length=500)
+    type = models.ForeignKey(
+       'System', on_delete=models.DO_NOTHING, 
+       related_name="system_log_added_by",
+       null=True, blank=True
+    )
+
     date = models.DateField()
     status = models.CharField(max_length=100)
     size = models.IntegerField(default=0)
@@ -58,10 +63,20 @@ class RemoteBackupLog(models.Model):
        related_name="remote_log_added_by"
     )
 
-    type = models.CharField(max_length=500)
+    type = models.ForeignKey(
+       'System', on_delete=models.DO_NOTHING, 
+       related_name="remote_system_log_added_by",
+       null=True, blank=True
+    )
+
+    remote_location = models.ForeignKey(
+       'RemoteLocations', on_delete=models.DO_NOTHING, 
+       related_name="remote_location_added_by",
+       null=True, blank=True
+    )
+
     date = models.DateField()
     status = models.CharField(max_length=100)
-    remote_location = models.CharField(max_length=500)
     size = models.IntegerField(default=0)
     unit = models.CharField(max_length=100)
     is_deleted = models.BooleanField(default=False)
@@ -74,3 +89,28 @@ class RemoteBackupLog(models.Model):
     class Meta:
         db_table = u'"{}\".\"remote_backup_logs"'.format(settings.DB_MANAGER)
 
+
+class System(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, unique=True)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = u'"{}\".\"systems"'.format(settings.DB_MANAGER)
+
+
+class RemoteLocations(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255, unique=True)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = u'"{}\".\"remote_locations"'.format(settings.DB_MANAGER)

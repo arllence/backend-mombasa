@@ -57,11 +57,16 @@ class DbManagerViewSet(viewsets.ViewSet):
                 size = payload['size']
                 unit = payload['unit']
 
+                try:
+                    system = models.System.objects.get(id=type)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid backup log type'}, status=status.HTTP_400_BAD_REQUEST)
+
    
                 with transaction.atomic():
 
                     raw = {
-                        "type":type,
+                        "type":system,
                         "date":date,
                         "status":log_status,
                         "size":size,
@@ -94,11 +99,16 @@ class DbManagerViewSet(viewsets.ViewSet):
                     BackupLogInstance = models.BackupLog.objects.get(id=request_id)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    system = models.System.objects.get(id=type)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid backup log type'}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
 
                     raw = {
-                        "type":type,
+                        "type":system,
                         "date":date,
                         "status":log_status,
                         "size":size,
@@ -176,11 +186,22 @@ class DbManagerViewSet(viewsets.ViewSet):
                 unit = payload['unit']
                 remote_location = payload['remote_location']
 
+                try:
+                    system = models.System.objects.get(id=type)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid backup log type'}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    remote_location = models.RemoteLocations.objects.get(id=remote_location)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid location'}, status=status.HTTP_400_BAD_REQUEST)
+
+
    
                 with transaction.atomic():
 
                     raw = {
-                        "type":type,
+                        "type":system,
                         "date":date,
                         "status":log_status,
                         "size":size,
@@ -215,11 +236,22 @@ class DbManagerViewSet(viewsets.ViewSet):
                     BackupLogInstance = models.RemoteBackupLog.objects.get(id=request_id)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    system = models.System.objects.get(id=type)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid backup log type'}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    remote_location = models.RemoteLocations.objects.get(id=remote_location)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid location'}, status=status.HTTP_400_BAD_REQUEST)
+
 
                 with transaction.atomic():
 
                     raw = {
-                        "type":type,
+                        "type":system,
                         "date":date,
                         "status":log_status,
                         "size":size,
@@ -387,6 +419,151 @@ class DbManagerViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
 
+    
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="systems",
+            url_name="systems")
+    def systems(self, request):
+        # roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+
+                with transaction.atomic():
+                    raw = {
+                        "name": name
+                    }
+
+                    models.System.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateGeneralNameSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                name = payload['name']
+
+                try:
+                    system = models.System.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown System"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+
+                    system.name = name
+                    system.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    system = models.System.objects.get(Q(id=request_id))
+                    system = serializers.SlimFetchSystemsSerializer(system, many=False).data
+                    return Response(system, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown system"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+
+                    systems = models.System.objects.filter(Q(is_deleted=False)).order_by('name')
+                    systems = serializers.SlimFetchSystemsSerializer(systems, many=True).data
+                    return Response(systems, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="remote-locations",
+            url_name="remote-locations")
+    def remote_locations(self, request):
+        # roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+
+                with transaction.atomic():
+                    raw = {
+                        "name": name
+                    }
+
+                    models.RemoteLocations.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateGeneralNameSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                name = payload['name']
+
+                try:
+                    system = models.RemoteLocations.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown System"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+
+                    system.name = name
+                    system.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    system = models.RemoteLocations.objects.get(Q(id=request_id))
+                    system = serializers.SlimFetchSystemsSerializer(system, many=False).data
+                    return Response(system, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown system"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+
+                    systems = models.RemoteLocations.objects.filter(Q(is_deleted=False)).order_by('name')
+                    systems = serializers.SlimFetchSystemsSerializer(systems, many=True).data
+                    return Response(systems, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ReportsViewSet(viewsets.ViewSet):
