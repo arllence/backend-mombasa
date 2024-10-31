@@ -4,8 +4,8 @@ from dbmanager import views
 router = DefaultRouter(trailing_slash=False)
 
 router.register('db-manager', views.DbManagerViewSet, basename='db-manager')
-# router.register('s3-reports',views.ReportsViewSet, basename='s3-reports')
-# router.register('s3-analytics',views.AnalyticsViewSet, basename='s3-analytics')
+# router.register('db-manager-reports',views.ReportsViewSet, basename='db-manager-reports')
+router.register('db-manager-analytics',views.AnalyticsViewSet, basename='db-manager-analytics')
    
                          
 urlpatterns = router.urls

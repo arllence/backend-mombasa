@@ -649,20 +649,17 @@ class AnalyticsViewSet(viewsets.ViewSet):
             url_path="general",
             url_name="general")
     def general(self, request):
-        # roles = user_util.fetchusergroups(request.user.id)
-        # active_status = ['REQUESTED','HOD APPROVED','CLOSED']
 
-        applications = models.Medical.objects.filter( Q(is_deleted=False)).count()
-        is_fit = models.Medical.objects.filter(Q(is_fit_to_work='YES') & Q(is_deleted=False)).count()
-        un_fit = models.Medical.objects.filter(Q(is_fit_to_work='NO') & Q(is_deleted=False)).count()
-        # approved = models.Medical.objects.aggregate(total=Sum('days'))['total']
-        referred = models.Refer.objects.filter(consultant_name__isnull=False).exclude(consultant_name="").count()
-
+        backups = (models.BackupLog.objects.filter( Q(is_deleted=False)).count()) + (models.RemoteBackupLog.objects.filter( Q(is_deleted=False)).count())
+        succeeded = (models.BackupLog.objects.filter(Q(status='SUCCEEDED') & Q(is_deleted=False)).count()) + (models.RemoteBackupLog.objects.filter(Q(status='SUCCEEDED') & Q(is_deleted=False)).count())
+        failed = (models.BackupLog.objects.filter(Q(status='FAILED') & Q(is_deleted=False)).count()) + (models.RemoteBackupLog.objects.filter(Q(status='FAILED') & Q(is_deleted=False)).count())
+        verifications = models.SystemRecoveryVerification.objects.filter(Q(is_deleted=False)).count()
+ 
         resp = {
-            "applications": applications,
-            "is_fit": is_fit,
-            "un_fit": un_fit,
-            "referred": referred,
+            "backups": backups,
+            "succeeded": succeeded,
+            "failed": failed,
+            "verifications": verifications,
         }
 
         return Response(resp, status=status.HTTP_200_OK)
