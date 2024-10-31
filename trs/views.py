@@ -593,22 +593,25 @@ class TrsViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-
+                    resps = []
                     if "HOD" in roles:
 
                         if query == 'salary-advance':
-                            # print("in advance")
                             targets = models.AdvanceSalaryRequests.objects.filter(
                                 Q(traveler__department=request.user.srrs_department),is_deleted=False).order_by('-date_created')
                             resp = [x.traveler for x in targets]
 
                         elif query == 'pending':
-                            resp = models.Traveler.objects.filter(Q(department=request.user.srrs_department) & Q(requires_hod_approval=True) , is_hod_approved=False, is_deleted=False).order_by('-date_created')
+                            resp = models.Traveler.objects.filter(
+                                Q(department=request.user.srrs_department) & 
+                                Q(requires_hod_approval=True) , is_hod_approved=False, is_deleted=False).order_by('-date_created')
 
                         else:
                             resp = models.Traveler.objects.filter((Q(department=request.user.srrs_department) &  Q(requires_hod_approval=True)) |  Q(traveler=authenticated_user), is_deleted=False).order_by('-date_created')
 
-                    elif "USER_MANAGER" in roles:
+                        resps += resp
+
+                    if "USER_MANAGER" in roles:
                         if query == 'salary-advance':
                             targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
                             resp = [
@@ -618,7 +621,7 @@ class TrsViewSet(viewsets.ViewSet):
                         else:
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
 
-                    elif "SLTs" in roles:
+                    if "SLTs" in roles:
                         resp = []
                         if "HOF" in roles:
 
@@ -635,7 +638,9 @@ class TrsViewSet(viewsets.ViewSet):
                         else:
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)).order_by('-date_created')
 
-                    elif "HOF" in roles:
+                        resps += resp
+
+                    if "HOF" in roles:
                         if not query:
                             resp = models.Traveler.objects.filter(Q(requires_hof_approval=True),is_deleted=False).order_by('-date_created')
 
@@ -645,8 +650,10 @@ class TrsViewSet(viewsets.ViewSet):
 
                         elif query == 'pending':
                             resp = models.Traveler.objects.filter(Q(requires_hof_approval=True) & Q(is_hof_approved=False), is_deleted=False).order_by('-date_created')
+
+                        resps += resp
                     
-                    elif "CEO" in roles:
+                    if "CEO" in roles:
                         if not query:
                             resp = models.Traveler.objects.filter(Q(requires_ceo_approval=True), is_deleted=False).order_by('-date_created')
 
@@ -657,15 +664,10 @@ class TrsViewSet(viewsets.ViewSet):
                         elif query == 'pending':
                             resp = models.Traveler.objects.filter(Q(requires_ceo_approval=True) & Q(is_ceo_approved=False), is_deleted=False).order_by('-date_created')
 
-                    # elif "USER" in roles:
-                    #     if not query:
-                    #         resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(traveler=request.user)).order_by('-date_created')
+                        resps += resp
 
-                    #     if query == 'salary-advance':
-                    #         targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False) & Q(traveler__traveler=request.user)).order_by('-date_created')
-                    #         resp = [x.traveler for x in targets]
 
-                    elif "ADMINISTRATOR" in roles :
+                    if "ADMINISTRATOR" in roles :
                         allowed_statuses = ['APPROVED', 'CLOSED']
 
                         if query == 'pending':
@@ -677,8 +679,10 @@ class TrsViewSet(viewsets.ViewSet):
                         else:
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(requires_administrator_approval=True) & Q(status__in=allowed_statuses)).order_by('-date_created')
 
+                        resps += resp
+
                     
-                    elif "CASH_OFFICE" in roles :
+                    if "CASH_OFFICE" in roles :
                         allowed_statuses = ['APPROVED', 'CLOSED']
                         
                         if query == 'pending':
@@ -691,7 +695,9 @@ class TrsViewSet(viewsets.ViewSet):
                         else:
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(requires_cash_office_approval=True) & Q(status__in=allowed_statuses)).order_by('-date_created')
 
-                    elif "TRANSPORT" in roles :
+                        resps += resp
+
+                    if "TRANSPORT" in roles :
                         allowed_statuses = ['APPROVED', 'CLOSED']
                         
                         if query == 'pending':
@@ -701,17 +707,23 @@ class TrsViewSet(viewsets.ViewSet):
                         else:
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(requires_transport_approval=True) & Q(status__in=allowed_statuses) ).order_by('-date_created')
 
-                    else:
-                        if not query:
-                            resp = models.Traveler.objects.filter(Q(created_by=request.user) | Q(traveler=request.user),is_deleted=False).order_by('-date_created')
+                        resps += resp
 
-                        if query == 'salary-advance':
-                            targets = models.AdvanceSalaryRequests.objects.filter(Q(traveler__created_by=request.user) & Q(traveler__traveler=request.user), is_deleted=False).order_by('-date_created')
-                            resp = [x.traveler for x in targets]
+                    # else:
+                    if not query:
+                        resp = models.Traveler.objects.filter(Q(created_by=request.user) | Q(traveler=request.user),is_deleted=False).order_by('-date_created')
+
+                    if query == 'salary-advance':
+                        targets = models.AdvanceSalaryRequests.objects.filter(Q(traveler__created_by=request.user) & Q(traveler__traveler=request.user), is_deleted=False).order_by('-date_created')
+                        resp = [x.traveler for x in targets]
+
+                    resps += resp
+
+                        
 
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
-                    result_page = paginator.paginate_queryset(resp, request)
+                    result_page = paginator.paginate_queryset(resps, request)
                     serializer = serializers.FetchTravelerSerializer(
                         result_page, many=True, context={"user_id":request.user.id})
                     return paginator.get_paginated_response(serializer.data)
