@@ -574,16 +574,15 @@ class ReportsViewSet(viewsets.ViewSet):
 
     @action(methods=["GET",],
             detail=False,
-            url_path="applications",
-            url_name="applications")
-    def applications(self, request):
+            url_path="local-backups",
+            url_name="local-backups")
+    def local_backups(self, request):
                     
-        department = request.query_params.get('department')
-        location = request.query_params.get('location')
-        ohc = request.query_params.get('ohc')
+        type = request.query_params.get('system')
+        r_status = request.query_params.get('status')
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
-        # r_status = request.query_params.get('status')
+
         date = False
 
         if date_to and date_from:
@@ -594,46 +593,38 @@ class ReportsViewSet(viewsets.ViewSet):
             date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
             date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
 
-            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+            q_filters = Q(date__gte=date_from) & Q(date__lte=date_to)
 
             return q_filters
 
-        # try:
         q_filters = Q()
 
-        if department:
-            q_filters &= Q(department=department)
+        if type:
+            q_filters &= Q(type=type)
+
+        if r_status:
+            q_filters &= Q(status=r_status)
 
         if date_from or date_to:
             if not date:
                 return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
             q_filters &= create_date_range(date_from,date_to)
             
-        # if r_status:
-        #     q_filters &= Q(status=r_status)
-
-        if location:
-            q_filters &= Q(location=location)
-
-        if ohc:
-            q_filters &= Q(ohc=ohc)
-
-
+            
         if q_filters:
 
-            resp = models.Staff.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-
+            resp = models.BackupLog.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            print(resp)
         else:
             roles = user_util.fetchusergroups(request.user.id)  
 
-            if "OSH" in roles or "SUPERUSER" in roles:
-                resp = models.Staff.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+            if "ICT" in roles or "SUPERUSER" in roles:
+                resp = models.BackupLog.objects.filter(Q(is_deleted=False)).order_by('date')[:50]
                 
             else:
-                resp = models.Staff.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('-date_created')[:50]
+                resp = models.BackupLog.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('date')[:20]
 
-
-        resp = serializers.FetchStaffSerializer(resp, many=True, context={"user_id":request.user.id}).data
+        resp = serializers.FetchBackupLogSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
     
