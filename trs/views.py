@@ -621,6 +621,8 @@ class TrsViewSet(viewsets.ViewSet):
                         else:
                             resp = models.Traveler.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
 
+                        resps += resp
+
                     if "SLTs" in roles:
                         resp = []
                         if "HOF" in roles:
