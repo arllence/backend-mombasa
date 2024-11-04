@@ -610,11 +610,11 @@ class ReportsViewSet(viewsets.ViewSet):
                 return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
             q_filters &= create_date_range(date_from,date_to)
             
-            
+
         if q_filters:
 
             resp = models.BackupLog.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-            print(resp)
+
         else:
             roles = user_util.fetchusergroups(request.user.id)  
 
@@ -628,6 +628,68 @@ class ReportsViewSet(viewsets.ViewSet):
 
         return Response(resp, status=status.HTTP_200_OK)
     
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="remote-backups",
+            url_name="remote-backups")
+    def remote_backups(self, request):
+                    
+        type = request.query_params.get('system')
+        r_status = request.query_params.get('status')
+        location = request.query_params.get('location')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+
+        date = False
+
+        if date_to and date_from:
+            date = True
+
+        def create_date_range(date_from,date_to):
+            # Convert the string dates to datetime objects
+            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+
+            q_filters = Q(date__gte=date_from) & Q(date__lte=date_to)
+
+            return q_filters
+
+        q_filters = Q()
+
+        if type:
+            q_filters &= Q(type=type)
+
+        if r_status:
+            q_filters &= Q(status=r_status)
+
+        if location:
+            q_filters &= Q(remote_location=location)
+
+        if date_from or date_to:
+            if not date:
+                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
+            q_filters &= create_date_range(date_from,date_to)
+            
+            
+        if q_filters:
+
+            resp = models.RemoteBackupLog.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+
+        else:
+            roles = user_util.fetchusergroups(request.user.id)  
+
+            if "ICT" in roles or "SUPERUSER" in roles:
+                resp = models.RemoteBackupLog.objects.filter(Q(is_deleted=False)).order_by('date')[:50]
+                
+            else:
+                resp = models.RemoteBackupLog.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('date')[:20]
+
+        resp = serializers.FetchRemoteBackupLogSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+        return Response(resp, status=status.HTTP_200_OK)
+    
+  
         
 class AnalyticsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
