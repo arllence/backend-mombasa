@@ -20,7 +20,7 @@ class BackupLog(models.Model):
 
     date = models.DateField()
     status = models.CharField(max_length=100)
-    size = models.IntegerField(default=0)
+    size = models.FloatField(default=0.0)
     unit = models.CharField(max_length=100)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
@@ -77,7 +77,7 @@ class RemoteBackupLog(models.Model):
 
     date = models.DateField()
     status = models.CharField(max_length=100)
-    size = models.IntegerField(default=0)
+    size = models.FloatField(default=0.0)
     unit = models.CharField(max_length=100)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)

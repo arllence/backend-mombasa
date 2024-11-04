@@ -1,0 +1,1 @@
+pg_dump -U postgres psmdqs > /opt/dbs/psmdqs_backup_04_11_2024.sql

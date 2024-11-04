@@ -37,14 +37,14 @@ class UpdateBackupLogSerializer(serializers.Serializer):
     type = serializers.CharField(max_length=500)
     date = serializers.CharField(max_length=500)
     status = serializers.CharField(max_length=500)
-    size = serializers.IntegerField()
+    size = serializers.FloatField()
     unit = serializers.CharField(max_length=100)
 
 class BackupLogSerializer(serializers.Serializer):
     type = serializers.CharField(max_length=500)
     date = serializers.CharField(max_length=500)
     status = serializers.CharField(max_length=500)
-    size = serializers.IntegerField()
+    size = serializers.FloatField()
     unit = serializers.CharField(max_length=100)
 
 class FetchRemoteBackupLogSerializer(serializers.ModelSerializer):
@@ -61,14 +61,14 @@ class UpdateRemoteBackupLogSerializer(serializers.Serializer):
     type = serializers.CharField(max_length=500)
     date = serializers.CharField(max_length=500)
     status = serializers.CharField(max_length=500)
-    size = serializers.IntegerField()
+    size = serializers.FloatField()
     unit = serializers.CharField(max_length=100)
 
 class RemoteBackupLogSerializer(serializers.Serializer):
     type = serializers.CharField(max_length=500)
     date = serializers.CharField(max_length=500)
     status = serializers.CharField(max_length=500)
-    size = serializers.IntegerField()
+    size = serializers.FloatField()
     unit = serializers.CharField(max_length=100)
     remote_location = serializers.CharField(max_length=500)
 
