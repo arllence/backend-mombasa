@@ -672,11 +672,11 @@ class TrsViewSet(viewsets.ViewSet):
                         resps += resp
 
                         # filter for hod
-                        resp = models.Traveler.objects.filter(
-                                Q(department=request.user.srrs_department) & 
-                                Q(requires_hod_approval=True) , is_hod_approved=False, is_deleted=False).order_by('-date_created')
+                        # resp = models.Traveler.objects.filter(
+                        #         Q(department=request.user.srrs_department) & 
+                        #         Q(requires_hod_approval=True) , is_hod_approved=False, is_deleted=False).order_by('-date_created')
                         
-                        resps += resp
+                        # resps += resp
 
 
                     if "ADMINISTRATOR" in roles :
