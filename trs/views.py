@@ -730,7 +730,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                     resps += resp
 
-                    resps = list(set(resp))
+                    resps = list(set(resps))
 
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
