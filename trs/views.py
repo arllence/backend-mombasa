@@ -659,7 +659,7 @@ class TrsViewSet(viewsets.ViewSet):
                         if not query:
                             query = 'pending'
                             # resp = models.Traveler.objects.filter(Q(requires_ceo_approval=True), is_deleted=False).order_by('-date_created')
-                            
+
                             # resp = models.Traveler.objects.filter(Q(requires_ceo_approval=True) & Q(is_ceo_approved=False), is_deleted=False).order_by('-date_created')
 
                         if query == 'salary-advance':
@@ -669,6 +669,13 @@ class TrsViewSet(viewsets.ViewSet):
                         elif query == 'pending':
                             resp = models.Traveler.objects.filter(Q(requires_ceo_approval=True) & Q(is_ceo_approved=False), is_deleted=False).order_by('-date_created')
 
+                        resps += resp
+
+                        # filter for hod
+                        resp = models.Traveler.objects.filter(
+                                Q(department=request.user.srrs_department) & 
+                                Q(requires_hod_approval=True) , is_hod_approved=False, is_deleted=False).order_by('-date_created')
+                        
                         resps += resp
 
 
