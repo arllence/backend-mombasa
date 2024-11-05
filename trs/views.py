@@ -657,7 +657,8 @@ class TrsViewSet(viewsets.ViewSet):
                     
                     if "CEO" in roles:
                         if not query:
-                            resp = models.Traveler.objects.filter(Q(requires_ceo_approval=True), is_deleted=False).order_by('-date_created')
+                            # resp = models.Traveler.objects.filter(Q(requires_ceo_approval=True), is_deleted=False).order_by('-date_created')
+                            resp = models.Traveler.objects.filter(Q(requires_ceo_approval=True) & Q(is_ceo_approved=False), is_deleted=False).order_by('-date_created')
 
                         if query == 'salary-advance':
                             targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
