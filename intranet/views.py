@@ -89,7 +89,7 @@ class GenericsViewSet(viewsets.ViewSet):
             documents = models.QipsDocument.objects.filter(
                 Q(topic=request_id) | 
                 Q(sub_topic=request_id) | 
-                Q(category=request_id) ,is_deleted=False).order_by('original_file_name')
+                Q(category=request_id) ,is_deleted=False).order_by('file_name')
         else:
             documents = []
         
