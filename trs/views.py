@@ -673,7 +673,8 @@ class TrsViewSet(viewsets.ViewSet):
                         # filter for hod
                         resp = models.Traveler.objects.filter(
                                 Q(department=request.user.srrs_department) & 
-                                Q(requires_hod_approval=True) , is_hod_approved=False, is_deleted=False).order_by('-date_created')
+                                Q(requires_hod_approval=True),
+                                is_hod_approved=False, is_deleted=False).exclude(requires_ceo_approval=False).order_by('-date_created')
                         
                         resps += resp
 
