@@ -1087,21 +1087,21 @@ class TrsViewSet(viewsets.ViewSet):
                         except Exception as e:
                             logger.error(e)
 
-                    # # Notify TRANSPORT
-                    # if is_ceo and traveler.mode_of_transport == 'HOSPITAL VEHICLE':
-                    #     emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
-                    #     subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
-                    #     message = f"Hello. \nTravel Request: {traveler.tid} has been approved by CEO,\n currently pending your action\n\nRegards\nTRS-AKHK"
+                    # Notify TRANSPORT
+                    if is_hod:
+                        emails = list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
+                        subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
+                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by HOD,\n currently pending your action\n\nRegards\nTRS-AKHK"
 
-                    #     try:
-                    #         mail = {
-                    #             "email" : list(set(emails)), 
-                    #             "subject" : subject,
-                    #             "message" : message,
-                    #         }
-                    #         Sendmail.objects.create(**mail)
-                    #     except Exception as e:
-                    #         logger.error(e)
+                        try:
+                            mail = {
+                                "email" : list(set(emails)), 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            Sendmail.objects.create(**mail)
+                        except Exception as e:
+                            logger.error(e)
 
                     # Notify transport department
                     if is_ceo:
