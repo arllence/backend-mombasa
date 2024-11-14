@@ -129,6 +129,9 @@ class DbManagerViewSet(viewsets.ViewSet):
             if request_id:
                 logs = models.BackupLog.objects.get(
                     Q(id=request_id) & Q(is_deleted=False))
+                serializer = serializers.FetchBackupLogSerializer(
+                logs, many=False, context={"user_id":request.user.id})
+                return Response(serializer.data, status=status.HTTP_200_OK)   
             elif q:
                 if "SUPERUSER" in roles or "ICT" in roles:
                     logs = models.BackupLog.objects.filter(
@@ -283,6 +286,9 @@ class DbManagerViewSet(viewsets.ViewSet):
             if request_id:
                 logs = models.RemoteBackupLog.objects.get(
                     Q(id=request_id) & Q(is_deleted=False))
+                serializer = serializers.FetchRemoteBackupLogSerializer(
+                logs, many=True, context={"user_id":request.user.id})
+                return Response(serializer.data, status=status.HTTP_200_OK)  
             elif q:
                 if "SUPERUSER" in roles or "ICT" in roles:
                     logs = models.RemoteBackupLog.objects.filter(
