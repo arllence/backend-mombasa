@@ -208,7 +208,7 @@ class DbManagerViewSet(viewsets.ViewSet):
                 data = [
                     models.BackupLog(
                         type=get_system(row[0].strip()),
-                        status=row[1].strip(),
+                        status=row[1].strip().upper(),
                         size=row[2].strip(),
                         unit=row[3].strip().upper(),
                         date=row[4].strip(),
@@ -417,7 +417,7 @@ class DbManagerViewSet(viewsets.ViewSet):
                 data = [
                     models.RemoteBackupLog(
                         type=get_system(row[0].strip()),
-                        status=row[1].strip(),
+                        status=row[1].strip().upper(),
                         size=row[2].strip(),
                         unit=row[3].strip().upper(),
                         date=row[4].strip(),
