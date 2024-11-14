@@ -25,6 +25,7 @@ from django.db.models import Sum
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import Group
+from rest_framework.exceptions import NotFound, ParseError
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -379,6 +380,57 @@ class DbManagerViewSet(viewsets.ViewSet):
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+
+    
+    @action(methods=["POST"],
+            detail=False,
+            url_path="upload-remote-backup-logs",
+            url_name="upload-remote-backup-logs")
+    def upload_remote(self, request):
+        if request.method == "POST":
+            formfiles = request.FILES
+            if not formfiles:
+                return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            def get_system(name):
+                try:
+                    system = models.System.objects.get(name__icontains=name.upper())
+                except Exception as e:
+                    system = None
+                    raise ParseError({"details": f"Unknown system: {name}"})
+                return system
+            
+            def get_location(name):
+                try:
+                    location = models.RemoteLocations.objects.get(name__icontains=name.upper())
+                except Exception as e:
+                    location = None
+                    raise ParseError({"details": f"Unknown remote location: {name}"})
+                return location
+            
+            f = request.FILES.getlist('documents')[0]
+            if f.name.endswith('.csv'):
+                decoded_file = f.read().decode('utf-8')
+                csv_data = csv.reader(decoded_file.splitlines(), delimiter=',')
+                # Skip the header row
+                next(csv_data)
+                data = [
+                    models.RemoteBackupLog(
+                        type=get_system(row[0].strip()),
+                        status=row[1].strip(),
+                        size=row[2].strip(),
+                        unit=row[3].strip().upper(),
+                        date=row[4].strip(),
+                        remote_location=get_location(row[5].strip()),
+                        action_by=request.user
+                    ) 
+                    for row in csv_data
+                ]
+                with transaction.atomic():
+                    models.RemoteBackupLog.objects.bulk_create(data)
+                return Response('Data uploaded successfully', status=status.HTTP_200_OK)
+            else:
+                return Response({"details": "Please upload a CSV file."}, status=status.HTTP_400_BAD_REQUEST)
                 
 
     @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="system-recovery-verifications",url_name="system-recovery-verifications")
