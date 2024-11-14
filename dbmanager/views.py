@@ -1,5 +1,6 @@
 import calendar
 from collections import OrderedDict
+import csv
 import datetime
 import json
 import logging
@@ -178,6 +179,48 @@ class DbManagerViewSet(viewsets.ViewSet):
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+    @action(methods=["POST"],
+            detail=False,
+            url_path="upload-local-backup-logs",
+            url_name="upload-local-backup-logs")
+    def upload_local(self, request):
+        if request.method == "POST":
+            formfiles = request.FILES
+            if not formfiles:
+                return Response({"details": "Please upload attachment"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            def get_system(name):
+                try:
+                    system = models.System.objects.get(name=name.upper())
+                except Exception as e:
+                    system = None
+                return system
+            
+            f = request.FILES.getlist('documents')[0]
+            if f.name.endswith('.csv'):
+                decoded_file = f.read().decode('utf-8')
+                csv_data = csv.reader(decoded_file.splitlines(), delimiter=',')
+                # Skip the header row
+                next(csv_data)
+                data = [
+                    models.BackupLog(
+                        type=get_system(row[0].strip()),
+                        status=row[1].strip(),
+                        size=row[2].strip(),
+                        unit=row[3].strip().upper(),
+                        date=row[4].strip(),
+                        action_by=request.user
+                    ) 
+                    for row in csv_data
+                ]
+                with transaction.atomic():
+                    models.BackupLog.objects.bulk_create(data)
+                return Response('Data uploaded successfully', status=status.HTTP_200_OK)
+            else:
+                return Response({"details": "Please upload a CSV file."}, status=status.HTTP_400_BAD_REQUEST)
+            
 
 
     @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="remote-backup-logs",url_name="remote-backup-logs")
