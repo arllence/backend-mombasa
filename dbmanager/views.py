@@ -217,7 +217,10 @@ class DbManagerViewSet(viewsets.ViewSet):
                     for row in csv_data
                 ]
                 with transaction.atomic():
-                    models.BackupLog.objects.bulk_create(data)
+                    try:
+                        models.BackupLog.objects.bulk_create(data)
+                    except Exception as e:
+                        return Response({"details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
                 return Response('Data uploaded successfully', status=status.HTTP_200_OK)
             else:
                 return Response({"details": "Please upload a CSV file."}, status=status.HTTP_400_BAD_REQUEST)
@@ -427,7 +430,10 @@ class DbManagerViewSet(viewsets.ViewSet):
                     for row in csv_data
                 ]
                 with transaction.atomic():
-                    models.RemoteBackupLog.objects.bulk_create(data)
+                    try:
+                        models.RemoteBackupLog.objects.bulk_create(data)
+                    except Exception as e:
+                        return Response({"details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
                 return Response('Data uploaded successfully', status=status.HTTP_200_OK)
             else:
                 return Response({"details": "Please upload a CSV file."}, status=status.HTTP_400_BAD_REQUEST)
