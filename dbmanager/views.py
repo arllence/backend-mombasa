@@ -124,11 +124,21 @@ class DbManagerViewSet(viewsets.ViewSet):
         elif request.method == "GET":
 
             request_id = request.query_params.get('request_id')
+            q = request.query_params.get('q')
 
             if request_id:
                 logs = models.BackupLog.objects.get(
                     Q(id=request_id) & Q(is_deleted=False))
-
+            elif q:
+                if "SUPERUSER" in roles or "ICT" in roles:
+                    logs = models.BackupLog.objects.filter(
+                        Q(unit__icontains=q) | 
+                        Q(size__icontains=q) |
+                        Q(status__icontains=q) |
+                        Q(date__icontains=q) |
+                        Q(type__name__icontains=q), is_deleted=False).order_by('-date')
+                else:
+                    logs = []
             else:
                 if "SUPERUSER" in roles or "ICT" in roles:
                     logs = models.BackupLog.objects.filter(
@@ -268,11 +278,22 @@ class DbManagerViewSet(viewsets.ViewSet):
         elif request.method == "GET":
 
             request_id = request.query_params.get('request_id')
+            q = request.query_params.get('q')
 
             if request_id:
                 logs = models.RemoteBackupLog.objects.get(
                     Q(id=request_id) & Q(is_deleted=False))
-
+            elif q:
+                if "SUPERUSER" in roles or "ICT" in roles:
+                    logs = models.RemoteBackupLog.objects.filter(
+                        Q(unit__icontains=q) | 
+                        Q(size__icontains=q) |
+                        Q(status__icontains=q) |
+                        Q(date__icontains=q) |
+                        Q(remote_location__name__icontains=q) |
+                        Q(type__name__icontains=q), is_deleted=False).order_by('-date')
+                else:
+                    logs = []
             else:
                 if "SUPERUSER" in roles or "ICT" in roles:
                     logs = models.RemoteBackupLog.objects.filter(
