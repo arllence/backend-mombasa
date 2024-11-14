@@ -132,7 +132,7 @@ class DbManagerViewSet(viewsets.ViewSet):
             else:
                 if "SUPERUSER" in roles or "ICT" in roles:
                     logs = models.BackupLog.objects.filter(
-                        Q(is_deleted=False)).order_by('date')
+                        Q(is_deleted=False)).order_by('-date')
                 else:
                     logs = []
             
@@ -276,7 +276,7 @@ class DbManagerViewSet(viewsets.ViewSet):
             else:
                 if "SUPERUSER" in roles or "ICT" in roles:
                     logs = models.RemoteBackupLog.objects.filter(
-                        Q(is_deleted=False)).order_by('date')
+                        Q(is_deleted=False)).order_by('-date')
                 else:
                     logs = []
             
