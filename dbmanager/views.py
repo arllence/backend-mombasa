@@ -613,16 +613,16 @@ class ReportsViewSet(viewsets.ViewSet):
 
         if q_filters:
 
-            resp = models.BackupLog.objects.filter(Q(is_deleted=False) & q_filters).order_by('date')
+            resp = models.BackupLog.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date')
 
         else:
             roles = user_util.fetchusergroups(request.user.id)  
 
             if "ICT" in roles or "SUPERUSER" in roles:
-                resp = models.BackupLog.objects.filter(Q(is_deleted=False)).order_by('date')[:20]
+                resp = models.BackupLog.objects.filter(Q(is_deleted=False)).order_by('-date')[:20]
                 
             else:
-                resp = models.BackupLog.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('date')[:20]
+                resp = models.BackupLog.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('-date')[:20]
 
         resp = serializers.FetchBackupLogSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
@@ -674,16 +674,16 @@ class ReportsViewSet(viewsets.ViewSet):
             
         if q_filters:
 
-            resp = models.RemoteBackupLog.objects.filter(Q(is_deleted=False) & q_filters).order_by('date')
+            resp = models.RemoteBackupLog.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date')
 
         else:
             roles = user_util.fetchusergroups(request.user.id)  
 
             if "ICT" in roles or "SUPERUSER" in roles:
-                resp = models.RemoteBackupLog.objects.filter(Q(is_deleted=False)).order_by('date')[:20]
+                resp = models.RemoteBackupLog.objects.filter(Q(is_deleted=False)).order_by('-date')[:20]
                 
             else:
-                resp = models.RemoteBackupLog.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('date')[:20]
+                resp = models.RemoteBackupLog.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('-date')[:20]
 
         resp = serializers.FetchRemoteBackupLogSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
@@ -723,16 +723,16 @@ class ReportsViewSet(viewsets.ViewSet):
             
         if q_filters:
 
-            resp = models.SystemRecoveryVerification.objects.filter(Q(is_deleted=False) & q_filters).order_by('date_created')
+            resp = models.SystemRecoveryVerification.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
 
         else:
             roles = user_util.fetchusergroups(request.user.id)  
 
             if "ICT" in roles or "SUPERUSER" in roles:
-                resp = models.SystemRecoveryVerification.objects.filter(Q(is_deleted=False)).order_by('date_created')[:20]
+                resp = models.SystemRecoveryVerification.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:20]
                 
             else:
-                resp = models.SystemRecoveryVerification.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('date_created')[:20]
+                resp = models.SystemRecoveryVerification.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('-date_created')[:20]
 
         resp = serializers.FetchSystemRecoveryVerificationSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
