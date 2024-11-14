@@ -220,6 +220,7 @@ class DbManagerViewSet(viewsets.ViewSet):
                     try:
                         models.BackupLog.objects.bulk_create(data)
                     except Exception as e:
+                        logger.error(e)
                         return Response({"details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
                 return Response('Data uploaded successfully', status=status.HTTP_200_OK)
             else:
@@ -433,6 +434,7 @@ class DbManagerViewSet(viewsets.ViewSet):
                     try:
                         models.RemoteBackupLog.objects.bulk_create(data)
                     except Exception as e:
+                        logger.error(e)
                         return Response({"details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
                 return Response('Data uploaded successfully', status=status.HTTP_200_OK)
             else:
