@@ -454,6 +454,7 @@ class DbManagerViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 module_verified = payload['module_verified']
+                verified_by = payload['verified_by']
                 date = payload['date']
                 comments = payload['comments']
 
@@ -463,7 +464,8 @@ class DbManagerViewSet(viewsets.ViewSet):
                         "module_verified":module_verified,
                         "date":date,
                         "comments":comments,
-                        "verified_by": request.user
+                        "verified_by": verified_by,
+                        "uploaded_by": request.user
                     }
 
                     models.SystemRecoveryVerification.objects.create(**raw)
@@ -482,6 +484,7 @@ class DbManagerViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 module_verified = payload['module_verified']
+                verified_by = payload['verified_by']
                 date = payload['date']
                 comments = payload['comments']
 
@@ -493,10 +496,10 @@ class DbManagerViewSet(viewsets.ViewSet):
                 with transaction.atomic():
 
                     raw = {
-                        "module_verified":module_verified,
-                        "date":date,
-                        "comments":comments,
-                        "verified_by": request.user
+                        "module_verified": module_verified,
+                        "date": date,
+                        "comments": comments,
+                        "verified_by": verified_by
                     }
 
                     models.SystemRecoveryVerification.objects.filter(Q(id=request_id)).update(**raw)

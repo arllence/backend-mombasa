@@ -73,7 +73,7 @@ class RemoteBackupLogSerializer(serializers.Serializer):
     remote_location = serializers.CharField(max_length=500)
 
 class FetchSystemRecoveryVerificationSerializer(serializers.ModelSerializer):
-    verified_by = UsersSerializer()
+    # verified_by = UsersSerializer()
     
     class Meta:
         model = models.SystemRecoveryVerification
@@ -82,10 +82,12 @@ class FetchSystemRecoveryVerificationSerializer(serializers.ModelSerializer):
 class UpdateSystemRecoveryVerificationSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
     module_verified = serializers.CharField(max_length=500)
+    verified_by = serializers.CharField(max_length=500)
     date = serializers.CharField(max_length=500)
     comments = serializers.CharField(style={'type': 'textarea'})
 
 class SystemRecoveryVerificationSerializer(serializers.Serializer):
     module_verified = serializers.CharField(max_length=500)
     date = serializers.CharField(max_length=500)
+    verified_by = serializers.CharField(max_length=500)
     comments = serializers.CharField(style={'type': 'textarea'})

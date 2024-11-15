@@ -36,12 +36,14 @@ class BackupLog(models.Model):
 class SystemRecoveryVerification(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     
-    verified_by = models.ForeignKey(
+    uploaded_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="verified_by"
+       related_name="verified_by", 
+       null=True, blank=True
     )
 
     module_verified = models.CharField(max_length=500)
+    verified_by = models.CharField(max_length=500, null=True, blank=True)
     date = models.DateField()
     comments = models.TextField()
     is_deleted = models.BooleanField(default=False)
