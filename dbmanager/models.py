@@ -1,5 +1,5 @@
 import uuid
-from acl.models import User, SRRSDepartment
+from acl.models import User
 from django.db import models
 from django.conf import settings
 
