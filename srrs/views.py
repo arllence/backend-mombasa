@@ -760,7 +760,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         recordInstance.save()
                         # track status change
                         raw = {
-                            "recruit": recruit,
+                            "recruit": recordInstance,
                             "status": "DELETED",
                             "status_for": '/'.join(roles),
                             "action_by": authenticated_user,
