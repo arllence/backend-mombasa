@@ -30,6 +30,7 @@ class FetchRecruitSerializer(serializers.ModelSerializer):
     can_approve = serializers.SerializerMethodField()
     approvals = serializers.SerializerMethodField()
     employees = serializers.SerializerMethodField()
+    period = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Recruit
@@ -46,6 +47,15 @@ class FetchRecruitSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return {} 
+        
+    def get_period(self, obj):
+        try:
+            if obj.period_from and obj.period_to:
+                return (obj.period_to - obj.period_from).days
+            return '-' 
+        except Exception as e:
+            print(e)
+            return '-'
         
     def get_employees(self, obj):
         try:
