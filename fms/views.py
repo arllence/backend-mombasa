@@ -209,7 +209,7 @@ class FmsViewSet(viewsets.ViewSet):
                     }  
 
                     models.Incident.objects.filter(Q(id=request_id)).update(**raw)
-                    
+
                     if attachment:
                         incidentInstance.attachment = attachment
                         incidentInstance.save()
@@ -343,22 +343,24 @@ class FmsViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 request_id = payload['request_id']
-                assigned_to = payload['assigned_to']
+                assigned_to = payload['assign_to']
+                comment = payload.get('comment') or None
 
                 try:
                     incidentInstance = models.Incident.objects.get(id=request_id)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown incident "}, 
+                    return Response({"details": "Unknown incident"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    assigned_to = User.objects.get(id=request_id)
+                    assigned_to = User.objects.get(id=assigned_to)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown assignee"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
                     incidentInstance.assigned_to = assigned_to
+                    incidentInstance.assignee_comment = comment
                     incidentInstance.status = 'ASSIGNED'
                     incidentInstance.save()
 
@@ -399,7 +401,69 @@ class FmsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, 
                                 status=status.HTTP_400_BAD_REQUEST)
-      
+            
+
+    @action(methods=["POST","GET"],
+            detail=False,
+            url_path="notes",
+            url_name="notes")
+    def notes(self, request):
+
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        # allowed = ["FMS_ADMIN", "SUPERUSER"]
+
+        # if not any(role in allowed for role in roles):
+        #     return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == "POST":
+
+            payload = request.data
+            roles = user_util.fetchusergroups(request.user.id) 
+
+            serializer = serializers.NoteSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                comment = payload.get('comments')
+
+                try:
+                    incidentInstance = models.Incident.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown incident"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "owner": request.user,
+                        "incident": incidentInstance,
+                        "note": comment,
+                    }
+                    models.Note.objects.create(**raw)
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.Note.objects.filter(Q(incident=request_id))
+
+                    resp = serializers.FetchNoteSerializer(
+                        resp, many=True, context={"user_id":request.user.id}).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response([], status=status.HTTP_200_OK)
 
 
             

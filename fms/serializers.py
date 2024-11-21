@@ -43,6 +43,7 @@ class FetchIncidentSerializer(serializers.ModelSerializer):
     assigned_to = UsersSerializer()
     department = FetchSRRSDepartmentSerializer()
     location = FetchSubDepartmentSerializer()
+    approvals = serializers.SerializerMethodField()
     ohc = FetchOHCSerializer()
     
     class Meta:
@@ -74,7 +75,7 @@ class SlimFetchIncidentSerializer(serializers.ModelSerializer):
 
 class AssignSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
-    assigned_to = serializers.CharField(max_length=500)
+    assign_to = serializers.CharField(max_length=500)
 
 
 class FetchStatusChangeSerializer(serializers.ModelSerializer):
@@ -84,6 +85,16 @@ class FetchStatusChangeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class NoteSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    comments = serializers.CharField(style={'type': 'textarea'})
+
+
+class FetchNoteSerializer(serializers.ModelSerializer):
+    owner = SlimUsersSerializer()
+    class Meta:
+        model = models.Note
+        fields = '__all__'
 
 
 
