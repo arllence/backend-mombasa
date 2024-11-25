@@ -829,7 +829,11 @@ class TrsViewSet(viewsets.ViewSet):
 
                         if traveler.mode_of_transport == 'FLIGHT':
                             traveler.requires_administrator_approval = True
-                        elif traveler.mode_of_transport == 'HOSPITAL VEHICLE':
+
+                        if traveler.mode_of_transport == 'HOSPITAL VEHICLE':
+                            traveler.requires_transport_approval = True
+
+                        if traveler.mode_of_transport == 'PSV':
                             traveler.requires_transport_approval = True
 
                         try:
