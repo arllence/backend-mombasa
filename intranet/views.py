@@ -178,6 +178,32 @@ class GenericsViewSet(viewsets.ViewSet):
         
         return paginator.get_paginated_response(serializer.data)
     
+    @action(methods=["GET"], detail=False, url_path="modules",url_name="modules")
+    def modules(self, request):
+
+        resp = models.Module.objects.filter(Q(is_deleted=False)).order_by('topic')
+        serializer = serializers.FullFetchModuleSerializer(
+                    resp, many=True)
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(methods=["GET"], detail=False, url_path="module-links",url_name="module-links")
+    def module_links(self, request):
+        request_id = request.query_params.get('request_id')
+        if request_id:
+            links = models.ModuleLink.objects.filter(Q(topic=request_id) | Q(sub_topic=request_id) | Q(category=request_id) ,is_deleted=False)
+        else:
+            links = []
+        
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 50
+        result_page = paginator.paginate_queryset(links, request)
+        serializer = serializers.SlimFetchModuleLinkSerializer(
+            result_page, many=True)
+        
+        return paginator.get_paginated_response(serializer.data)
+    
 class DocumentManagerViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     search_fields = ['id', ]
@@ -1616,6 +1642,446 @@ class SurveyViewSet(viewsets.ViewSet):
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ModuleViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    search_fields = ['id', ]
+    
+
+    def get_queryset(self):
+        return []
+    
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="topics",url_name="topics")
+    def topics(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.ModuleSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                topics = payload['topic']
+                
+                with transaction.atomic():
+                    for topic in topics:
+                        models.Module.objects.create(
+                            topic=topic,
+                            created_by=request.user
+                        )
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateModuleSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                topic = payload['topic']
+
+                try:
+                    topicInstance = models.Module.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    topicInstance.topic = topic
+                    topicInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+            serializer = request.query_params.get('serializer')
+
+            if request_id:
+                resp = models.Module.objects.get(Q(id=request_id) & Q(is_deleted=False))
+            else:
+                resp = models.Module.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            if serializer == 'full':
+                serializer = serializers.FullFetchModuleSerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            else:
+                serializer = serializers.SlimFetchModuleSerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.Module.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="sub-topics",url_name="sub-topics")
+    def sub_topics(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.ModuleSubTopicSerializer(
+                    data=payload, many=False)
+            
+
+            if serializer.is_valid():
+                module = payload['topic']
+                sub_topics = payload['sub_topic']
+
+                try:
+                    moduleInstance = models.Module.objects.get(id=module)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    for sub_topic in sub_topics:
+                        models.ModuleSubTopic.objects.create(
+                            module=moduleInstance,
+                            sub_topic=sub_topic
+                        )
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateModuleSubTopicSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                sub_topic = payload['sub_topic']
+
+                try:
+                    topicInstance = models.ModuleSubTopic.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    topicInstance.sub_topic = sub_topic
+                    topicInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+            serializer = request.query_params.get('serializer')
+
+            if request_id:
+                resp = models.ModuleSubTopic.objects.get(Q(id=request_id) & Q(is_deleted=False))
+            
+            else:
+                resp = models.ModuleSubTopic.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            if serializer == 'full':
+                serializer = serializers.FetchModuleSubTopicSerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            else: 
+                serializer = serializers.SlimFetchModuleSubTopicSerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.ModuleSubTopic.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="categories",url_name="categories")
+    def categories(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.ModuleCategorySerializer(
+                    data=payload, many=False)
+            
+
+            if serializer.is_valid():
+                categories = payload['category']
+                sub_topic = payload['sub_topic']
+
+                try:
+                    sub_topicInstance = models.ModuleSubTopic.objects.get(id=sub_topic)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    for category in categories:
+                        models.ModuleCategory.objects.create(
+                            category=category,
+                            sub_topic=sub_topicInstance
+                        )
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateModuleCategorySerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                category = payload['category']
+                # sub_topic = payload['topic']
+
+                try:
+                    categoryInstance = models.ModuleCategory.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    categoryInstance.category = category
+                    categoryInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+            serializer = request.query_params.get('serializer')
+
+            if request_id:
+                resp = models.ModuleCategory.objects.get(Q(id=request_id) & Q(is_deleted=False))
+            
+            else:
+                resp = models.ModuleCategory.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            if serializer == 'full':
+                serializer = serializers.FetchModuleCategorySerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            else:
+                serializer = serializers.SlimFetchModuleCategorySerializer(
+                    result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.ModuleCategory.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="links",url_name="links")
+    def links(self, request):
+        # roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.ModuleLinkSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                category = payload.get('category') or None
+                sub_topic = payload.get('sub_topic') or None
+                topic = payload['topic']
+                link = payload['link']
+
+                try:
+                    topic = models.Module.objects.get(id=topic)
+                except Exception as e:
+                    return Response({"details": "Unknown topic"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if sub_topic:
+                    try:
+                        sub_topic = models.ModuleSubTopic.objects.get(id=sub_topic)
+                    except Exception as e:
+                        return Response({"details": "Unknown sub topic"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if category:
+                    try:
+                        category = models.ModuleCategory.objects.get(id=category)
+                    except Exception as e:
+                        return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                # check if already existing
+                try:
+                    existingLink = models.ModuleLink.objects.get(topic=topic,sub_topic=sub_topic,category=category)
+                except (ValidationError, ObjectDoesNotExist):
+                    existingLink = None
+                except Exception as e:
+                    print(e)
+                    # logger.error(e)
+                    existingLink = None
+            
+
+                with transaction.atomic():
+                    if existingLink:
+                        existingLink.link = link
+                        existingLink.save()
+                    else:
+                        try:                         
+                            models.ModuleLink.objects.create(
+                                topic=topic, 
+                                sub_topic=sub_topic, 
+                                category=category,
+                                link=link,
+                                created_by=request.user
+                            )
+                        except Exception as e:
+                            logger.error(e)
+                            # print(e)
+                            return Response({"details": "Error saving link"}, status=status.HTTP_400_BAD_REQUEST)  
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            payload = request.data
+
+            serializer = serializers.UpdateModuleSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                link = payload['link']
+
+                try:
+                    targetInstance = models.ModuleLink.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    targetInstance.link = link
+                    targetInstance.save()
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+            topic_id = request.query_params.get('topic_id')
+            sub_topic_id = request.query_params.get('sub_topic_id')
+            category_id = request.query_params.get('category_id')
+
+            if request_id:
+                links = models.ModuleLink.objects.get(Q(id=request_id) & Q(is_deleted=False))
+
+            elif topic_id:
+                links = models.ModuleLink.objects.filter(Q(topic=topic_id) & Q(is_deleted=False))
+
+            elif sub_topic_id:
+                links = models.ModuleLink.objects.filter(Q(sub_topic=sub_topic_id) & Q(is_deleted=False))
+            
+            elif category_id:
+                links = models.ModuleLink.objects.filter(Q(category=category_id) & Q(is_deleted=False))
+
+            else:
+                links = models.ModuleLink.objects.filter(Q(is_deleted=False))
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(links, request)
+            serializer = serializers.FetchModuleLinkSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+            
+            
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.ModuleLink.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 
 

@@ -287,3 +287,90 @@ class SurveyLink(models.Model):
     
     class Meta:
         db_table = u'"{}\".\"survey_links"'.format(settings.INTRANET)
+
+
+class Module(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="modules_created_by"
+    )
+
+    topic = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title}"
+    
+    class Meta:
+        db_table = u'"{}\".\"modules"'.format(settings.INTRANET)
+
+class ModuleSubTopic(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    module = models.ForeignKey(
+       Module, on_delete=models.DO_NOTHING, 
+       related_name="module_topic"
+    )
+
+    sub_topic = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.sub_topic}"
+    
+    class Meta:
+        db_table = u'"{}\".\"module_sub_topics"'.format(settings.INTRANET)
+
+
+class ModuleCategory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    sub_topic = models.ForeignKey(
+       ModuleSubTopic, on_delete=models.DO_NOTHING, 
+       related_name="module_sub_topic"
+    )
+
+    category = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.category}"
+    
+    class Meta:
+        db_table = u'"{}\".\"module_categories"'.format(settings.INTRANET)  
+
+
+class ModuleLink(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    topic = models.ForeignKey(
+        Module, on_delete=models.DO_NOTHING, 
+        related_name='module_link')
+    
+    sub_topic = models.ForeignKey(
+        ModuleSubTopic, on_delete=models.DO_NOTHING, 
+        related_name='module_subtopic_link', null=True, blank=True)
+    
+    category = models.ForeignKey(
+        ModuleCategory, on_delete=models.DO_NOTHING, 
+        related_name='module_category_link', null=True, blank=True)
+    
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="module_link_created_by"
+    )
+
+    link = models.URLField(max_length=200)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.link}"
+    
+    class Meta:
+        db_table = u'"{}\".\"module_links"'.format(settings.INTRANET)

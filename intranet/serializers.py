@@ -388,3 +388,146 @@ class SlimFetchSurveyLinkSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.SurveyLink
         fields = '__all__'
+
+
+# Module
+class ModuleSerializer(serializers.Serializer):
+    topic = serializers.ListField(min_length=1)
+
+class UpdateModuleSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    link = serializers.CharField(max_length=500)
+
+class SlimFetchModuleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Module
+        fields = '__all__'
+
+class FullFetchModuleSerializer(serializers.ModelSerializer):
+    sub_topics = serializers.SerializerMethodField()
+    link = serializers.SerializerMethodField()
+    class Meta:
+        model = models.Module
+        fields = '__all__'
+
+    def get_sub_topics(self, obj):
+        try:
+            request = models.ModuleSubTopic.objects.filter(module=obj,is_deleted=False)
+            serializer = FetchModuleSubTopicSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
+        
+    def get_link(self, obj):
+        try:
+            request = models.ModuleLink.objects.get(topic=obj)
+            if request.link:
+                return request.link 
+            return ""
+        except (ValidationError, ObjectDoesNotExist):
+            return ""
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return ""
+
+class ModuleSubTopicSerializer(serializers.Serializer):
+    topic = serializers.CharField(max_length=500)
+    sub_topic = serializers.ListField(min_length=1)
+
+class UpdateModuleSubTopicSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    sub_topic = serializers.CharField(max_length=500)
+
+class SlimFetchModuleSubTopicSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.ModuleSubTopic
+        fields = '__all__'
+
+class FetchModuleSubTopicSerializer(serializers.ModelSerializer):
+    module = SlimFetchModuleSerializer()
+    categories = serializers.SerializerMethodField()
+    link = serializers.SerializerMethodField()
+    class Meta:
+        model = models.ModuleSubTopic
+        fields = '__all__'
+
+    def get_categories(self, obj):
+        try:
+            request = models.ModuleCategory.objects.filter(sub_topic=obj,is_deleted=False)
+            serializer = SlimFetchModuleCategorySerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return [] 
+        
+    def get_link(self, obj):
+        try:
+            request = models.ModuleLink.objects.get(sub_topic=obj,is_deleted=False)
+            if request.link:
+                return request.link 
+            return ""
+        except (ValidationError, ObjectDoesNotExist):
+            return ""
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return "" 
+
+class ModuleCategorySerializer(serializers.Serializer):
+    category = serializers.ListField(min_length=1)
+    sub_topic = serializers.CharField(max_length=500)
+
+class UpdateModuleCategorySerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    category = serializers.CharField(max_length=500)
+
+class SlimFetchModuleCategorySerializer(serializers.ModelSerializer):
+    link = serializers.SerializerMethodField()
+    def get_link(self, obj):
+        try:
+            request = models.ModuleLink.objects.get(category=obj)
+            if request.link:
+                return request.link 
+            return ""
+        except (ValidationError, ObjectDoesNotExist):
+            return ""
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return "" 
+    class Meta:
+        model = models.ModuleCategory
+        fields = '__all__'
+
+class FetchModuleCategorySerializer(serializers.ModelSerializer):
+    sub_topic = SlimFetchModuleSubTopicSerializer()
+    class Meta:
+        model = models.ModuleCategory
+        fields = '__all__'
+
+class ModuleLinkSerializer(serializers.Serializer):
+    topic = serializers.CharField(max_length=500)
+    link = serializers.CharField(max_length=500)
+
+class FetchModuleLinkSerializer(serializers.ModelSerializer):
+    topic = SlimFetchModuleSerializer()
+    sub_topic = SlimFetchModuleSubTopicSerializer()
+    category = SlimFetchModuleCategorySerializer()
+    created_by = SlimUsersSerializer()
+    
+    class Meta:
+        model = models.ModuleLink
+        fields = '__all__'
+
+class SlimFetchModuleLinkSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.ModuleLink
+        fields = '__all__'
