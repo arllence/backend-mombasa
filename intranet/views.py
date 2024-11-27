@@ -665,6 +665,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             pass
 
         elif request.method == "PATCH":
+            payload = request.data
             request_id = payload.get('request_id')
             if not request_id:
                 return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
@@ -680,7 +681,10 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 general_document=documentInstance,
                 created_by=request.user
             )
-            
+
+            documentInstance.is_quick_link = True
+            documentInstance.save()
+
             return Response("Success", status=status.HTTP_200_OK)
             
         elif request.method == "GET":
@@ -716,7 +720,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             
             with transaction.atomic():
                 try:
-                    deleted = {"is_deleted" : True, "is_quick_link": False}
+                    deleted = {"is_deleted" : True}
                     raw = {"is_deleted" : True, "is_quick_link": False}
                     if request_ids:
                         request_ids = json.loads(request_ids)
@@ -727,6 +731,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                         models.QuickLink.objects.filter(Q(general_document=request_id)).update(**deleted)
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
+                    print(e)
                     return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
                        
 class QuickLinksViewSet(viewsets.ViewSet):
