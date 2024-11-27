@@ -18,7 +18,14 @@ class UploadDocumentSerializer(serializers.Serializer):
     # title = serializers.CharField(max_length=500)
     department = serializers.CharField(max_length=500)
 
+class UploadGeneralDocumentSerializer(serializers.Serializer):
+    title = serializers.CharField(max_length=500)
 
+class FetchGeneralDocumentSerializer(serializers.ModelSerializer):
+    uploaded_by = UsersSerializer()
+    class Meta:
+        model = models.GeneralDocument
+        fields = '__all__'
 class SlimFetchDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Document

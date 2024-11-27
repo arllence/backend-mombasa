@@ -582,7 +582,6 @@ class DocumentManagerViewSet(viewsets.ViewSet):
        
     @action(methods=["POST"], detail=False, url_path="qips-downloads",url_name="qips-downloads")
     def qips_downloads(self, request):
-        roles = user_util.fetchusergroups(request.user.id) 
         payload = request.data
         try:
             request_id = payload['request_id']
@@ -600,6 +599,116 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 return Response("200", status=status.HTTP_200_OK)
             except Exception as e:
                 return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            
+    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="general-documents",url_name="general-documents")
+    def general_documents(self, request):
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            uploaded_files = request.FILES
+            if not uploaded_files:
+                return Response({"details": f"No files attached"}, status=status.HTTP_400_BAD_REQUEST)
+
+            payload = json.loads(request.data['payload'])
+
+            serializer = serializers.UploadGeneralDocumentSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                title = payload.get('title')
+                is_quick_link = payload.get('is_quick_link') == "YES"
+                # is_quick_link = is_quick_link == "YES"
+
+
+                exts = ['pdf']
+                for f in request.FILES.getlist('documents'):
+                    original_file_name = f.name
+                    ext = original_file_name.split('.')[1].strip().lower()
+                    if ext not in exts:
+                        return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    for f in request.FILES.getlist('documents'):
+                        try:
+                            original_file_name = f.name.split('.')[0]                            
+                            documentInstance = models.GeneralDocument.objects.create(
+                                document=f,
+                                file_name=original_file_name, 
+                                title=title, 
+                                is_quick_link=is_quick_link, 
+                                uploaded_by=request.user
+                            )
+                            
+                            if is_quick_link:
+                                link = 'http://172.20.0.42:4000' + str(documentInstance.document)
+                                models.QuickLink.objects.create(
+                                    title=title,
+                                    link=link,
+                                    general_document=documentInstance,
+                                    created_by=request.user
+                                )
+                        except Exception as e:
+                            logger.error(e)
+                            print(e)
+                            return Response({"details": "Error saving file"}, status=status.HTTP_400_BAD_REQUEST) 
+
+                        break 
+                    
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+
+            pass
+            
+        elif request.method == "GET":
+
+            request_id = request.query_params.get('request_id')
+
+            if request_id:
+                documents = models.GeneralDocument.objects.get(Q(id=request_id) & Q(is_deleted=False))
+
+            else:
+                if "SUPERUSER" in roles or "ICT" in roles:
+                    documents = models.GeneralDocument.objects.filter(Q(is_deleted=False)).order_by('title')
+                else:
+                    documents = []
+            
+
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(documents, request)
+            serializer = serializers.FetchGeneralDocumentSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            
+            return paginator.get_paginated_response(serializer.data)
+                 
+        elif request.method == "DELETE":
+
+            request_id = request.query_params.get('request_id')
+            request_ids = request.query_params.get('request_ids')
+
+            if not request_id and not request_ids:
+                return Response({"details": "Cannot complete request !"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    deleted = {"is_deleted" : True, "is_quick_link": False}
+                    raw = {"is_deleted" : True, "is_quick_link": False}
+                    if request_ids:
+                        request_ids = json.loads(request_ids)
+                        models.GeneralDocument.objects.filter(Q(id__in=request_ids)).update(**raw)
+                        models.QuickLink.objects.filter(Q(general_document__in=request_ids)).update(**deleted)
+                    else:
+                        models.GeneralDocument.objects.filter(Q(id=request_id)).update(**raw)
+                        models.QuickLink.objects.filter(Q(general_document=request_id)).update(**deleted)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
                        
 class QuickLinksViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)

@@ -137,6 +137,11 @@ class QuickLink(models.Model):
        related_name="link_created_by"
     )
 
+    general_document = models.ForeignKey(
+       'GeneralDocument', on_delete=models.DO_NOTHING, 
+       related_name="general_document", null=True, blank=True
+    )
+
     title = models.CharField(max_length=500)
     link = models.URLField()
     is_deleted = models.BooleanField(default=False)
@@ -374,3 +379,26 @@ class ModuleLink(models.Model):
     
     class Meta:
         db_table = u'"{}\".\"module_links"'.format(settings.INTRANET)
+
+
+# General Documents
+class GeneralDocument(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    
+    uploaded_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="general_document_uploaded_by"
+    )
+
+    document = models.FileField(upload_to='documents/intranet')
+    title = models.CharField(max_length=500)
+    file_name = models.CharField(max_length=500)
+    is_quick_link = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title}"
+    
+    class Meta:
+        db_table = u'"{}\".\"general_documents"'.format(settings.INTRANET)
