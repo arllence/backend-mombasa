@@ -601,7 +601,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
             
             
-    @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="general-documents",url_name="general-documents")
+    @action(methods=["POST","PUT","PATCH","DELETE", "GET"], detail=False, url_path="general-documents",url_name="general-documents")
     def general_documents(self, request):
         roles = user_util.fetchusergroups(request.user.id) 
 
@@ -663,6 +663,25 @@ class DocumentManagerViewSet(viewsets.ViewSet):
         elif request.method == "PUT":
 
             pass
+
+        elif request.method == "PATCH":
+            request_id = payload.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                documentInstance = models.GeneralDocument.objects.get(id=request_id)
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            models.QuickLink.objects.create(
+                title=documentInstance.title,
+                link='http://172.20.0.42:4000' + str(documentInstance.document),
+                general_document=documentInstance,
+                created_by=request.user
+            )
+            
+            return Response("Success", status=status.HTTP_200_OK)
             
         elif request.method == "GET":
 
