@@ -396,6 +396,7 @@ class GeneralDocument(models.Model):
     title = models.CharField(max_length=500)
     file_name = models.CharField(max_length=500)
     is_quick_link = models.BooleanField(default=False)
+    downloads = models.IntegerField(default=0)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 

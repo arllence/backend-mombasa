@@ -161,6 +161,26 @@ class GenericsViewSet(viewsets.ViewSet):
             except Exception as e:
                 return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
             
+    @action(methods=["POST"], detail=False, url_path="quick-link-files-downloads",url_name="quick-link-files-downloads")
+    def quick_link_files_downloads(self, request):
+        payload = request.data
+        try:
+            request_id = payload['request_id']
+            document = models.GeneralDocument.objects.get(id=request_id)
+        except:
+            return Response("200", status=status.HTTP_200_OK)
+        
+        count = int(document.downloads)
+        count += 1
+        
+        with transaction.atomic():
+            try:
+                document.downloads = count
+                document.save()  
+                return Response("200", status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({"details": "Unknown Id"}, status=status.HTTP_400_BAD_REQUEST)
+            
     
     @action(methods=["GET"], detail=False, url_path="qips",url_name="qips")
     def qips(self, request):
