@@ -254,7 +254,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 exts = ['pdf']
                 for f in request.FILES.getlist('documents'):
                     original_file_name = f.name
-                    ext = original_file_name.split('.')[1].strip().lower()
+                    ext = original_file_name.split('.')[-1].strip().lower()
                     if ext not in exts:
                         return Response({"details": f"{original_file_name} not allowed. Only Images, PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
                 
@@ -262,7 +262,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                     total_files = 1
                     for f in request.FILES.getlist('documents'):
                         try:
-                            original_file_name = f.name.split('.')[0]                            
+                            original_file_name = f.name #.split('.')[0]                            
                             models.Document.objects.create(
                                 document=f,
                                 original_file_name=original_file_name, 
@@ -435,7 +435,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 exts = ['pdf']
                 for f in request.FILES.getlist('documents'):
                     original_file_name = f.name
-                    ext = original_file_name.split('.')[1].strip().lower()
+                    ext = original_file_name.split('.')[-1].strip().lower()
                     if ext not in exts:
                         return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
                 
@@ -443,7 +443,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                     for f in request.FILES.getlist('documents'):
                         try:
 
-                            original_file_name = f.name.split('.')[0]                            
+                            original_file_name = f.name #.split('.')[0]                            
                             models.QipsDocument.objects.create(
                                 document=f,
                                 file_name=original_file_name, 
@@ -619,20 +619,18 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 title = payload.get('title')
                 is_quick_link = payload.get('is_quick_link') == "YES"
-                # is_quick_link = is_quick_link == "YES"
-
 
                 exts = ['pdf']
                 for f in request.FILES.getlist('documents'):
                     original_file_name = f.name
-                    ext = original_file_name.split('.')[1].strip().lower()
+                    ext = original_file_name.split('.')[-1].strip().lower()
                     if ext not in exts:
                         return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
                     for f in request.FILES.getlist('documents'):
                         try:
-                            original_file_name = f.name.split('.')[0]                            
+                            original_file_name = f.name #.split('.')[0]                            
                             documentInstance = models.GeneralDocument.objects.create(
                                 document=f,
                                 file_name=original_file_name, 
