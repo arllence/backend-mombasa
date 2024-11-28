@@ -165,6 +165,11 @@ class SlimFetchQipsDocumentSerializer(serializers.ModelSerializer):
         model = models.QipsDocument
         fields = '__all__'
 
+class SlimFetchGeneralDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.GeneralDocument
+        fields = '__all__'
+
 class SubDepartmentSerializer(serializers.Serializer):
     department_id = serializers.CharField(max_length=255)
     sub_departments = serializers.ListField(min_length=1)

@@ -144,6 +144,7 @@ class QuickLink(models.Model):
 
     title = models.CharField(max_length=500)
     link = models.URLField()
+    link_type = models.CharField(max_length=50, default='SINGLE')
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -391,6 +392,7 @@ class GeneralDocument(models.Model):
     )
 
     document = models.FileField(upload_to='documents/intranet')
+    tag = models.CharField(max_length=50, null=True, blank=True)
     title = models.CharField(max_length=500)
     file_name = models.CharField(max_length=500)
     is_quick_link = models.BooleanField(default=False)

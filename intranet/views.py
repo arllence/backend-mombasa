@@ -102,6 +102,25 @@ class GenericsViewSet(viewsets.ViewSet):
         
         return paginator.get_paginated_response(serializer.data)
     
+    @action(methods=["GET"], detail=False, url_path="quick-link-files",url_name="quick-link-files")
+    def quick_link_files(self, request):
+        tag = request.query_params.get('tag')
+        if tag:
+            documents = models.GeneralDocument.objects.filter(
+                Q(tag=tag), is_deleted=False).order_by('file_name')
+        else:
+            documents = []
+        
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 50
+        result_page = paginator.paginate_queryset(documents, request)
+        serializer = serializers.SlimFetchGeneralDocumentSerializer(
+            result_page, many=True)
+        
+        return paginator.get_paginated_response(serializer.data)
+    
+    
     @action(methods=["POST"], detail=False, url_path="downloads",url_name="downloads")
     def downloads(self, request):
         payload = request.data
@@ -618,7 +637,10 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 title = payload.get('title')
+                file_type = payload.get('file_type')
                 is_quick_link = payload.get('is_quick_link') == "YES"
+
+                tag = shared_fxns.generate_unique_identifier()
 
                 exts = ['pdf']
                 for f in request.FILES.getlist('documents'):
@@ -635,24 +657,35 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                                 document=f,
                                 file_name=original_file_name, 
                                 title=title, 
+                                tag=tag, 
                                 is_quick_link=is_quick_link, 
                                 uploaded_by=request.user
                             )
-                            
+                        except Exception as e:
+                            logger.error(e)
+                            print(e)
+                            return Response({"details": "Error saving file"}, status=status.HTTP_400_BAD_REQUEST) 
+
+                        if file_type == 'SINGLE': 
                             if is_quick_link:
-                                link = 'http://172.20.0.42:4000' + str(documentInstance.document)
+                                link = 'http://172.20.0.42:4000/media/' + str(documentInstance.document)
                                 models.QuickLink.objects.create(
                                     title=title,
                                     link=link,
                                     general_document=documentInstance,
                                     created_by=request.user
                                 )
-                        except Exception as e:
-                            logger.error(e)
-                            print(e)
-                            return Response({"details": "Error saving file"}, status=status.HTTP_400_BAD_REQUEST) 
+                            break
 
-                        break 
+                    if file_type == 'MULTIPLE':
+                        if is_quick_link:
+                            # link = 'tag=' + tag
+                            models.QuickLink.objects.create(
+                                title=title,
+                                link=tag,
+                                link_type=file_type,
+                                created_by=request.user
+                            )
                     
                     return Response("Success", status=status.HTTP_200_OK)
             else:

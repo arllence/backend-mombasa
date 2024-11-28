@@ -1,7 +1,7 @@
 from datetime import datetime
 import string
 import random
-from sls.models import Staff
+from intranet.models import GeneralDocument
 import json
 from collections import OrderedDict
 from uuid import UUID
@@ -52,9 +52,9 @@ def identify_file_type(ext):
 
 def generate_unique_identifier():
     characters = string.ascii_uppercase + string.digits
-    uid = ''.join(random.choices(characters, k=6))
+    uid = ''.join(random.choices(characters, k=8))
 
-    is_existing = Staff.objects.filter(uid=uid).exists()
+    is_existing = GeneralDocument.objects.filter(tag=uid).exists()
     if is_existing:
         generate_unique_identifier()
     else:
