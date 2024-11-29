@@ -670,7 +670,30 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                         return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
-                    for f in request.FILES.getlist('documents'):
+                    if file_type == 'MULTIPLE': 
+                        bulkDocuments = [
+                            models.GeneralDocument(
+                                document=f,
+                                file_name=f.name, 
+                                title=title, 
+                                tag=tag, 
+                                is_quick_link=is_quick_link, 
+                                uploaded_by=request.user
+                            )
+                            for f in request.FILES.getlist('documents')
+                        ]
+                        models.GeneralDocument.objects.bulk_create(bulkDocuments)
+
+                        if is_quick_link:
+                            models.QuickLink.objects.create(
+                                title=title,
+                                link=tag,
+                                link_type=file_type,
+                                created_by=request.user
+                            )
+
+                    if file_type == 'SINGLE': 
+                        f = request.FILES.get('documents')
                         try:
                             original_file_name = f.name #.split('.')[0]                            
                             documentInstance = models.GeneralDocument.objects.create(
@@ -686,27 +709,17 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                             print(e)
                             return Response({"details": "Error saving file"}, status=status.HTTP_400_BAD_REQUEST) 
 
-                        if file_type == 'SINGLE': 
-                            if is_quick_link:
-                                link = 'http://172.20.0.42:4000/media/' + str(documentInstance.document)
-                                models.QuickLink.objects.create(
-                                    title=title,
-                                    link=link,
-                                    general_document=documentInstance,
-                                    created_by=request.user
-                                )
-                            break
-
-                    if file_type == 'MULTIPLE':
+                        
                         if is_quick_link:
-                            # link = 'tag=' + tag
+                            link = 'http://172.20.0.42:4000/media/' + str(documentInstance.document)
                             models.QuickLink.objects.create(
                                 title=title,
-                                link=tag,
-                                link_type=file_type,
+                                link=link,
+                                general_document=documentInstance,
                                 created_by=request.user
                             )
-                    
+
+
                     return Response("Success", status=status.HTTP_200_OK)
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
