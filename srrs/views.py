@@ -84,8 +84,8 @@ class SrrsViewSet(viewsets.ViewSet):
                         return Response({"details": "Period From and Period To required"},
                                 status=status.HTTP_400_BAD_REQUEST)
                     
-                    years = shared_fxns.find_date_difference(period_from,period_to,'years')
                     try:
+                        years = shared_fxns.find_date_difference(period_from,period_to,'years')
                         if int(years) > 1:
                             return Response({"details": "Temporary hire period cannot be more than one year"},
                                     status=status.HTTP_400_BAD_REQUEST)
@@ -279,8 +279,8 @@ class SrrsViewSet(viewsets.ViewSet):
                         return Response({"details": "Period From and Period To required"},
                                 status=status.HTTP_400_BAD_REQUEST)
                     
-                    years = shared_fxns.find_date_difference(period_from,period_to,'years')
                     try:
+                        years = shared_fxns.find_date_difference(period_from,period_to,'years')
                         if int(years) > 1:
                             return Response({"details": "Temporary hire period cannot be more than one year"},
                                     status=status.HTTP_400_BAD_REQUEST)
