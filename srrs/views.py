@@ -85,8 +85,13 @@ class SrrsViewSet(viewsets.ViewSet):
                                 status=status.HTTP_400_BAD_REQUEST)
                     
                     years = shared_fxns.find_date_difference(period_from,period_to,'years')
-                    if int(years) > 1:
-                        return Response({"details": "Temporary hire period cannot be more than one year"},
+                    try:
+                        if int(years) > 1:
+                            return Response({"details": "Temporary hire period cannot be more than one year"},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                    except Exception as e:
+                        logger.error(e)
+                        return Response({"details": "Double check Period From and Period To make sure the dates are correct"},
                                 status=status.HTTP_400_BAD_REQUEST)
 
                 try:
@@ -275,9 +280,16 @@ class SrrsViewSet(viewsets.ViewSet):
                                 status=status.HTTP_400_BAD_REQUEST)
                     
                     years = shared_fxns.find_date_difference(period_from,period_to,'years')
-                    if int(years) > 1:
-                        return Response({"details": "Temporary hire period cannot be more than one year"},
+                    try:
+                        if int(years) > 1:
+                            return Response({"details": "Temporary hire period cannot be more than one year"},
+                                    status=status.HTTP_400_BAD_REQUEST)
+                    except Exception as e:
+                        logger.error(e)
+                        return Response({"details": "Double check Period From and Period To make sure the dates are correct"},
                                 status=status.HTTP_400_BAD_REQUEST)
+
+
                     
                 if nature_of_hiring == 'Replacement':
                     if replacement:
