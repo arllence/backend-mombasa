@@ -128,6 +128,23 @@ class FmsViewSet(viewsets.ViewSet):
 
                     models.StatusChange.objects.create(**raw)
 
+                    # Notify Platform Admins
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['FMS_ADMIN'])).values_list('email', flat=True))
+                    subject = f"New Incident Reported: {uid} .  [FMS-AKHK]"
+                    message = f"Hello. \nNew Incident: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nFMS-AKHK"
+
+                    try:
+                        if emails:
+                            mail = {
+                                "email" : list(set(emails)), 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            
+                            Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Incident Request created", f"Incident Request Id: {incident.id}")
                 
@@ -296,22 +313,18 @@ class FmsViewSet(viewsets.ViewSet):
             
             with transaction.atomic():
                 try:
-
-                    try:
-                        recordInstance = models.Incident.objects.get(id=request_id,created_by=request.user)
-                        recordInstance.is_deleted = True
-                        recordInstance.status = "DELETED"
-                        recordInstance.save()
-                        # track status change
-                        raw = {
-                            "incident": recordInstance,
-                            "status": "DELETED",
-                            "status_for": '/'.join(roles),
-                            "action_by": authenticated_user,
-                        }
-                        models.StatusChange.objects.create(**raw)
-                    except:
-                        return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
+                    recordInstance = models.Incident.objects.get(id=request_id,created_by=request.user)
+                    recordInstance.is_deleted = True
+                    recordInstance.status = "DELETED"
+                    recordInstance.save()
+                    # track status change
+                    raw = {
+                        "incident": recordInstance,
+                        "status": "DELETED",
+                        "status_for": '/'.join(roles),
+                        "action_by": authenticated_user,
+                    }
+                    models.StatusChange.objects.create(**raw)
 
                     return Response('200', status=status.HTTP_200_OK)    
                  
@@ -549,7 +562,7 @@ class FmsViewSet(viewsets.ViewSet):
             else:
                 try:
 
-                    request = models.PlatformAdmin.objects.filter(Q(is_deleted=False)).order_by('admin')
+                    request = models.PlatformAdmin.objects.filter(Q(is_deleted=False)).order_by('-date_created')
                     request = serializers.FetchPlatformAdminSerializer(request, many=True).data
                     return Response(request, status=status.HTTP_200_OK)
                 
@@ -562,7 +575,7 @@ class FmsViewSet(viewsets.ViewSet):
             if request_id:
                 try:
                     user = models.PlatformAdmin.objects.get(id=request_id)
-                    user_util.revoke_role('ICT', str(user.admin.id))
+                    user_util.revoke_role('FMS_ADMIN', str(user.admin.id))
                     user.delete()
                     return Response('200', status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
