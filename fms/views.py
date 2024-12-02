@@ -464,6 +464,114 @@ class FmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response([], status=status.HTTP_200_OK)
+            
+
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
+            detail=False,
+            url_path="platform-admins",
+            url_name="platform-admins")
+    def platform_admins(self, request):
+        # roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.PlatformAdminSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                admin = payload['admin']
+
+                try:
+                    admin = User.objects.get(id=admin)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown User"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # assign FMS_ADMIN role
+                assign_role = user_util.award_role('FMS_ADMIN', str(admin.id))
+                if not assign_role:
+                    return Response({"details": "Unable to assign role FMS_ADMIN"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "admin": admin,
+                        "created_by": request.user
+                    }
+
+                    models.PlatformAdmin.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdatePlatformAdminSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                admin = payload['admin']
+
+                try:
+                    request = models.PlatformAdmin.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+
+                    request.admin = admin
+                    request.created_by = request.user
+                    request.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    request = models.PlatformAdmin.objects.get(Q(id=request_id))
+                    request = serializers.FetchPlatformAdminSerializer(request, many=False).data
+                    return Response(request, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+
+                    request = models.PlatformAdmin.objects.filter(Q(is_deleted=False)).order_by('admin')
+                    request = serializers.FetchPlatformAdminSerializer(request, many=True).data
+                    return Response(request, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    user = models.PlatformAdmin.objects.get(id=request_id)
+                    user_util.revoke_role('ICT', str(user.admin.id))
+                    user.delete()
+                    return Response('200', status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
 
 
             

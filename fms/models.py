@@ -108,6 +108,26 @@ class StatusChange(models.Model):
         db_table = u'"{}\".\"status_change"'.format(settings.FEEDBACK_MANAGEMENT_SYSTEM)
 
 
+class PlatformAdmin(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
+    admin = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="fms_admin"
+    )
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="fms_admin_created_by"
+    )
+
+    status = models.CharField(max_length=255, default='ACTIVE')
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.admin.first_name
+    
+    class Meta:
+        db_table = u'"{}\".\"platform_admins"'.format(settings.FEEDBACK_MANAGEMENT_SYSTEM)
 
 

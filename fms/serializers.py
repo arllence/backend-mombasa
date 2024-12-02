@@ -96,6 +96,17 @@ class FetchNoteSerializer(serializers.ModelSerializer):
         model = models.Note
         fields = '__all__'
 
+class PlatformAdminSerializer(serializers.Serializer):
+    admin = serializers.CharField(max_length=500)
 
+class UpdatePlatformAdminSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    admin = serializers.CharField(max_length=500)
+
+class FetchPlatformAdminSerializer(serializers.Serializer):
+    admin = SlimUsersSerializer()
+    class Meta:
+        model = models.PlatformAdmin
+        fields = '__all__'
 
 
