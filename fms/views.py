@@ -668,6 +668,7 @@ class ReportsViewSet(viewsets.ViewSet):
         r_status = request.query_params.get('status')
         priority = request.query_params.get('priority')
         type_of_incident = request.query_params.get('incident_type')
+        issue_type = request.query_params.get('issue_type')
         date = False
 
         if date_to and date_from:
@@ -700,6 +701,9 @@ class ReportsViewSet(viewsets.ViewSet):
 
         if priority:
             q_filters &= Q(priority=priority)
+
+        if issue_type:
+            q_filters &= Q(type_of_issue=issue_type)
 
 
         if q_filters:
