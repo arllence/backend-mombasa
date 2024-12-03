@@ -267,6 +267,7 @@ class FmsViewSet(viewsets.ViewSet):
                 with transaction.atomic():
                     incidentInstance.status = 'CLOSED'
                     incidentInstance.closed_by = request.user
+                    incidentInstance.date_closed = datetime.datetime.now()
                     incidentInstance.save()
 
                     # track status change
@@ -665,6 +666,8 @@ class ReportsViewSet(viewsets.ViewSet):
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
         r_status = request.query_params.get('status')
+        priority = request.query_params.get('priority')
+        type_of_incident = request.query_params.get('incident_type')
         date = False
 
         if date_to and date_from:
@@ -692,15 +695,21 @@ class ReportsViewSet(viewsets.ViewSet):
         if r_status:
             q_filters &= Q(status=r_status)
 
+        if type_of_incident:
+            q_filters &= Q(type_of_incident=type_of_incident)
+
+        if priority:
+            q_filters &= Q(priority=priority)
+
 
         if q_filters:
 
             resp = models.Incident.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
             
         else:
-            resp = models.Incident.objects.filter(Q(is_deleted=False) & Q(created_by=request.user)).order_by('-date_created')[:50]
+            resp = models.Incident.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
 
-        resp = serializers.FetchRecruitSerializer(resp, many=True, context={"user_id":request.user.id}).data
+        resp = serializers.FetchIncidentSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
     
