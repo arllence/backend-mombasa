@@ -37,6 +37,10 @@ class PutIncidentSerializer(serializers.Serializer):
     subject = serializers.CharField(max_length=255)
     message = serializers.CharField(max_length=255)
 
+
+class PatchIncidentSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+
 class FetchIncidentSerializer(serializers.ModelSerializer):
     created_by = UsersSerializer()
     closed_by = UsersSerializer()

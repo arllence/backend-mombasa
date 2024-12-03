@@ -251,7 +251,67 @@ class FmsViewSet(viewsets.ViewSet):
 
   
         elif request.method == "PATCH":
-            pass
+            # close this incident
+            payload = request.data           
+            serializer = serializers.PatchIncidentSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                comments = payload.get('comments') or None
+                try:
+                    incidentInstance = models.Incident.objects.get(id=request_id)
+                except Exception as e:
+                    return Response({"details": "Unknown Incident"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    incidentInstance.status = 'CLOSED'
+                    incidentInstance.closed_by = request.user
+                    incidentInstance.save()
+
+                    # track status change
+                    raw = {
+                        "incident": incidentInstance,
+                        "status": "CLOSED",
+                        "status_for": '/'.join(roles),
+                        "action_by": request.user,
+                    }
+                    models.StatusChange.objects.create(**raw)
+
+                    # note comments
+                    if comments:
+                        raw = {
+                            "owner": request.user,
+                            "incident": incidentInstance,
+                            "note": comments,
+                        }
+                        models.Note.objects.create(**raw)
+
+
+                    # Notify Platform Admins
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['FMS_ADMIN'])).values_list('email', flat=True))
+                    subject = f"Incident {incidentInstance.uid} Closed [FMS-AKHK]"
+                    message = f"Hello. \nIncident: {incidentInstance.uid} from department: {incidentInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nFMS-AKHK"
+
+                    emails.append(str(incidentInstance.created_by.email))
+
+                    try:
+                        if emails:
+                            mail = {
+                                "email" : list(set(emails)), 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            
+                            Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+                    return Response('success', status=status.HTTP_200_OK)
+
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
