@@ -650,21 +650,18 @@ class FmsViewSet(viewsets.ViewSet):
             
 
    
-class SRRSReportsViewSet(viewsets.ViewSet):
-    # search_fields = ['id', ]
+class ReportsViewSet(viewsets.ViewSet):
 
     def get_queryset(self):
         return []
 
     @action(methods=["GET",],
             detail=False,
-            url_path="requisitions",
-            url_name="requisitions")
-    def requisitions(self, request):
+            url_path="incidents",
+            url_name="incidents")
+    def incidents(self, request):
                     
         department = request.query_params.get('department')
-        position_type = request.query_params.get('position_type')
-        nature_of_hiring = request.query_params.get('nature_of_hiring')
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
         r_status = request.query_params.get('status')
@@ -682,7 +679,6 @@ class SRRSReportsViewSet(viewsets.ViewSet):
 
             return q_filters
 
-        # try:
         q_filters = Q()
 
         if department:
@@ -696,29 +692,18 @@ class SRRSReportsViewSet(viewsets.ViewSet):
         if r_status:
             q_filters &= Q(status=r_status)
 
-        if position_type:
-            q_filters &= Q(position_type=position_type)
-
-        if nature_of_hiring:
-            q_filters &= Q(nature_of_hiring=nature_of_hiring)
-
 
         if q_filters:
 
-            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            resp = models.Incident.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
             
         else:
-            roles = user_util.fetchusergroups(request.user.id)  
-
-            if "HOD" in roles:
-                resp = models.Recruit.objects.filter(Q(is_deleted=False) & Q(created_by=request.user)).order_by('-date_created')[:50]
-
-            else:
-                resp = models.Recruit.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+            resp = models.Incident.objects.filter(Q(is_deleted=False) & Q(created_by=request.user)).order_by('-date_created')[:50]
 
         resp = serializers.FetchRecruitSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
+    
         
     @action(methods=["GET",],
             detail=False,
