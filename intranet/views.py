@@ -86,10 +86,6 @@ class GenericsViewSet(viewsets.ViewSet):
         result_page = paginator.paginate_queryset(documents, request)
         serializer = serializers.SlimFetchDocumentSerializer(
             result_page, many=True)
-
-        # start sorting
-
-        # end sorting
         
         return paginator.get_paginated_response(serializer.data)
         
@@ -98,10 +94,14 @@ class GenericsViewSet(viewsets.ViewSet):
     def qips_files(self, request):
         request_id = request.query_params.get('request_id')
         if request_id:
-            documents = models.QipsDocument.objects.filter(
+            documents = list(models.QipsDocument.objects.filter(
                 Q(topic=request_id) | 
                 Q(sub_topic=request_id) | 
-                Q(category=request_id) ,is_deleted=False).order_by('file_name')
+                Q(category=request_id) ,is_deleted=False).order_by('file_name'))
+            try:
+                documents.sort(key=lambda x: int(x.file_name.split('.')[0]))
+            except:
+                pass
         else:
             documents = []
         
@@ -118,8 +118,12 @@ class GenericsViewSet(viewsets.ViewSet):
     def quick_link_files(self, request):
         tag = request.query_params.get('tag')
         if tag:
-            documents = models.GeneralDocument.objects.filter(
-                Q(tag=tag), is_deleted=False).order_by('file_name')
+            documents = list(models.GeneralDocument.objects.filter(
+                Q(tag=tag), is_deleted=False).order_by('file_name'))
+            try:
+                documents.sort(key=lambda x: int(x.file_name.split('.')[0]))
+            except:
+                pass
         else:
             documents = []
         
