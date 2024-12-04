@@ -73,8 +73,10 @@ class GenericsViewSet(viewsets.ViewSet):
                 Q(department=department_id) | 
                 Q(sub_department=department_id) | 
                 Q(category=department_id), is_deleted=False).order_by('original_file_name'))
-            
-            documents.sort(key=lambda x: int(x.original_file_name.split('.')[0]))
+            try:
+                documents.sort(key=lambda x: int(x.original_file_name.split('.')[0]))
+            except:
+                pass
         else:
             documents = []
         
