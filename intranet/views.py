@@ -26,7 +26,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 
 from django.db.models import F, IntegerField
-from django.db.models.functions import Cast
+from django.db.models.functions import Cast, Substr
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -78,7 +78,9 @@ class GenericsViewSet(viewsets.ViewSet):
                 Q(sub_department=department_id) | 
                 Q(category=department_id), is_deleted=False
             ).annotate(
-                numeric_name=Cast(F('original_file_name').split('.')[0], IntegerField())
+                # Get the part before the first period
+                numeric_name=Cast(Substr(F('original_file_name'), 1, 
+                                        F('original_file_name').find('.')), IntegerField())
             ).order_by('numeric_name')
         else:
             documents = []
