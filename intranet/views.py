@@ -25,6 +25,9 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import Group
 
+from django.db.models import F, IntegerField
+from django.db.models.functions import Cast
+
 from rest_framework.pagination import PageNumberPagination
 
 # Get an instance of a logger
@@ -66,10 +69,17 @@ class GenericsViewSet(viewsets.ViewSet):
     def files(self, request):
         department_id = request.query_params.get('department_id')
         if department_id:
+            # documents = models.Document.objects.filter(
+            #     Q(department=department_id) | 
+            #     Q(sub_department=department_id) | 
+            #     Q(category=department_id), is_deleted=False).order_by('original_file_name')
             documents = models.Document.objects.filter(
                 Q(department=department_id) | 
                 Q(sub_department=department_id) | 
-                Q(category=department_id), is_deleted=False).order_by('original_file_name')
+                Q(category=department_id), is_deleted=False
+            ).annotate(
+                numeric_name=Cast(F('original_file_name').split('.')[0], IntegerField())
+            ).order_by('numeric_name')
         else:
             documents = []
         
@@ -81,17 +91,10 @@ class GenericsViewSet(viewsets.ViewSet):
             result_page, many=True)
 
         # start sorting
-        # Function to extract the numeric part from the document name 
-        def extract_numeric_part(doc_name): 
-            try:
-                return int(dict(doc_name['original_file_name']).split('.')[0])  # Sort the documents based on the numeric part 
-            except ValueError:
-                return 0  # Return a default value if conversion fails
-        sorted_documents = sorted(serializer.data, key=extract_numeric_part)
-        return paginator.get_paginated_response(sorted_documents)
+
         # end sorting
         
-        # return paginator.get_paginated_response(serializer.data)
+        return paginator.get_paginated_response(serializer.data)
         
     
     @action(methods=["GET"], detail=False, url_path="qips-files",url_name="qips-files")
