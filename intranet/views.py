@@ -84,9 +84,9 @@ class GenericsViewSet(viewsets.ViewSet):
         # Function to extract the numeric part from the document name 
         def extract_numeric_part(doc_name): 
             try:
-                return int(doc_name.split('.')[0]) # Sort the documents based on the numeric part 
-            except:
-                pass
+                return int(doc_name.split('.')[0])  # Sort the documents based on the numeric part 
+            except ValueError:
+                return 0  # Return a default value if conversion fails
         sorted_documents = sorted(serializer.data, key=extract_numeric_part)
         return paginator.get_paginated_response(sorted_documents)
         # end sorting
