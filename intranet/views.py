@@ -79,8 +79,20 @@ class GenericsViewSet(viewsets.ViewSet):
         result_page = paginator.paginate_queryset(documents, request)
         serializer = serializers.SlimFetchDocumentSerializer(
             result_page, many=True)
+
+        # start sorting
+        # Function to extract the numeric part from the document name 
+        def extract_numeric_part(doc_name): 
+            try:
+                return int(doc_name.split('.')[0]) # Sort the documents based on the numeric part 
+            except:
+                pass
+        sorted_documents = sorted(serializer.data, key=extract_numeric_part)
+        return paginator.get_paginated_response(sorted_documents)
+        # end sorting
         
-        return paginator.get_paginated_response(serializer.data)
+        # return paginator.get_paginated_response(serializer.data)
+        
     
     @action(methods=["GET"], detail=False, url_path="qips-files",url_name="qips-files")
     def qips_files(self, request):
