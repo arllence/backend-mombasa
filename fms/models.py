@@ -51,6 +51,8 @@ class Incident(models.Model):
     time_of_incident = models.TimeField()
     affected_person_phone = models.CharField(max_length=255, null=True, blank=True)
     ks_number = models.CharField(max_length=255, null=True, blank=True)
+    name = models.CharField(max_length=255, null=True, blank=True)
+    email = models.CharField(max_length=255, null=True, blank=True)
     assignee_comment = models.TextField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
@@ -96,7 +98,8 @@ class StatusChange(models.Model):
     status_for = models.CharField(max_length=255, null=True, blank=True)
     action_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="fms_action_by"
+       related_name="fms_action_by",
+       null=True, blank=True
     )
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)

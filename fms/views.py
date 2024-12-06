@@ -25,8 +25,209 @@ from django.utils import timezone
 
 from rest_framework.pagination import PageNumberPagination
 
+from intranet.serializers import FullFetchDepartmentSerializer
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
+
+class GenericsViewSet(viewsets.ViewSet):
+    permission_classes = (AllowAny,)
+    search_fields = ['id', ]
+    
+
+    def get_queryset(self):
+        return []
+    
+    @action(methods=["GET"], detail=False, url_path="departments",url_name="departments")
+    def departments(self, request):
+
+        resp = SRRSDepartment.objects.all().order_by('name')
+        serializer = FullFetchDepartmentSerializer(
+            resp, many=True, context={"user_id":request.user.id})
+        
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="sub-departments",
+            url_name="sub-departments")
+    def sub_department(self, request):
+        if request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    department = SubDepartment.objects.get(Q(id=request_id))
+                    department = serializers.FetchSubDepartmentSerializer(department,many=False).data
+                    return Response(department, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    departments = SubDepartment.objects.filter(is_deleted=False).order_by('name')
+                    departments = serializers.FetchSubDepartmentSerializer(departments,many=True).data
+                    return Response(departments, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="ohc",
+            url_name="ohc")
+    def ohc(self, request): 
+        if request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    ohc = OHC.objects.get(Q(id=request_id))
+                    ohc = serializers.FetchOHCSerializer(ohc,many=False).data
+                    return Response(ohc, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown ohc!"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    ohcs = OHC.objects.filter(is_deleted=False).order_by('name')
+                    ohcs = serializers.FetchOHCSerializer(ohcs,many=True).data
+                    return Response(ohcs, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+    
+    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
+            detail=False,
+            url_path="incident",
+            url_name="incident")
+    def incident(self, request):
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            # payload = request.data
+
+            payload = json.loads(request.data['payload'])
+            attachment = request.FILES.get('attachments', None)
+
+            serializer = serializers.GenericIncidentSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                type_of_incident = payload['type_of_incident']
+                priority = payload['priority']
+                department = payload['department']
+                location = payload['location']
+                affected_person_name = payload['affected_person_name']
+                person_affected = payload['person_affected']
+                date_of_incident = payload['date_of_incident']
+                time_of_incident = payload['time_of_incident']
+                type_of_issue = payload['type_of_issue']
+                subject = payload['subject']
+                message = payload['message']
+
+                ohc = payload.get('ohc') or None
+                ks_number = payload.get('ks_number') or None
+                affected_person_phone = payload.get('affected_person_phone') or None
+                name = payload.get('name') or 'Anonymous'
+                email = payload.get('email') or None
+
+
+                uid = shared_fxns.generate_unique_identifier()
+
+                try:
+                    department = SRRSDepartment.objects.get(id=department)
+                except Exception as e:
+                    return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    location = SubDepartment.objects.get(id=location)
+                except Exception as e:
+                    return Response({"details": "Unknown Location"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if ohc:
+                    try:
+                        ohc = OHC.objects.get(id=ohc)
+                    except Exception as e:
+                        return Response({"details": "Unknown OHC "}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    raw = {
+                        "department": department,
+                        "location": location,
+                        "type_of_incident": type_of_incident,
+                        "priority": priority,
+                        "attachment": attachment,
+                        "affected_person_name": affected_person_name,
+                        "person_affected": person_affected,
+                        "date_of_incident": date_of_incident,
+                        "time_of_incident": time_of_incident,
+                        "type_of_issue": type_of_issue,
+                        "ohc": ohc,
+                        "subject": subject,
+                        "message": message,
+                        "ks_number": ks_number,
+                        "name": name,
+                        "email": email,
+                        "affected_person_phone": affected_person_phone,
+                        "uid": uid
+                    }
+
+                    incident = models.Incident.objects.create(
+                        **raw
+                    )
+
+                    # create track status change
+                    raw = {
+                        "incident": incident,
+                        "status": "SUBMITTED",
+                        "status_for": "/".join(roles),
+                        # "action_by": authenticated_user
+                    }
+
+                    models.StatusChange.objects.create(**raw)
+
+                    # Notify Platform Admins
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['FMS_ADMIN'])).values_list('email', flat=True))
+                    subject = f"New Incident Reported: {uid} .  [FMS-AKHK]"
+                    message = f"Hello. \nNew Incident: {uid} from department: {department.name}, \nhas been raised by: {name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nFMS-AKHK"
+
+                    try:
+                        if emails:
+                            mail = {
+                                "email" : list(set(emails)), 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            
+                            Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+                # user_util.log_account_activity(
+                #     authenticated_user, authenticated_user, "Incident Request created", f"Incident Request Id: {incident.id}")
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
 
 class FmsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
@@ -294,7 +495,10 @@ class FmsViewSet(viewsets.ViewSet):
                     subject = f"Incident {incidentInstance.uid} Closed [FMS-AKHK]"
                     message = f"Hello. \nIncident: {incidentInstance.uid} from department: {incidentInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nFMS-AKHK"
 
-                    emails.append(str(incidentInstance.created_by.email))
+                    if incidentInstance.created_by:
+                        emails.append(str(incidentInstance.created_by.email))
+                    elif incidentInstance.email:
+                        emails.append(str(incidentInstance.email))
 
                     try:
                         if emails:
@@ -467,7 +671,7 @@ class FmsViewSet(viewsets.ViewSet):
 
 
                 user_util.log_account_activity(
-                    authenticated_user, incidentInstance.created_by, "Incident Request Assigned", 
+                    authenticated_user, authenticated_user, "Incident Request Assigned", 
                     f"Assigning Executed UID: {str(incidentInstance.id)}")
                 
                 return Response('success', status=status.HTTP_200_OK)

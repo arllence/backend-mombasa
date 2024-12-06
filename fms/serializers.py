@@ -10,6 +10,18 @@ class GeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
 
 
+class GenericIncidentSerializer(serializers.Serializer):
+    type_of_incident = serializers.CharField(max_length=500)
+    priority = serializers.CharField(max_length=500)
+    department = serializers.CharField()
+    location = serializers.CharField(max_length=500)
+    affected_person_name = serializers.CharField()
+    person_affected = serializers.CharField(max_length=255)
+    date_of_incident = serializers.DateField()
+    time_of_incident = serializers.CharField(max_length=255)
+    subject = serializers.CharField(max_length=255)
+    message = serializers.CharField(max_length=255)
+
 class IncidentSerializer(serializers.Serializer):
     type_of_incident = serializers.CharField(max_length=500)
     priority = serializers.CharField(max_length=500)
