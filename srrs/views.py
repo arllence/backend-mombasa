@@ -211,7 +211,7 @@ class SrrsViewSet(viewsets.ViewSet):
                                     "message" : message,
                                 }
                                 
-                                Sendmail.objects.create(**mail)
+                                # Sendmail.objects.create(**mail)
                         except Exception as e:
                             logger.error(e)
 
@@ -438,7 +438,7 @@ class SrrsViewSet(viewsets.ViewSet):
                                         "message" : message,
                                     }
                                     
-                                    Sendmail.objects.create(**mail)
+                                    # Sendmail.objects.create(**mail)
                             except Exception as e:
                                 logger.error(e)
 
@@ -986,7 +986,7 @@ class SrrsViewSet(viewsets.ViewSet):
                                     "message" : message,
                                 }
                                 
-                                Sendmail.objects.create(**mail)
+                                # Sendmail.objects.create(**mail)
                         except Exception as e:
                             logger.error(e)
 
