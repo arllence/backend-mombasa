@@ -529,13 +529,13 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 name = payload['name']
 
                 try:
-                    document = models.Document.objects.get(id=request_id)
+                    document = models.QipsDocument.objects.get(id=request_id)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 with transaction.atomic():
-                    document.original_file_name = name
+                    document.file_name = name
                     document.save()
                     
                     return Response("Success", status=status.HTTP_200_OK)
