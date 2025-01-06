@@ -57,3 +57,8 @@ def generate_unique_identifier():
     else:
         return uid
 
+def exempted_emails():
+    emails = [
+        'dennis.abuga@akhskenya.org'
+    ]
+    return emails

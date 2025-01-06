@@ -7,7 +7,6 @@ import uuid
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -186,6 +185,9 @@ class SrrsViewSet(viewsets.ViewSet):
                         subject = f"Recruitment Request: {recruit.uid} Pending Your Action.  [SRRS-AKHK]"
                         message = f"Hello. \nRecruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\nSRRS-AKHK"
 
+                        exempted_emails = shared_fxns.exempted_emails()
+                        forward_to_emails = [email for email in forward_to_emails if email not in exempted_emails]
+
                         try:
                             if emails:
                                 mail = {
@@ -219,6 +221,9 @@ class SrrsViewSet(viewsets.ViewSet):
                         # Notify SLT
                         subject = f"New Recruitment Request {uid} Received [SRRS-AKHK]"
                         message = f"Hello, \n\nA new recruit request of id: {uid}, from department: {department.name}, for position: {recruit.position_title}\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nSRRS-AKHK"
+
+                        exempted_emails = shared_fxns.exempted_emails()
+                        managers_emails = [email for email in managers_emails if email not in exempted_emails]
 
                         try:
                             mail = {
@@ -413,6 +418,10 @@ class SrrsViewSet(viewsets.ViewSet):
                             subject = f"Recruitment Request: {recruit.uid} Pending Your Action.  [SRRS-AKHK]"
                             message = f"Hello. \nRecruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\nSRRS-AKHK"
 
+                            exempted_emails = shared_fxns.exempted_emails()
+                            forward_to_emails = [email for email in forward_to_emails if email not in exempted_emails]
+
+
                             try:
                                 if emails:
                                     mail = {
@@ -593,6 +602,9 @@ class SrrsViewSet(viewsets.ViewSet):
 
                     subject = f"Staff Recruitment Request: {recruit.uid} Progress Update [SRRS-AKHK]"
                     message = f"Hello. \n\nThe requisition request of id:{recruit.uid} for position: {recruit.position_title} has been marked as {recruit_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
+
+                    exempted_emails = shared_fxns.exempted_emails()
+                    emails = [email for email in emails if email not in exempted_emails]
 
                     try:
                         mail = {
@@ -943,6 +955,9 @@ class SrrsViewSet(viewsets.ViewSet):
                     emails = [recruit.created_by.email]
                     subject = f"Recruitment Request: {recruit.uid} Status  [SRRS-AKHK]"
                     message = f"Hello, \nStaff Recruitment Request of id: {recruit.uid} for position: {recruit.position_title} has been {new_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nSRRS-AKHK"
+
+                    exempted_emails = shared_fxns.exempted_emails()
+                    emails = [email for email in emails if email not in exempted_emails]
                     
                     try:
                         mail = {
@@ -959,6 +974,9 @@ class SrrsViewSet(viewsets.ViewSet):
                     emails += forward_to_emails
                     subject = f"Recruitment Request: {recruit.uid} Pending Your Action.  [SRRS-AKHK]"
                     message = f"Hello. \nRecruitment Request: {recruit.uid} from department: {recruit.department.name}, for position: {recruit.position_title} is {new_status},\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}, and is now pending your action\n\nRegards\nSRRS-AKHK"
+
+                    exempted_emails = shared_fxns.exempted_emails()
+                    emails = [email for email in emails if email not in exempted_emails]
 
                     try:
                         if emails:
@@ -1119,6 +1137,9 @@ class SrrsViewSet(viewsets.ViewSet):
                     subject = f"Recruitment Request {recruit.uid} Budget  [SRRS-AKHK]"
                     message = f"Hello. \nBudget approval for requisition position: {recruit.position_title},\nhas been uploaded by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
 
+                    exempted_emails = shared_fxns.exempted_emails()
+                    recipients = [email for email in recipients if email not in exempted_emails]
+
                     try:
                         mail = {
                             "email" : list(set(recipients)), 
@@ -1215,6 +1236,9 @@ class SrrsViewSet(viewsets.ViewSet):
                     subject = f"Candidate hired [SRRS-AKHK]"
                     message = f"Hello. \n\nThe position: {recruit.position_title},\nhas been filled. Candidate name: {name},\nas updated by{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
 
+                    exempted_emails = shared_fxns.exempted_emails()
+                    recipients = [email for email in recipients if email not in exempted_emails]
+                    
                     try:
                         mail = {
                             "email" : list(set(recipients)), 
