@@ -20,7 +20,7 @@ class GenericIncidentSerializer(serializers.Serializer):
     date_of_incident = serializers.DateField()
     time_of_incident = serializers.CharField(max_length=255)
     subject = serializers.CharField(max_length=255)
-    message = serializers.CharField(max_length=255)
+    message = serializers.CharField(style={'type': 'textarea'})
 
 class IncidentSerializer(serializers.Serializer):
     type_of_incident = serializers.CharField(max_length=500)
@@ -33,7 +33,7 @@ class IncidentSerializer(serializers.Serializer):
     time_of_incident = serializers.CharField(max_length=255)
     type_of_issue = serializers.CharField(max_length=255)
     subject = serializers.CharField(max_length=255)
-    message = serializers.CharField(max_length=255)
+    message = serializers.CharField(style={'type': 'textarea'})
 
 class PutIncidentSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
@@ -47,7 +47,7 @@ class PutIncidentSerializer(serializers.Serializer):
     time_of_incident = serializers.CharField(max_length=255)
     type_of_issue = serializers.CharField(max_length=255)
     subject = serializers.CharField(max_length=255)
-    message = serializers.CharField(max_length=255)
+    message = serializers.CharField(style={'type': 'textarea'})
 
 
 class PatchIncidentSerializer(serializers.Serializer):
