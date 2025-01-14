@@ -851,7 +851,101 @@ class FmsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(methods=["POST","GET"],
+            detail=False,
+            url_path="rca",
+            url_name="rca")
+    def rca(self, request):
 
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        # allowed = ["FMS_ADMIN", "SUPERUSER"]
+
+        # if not any(role in allowed for role in roles):
+        #     return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.RCASerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                try:
+                    incidentInstance = models.Incident.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown incident"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                del payload['request_id']
+
+                # already added
+                is_existing = models.Rca.objects.filter(Q(incident=request_id)).exists()
+                if is_existing:
+                    return Response({"details": "RCA for this incident already added"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+            
+                with transaction.atomic():
+                    raw = {
+                        "incident": incidentInstance,
+                        "created_by": request.user,
+                        "data": payload
+                    }
+                    models.Rca.objects.create(**raw)
+                
+                return Response('success', status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "PUT":
+
+            payload = request.data
+            roles = user_util.fetchusergroups(request.user.id) 
+
+            serializer = serializers.RCASerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+
+                try:
+                    incidentInstance = models.Rca.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown incident rca"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                del payload['request_id']
+                
+                with transaction.atomic():
+                    incidentInstance.data = payload
+                    incidentInstance.save()
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.Rca.objects.filter(Q(incident=request_id))
+
+                    resp = serializers.FetchRCASerializer(
+                        resp, many=True, context={"user_id":request.user.id}).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response([], status=status.HTTP_200_OK)
             
 
    

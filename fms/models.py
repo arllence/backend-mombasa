@@ -134,3 +134,26 @@ class PlatformAdmin(models.Model):
         db_table = u'"{}\".\"platform_admins"'.format(settings.FEEDBACK_MANAGEMENT_SYSTEM)
 
 
+class Rca(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    incident = models.ForeignKey(
+        Incident, on_delete=models.DO_NOTHING,
+        related_name="rca_incident_instance"
+    )
+
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="rca_created_by"
+    )
+
+    data = models.JSONField()
+
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.created_by.first_name
+    
+    class Meta:
+        db_table = u'"{}\".\"rca"'.format(settings.FEEDBACK_MANAGEMENT_SYSTEM)

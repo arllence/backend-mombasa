@@ -62,6 +62,7 @@ class FetchIncidentSerializer(serializers.ModelSerializer):
     approvals = serializers.SerializerMethodField()
     is_owner = serializers.SerializerMethodField()
     is_assigned = serializers.SerializerMethodField()
+    rca = serializers.SerializerMethodField()
     ohc = FetchOHCSerializer()
     
     class Meta:
@@ -73,6 +74,17 @@ class FetchIncidentSerializer(serializers.ModelSerializer):
             request = models.StatusChange.objects.filter(incident=obj)
             serializer = FetchStatusChangeSerializer(request, many=True)
             return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+        
+    def get_rca(self, obj):
+        try:
+            request = models.Rca.objects.get(incident=obj)
+            return request.data
         except (ValidationError, ObjectDoesNotExist):
             return {}
         except Exception as e:
@@ -184,4 +196,14 @@ class FetchPlatformAdminSerializer(serializers.ModelSerializer):
     admin = UsersSerializer()
     class Meta:
         model = models.PlatformAdmin
+        fields = '__all__'
+
+
+class RCASerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+
+class FetchRCASerializer(serializers.ModelSerializer):
+    created_by = SlimUsersSerializer()
+    class Meta:
+        model = models.Rca
         fields = '__all__'
