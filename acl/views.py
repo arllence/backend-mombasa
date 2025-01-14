@@ -689,7 +689,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             
             def set_department(department):
                 try:
-                    department = models.Department.objects.get(name=department)
+                    department = models.SRRSDepartment.objects.get(name=department)
                 except (ValidationError, ObjectDoesNotExist):
                     department = None
                 return department
@@ -709,7 +709,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                         first_name=set_name(row[0])[0].strip(), 
                         last_name=set_name(row[0])[1].strip(), 
                         email=row[1].strip(), 
-                        department=set_department(row[2].strip()),
+                        srrs_department=set_department(row[2].strip()),
                         is_active=True,
                         is_superuser=False,
                         is_staff=False,
@@ -722,7 +722,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 newInstances = models.User.objects.bulk_create(users)
 
                 try:
-                    group_details = Group.objects.get(name="USER")
+                    group_details = Group.objects.get(name="VT")
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Role does not exist'}, 
                                     status=status.HTTP_400_BAD_REQUEST) 
@@ -744,7 +744,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     )
                     for instance in newInstances
                 ]
-                models.Sendmail.objects.bulk_create(mails)
+                # models.Sendmail.objects.bulk_create(mails)
 
 
                 return Response('Data uploaded successfully', status=status.HTTP_200_OK)
