@@ -765,9 +765,9 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
         serializer = serializers.UserDetailSerializer(data=payload, many=False)
         if serializer.is_valid():
             with transaction.atomic():
-                first_name = payload['first_name']
-                last_name = payload['last_name']
-                email = payload['email']
+                first_name = payload['first_name'].capitalize()
+                last_name = payload['last_name'].capitalize()
+                email = payload['email'].lower()
                 role_name = payload['role_name']
                 department = payload['department_id']
                 emailexists = get_user_model().objects.filter(email=email).exists()
