@@ -60,17 +60,18 @@ def revoke_role(role,account_id):
 
 def password_generator():
         # generate password
-        lower = "abcdefghijklmnopqrstuvwxyz"
-        upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        numbers = "0123456789"
+        lower = "abcdefghijklmnpqrstuvwxyz"
+        upper = "ABCDEFGHIJKLMNPQRSTUVWXYZ"
+        numbers = "123456789"
         symbols = "$@!?"
 
         sample_lower = random.sample(lower,2)
-        sample_upper = random.sample(upper,2)
+        sample_upper = random.sample(upper,4)
         sample_numbers = random.sample(numbers,2)
-        sample_symbols = random.sample(symbols,2)
+        sample_symbols = random.sample(symbols,1)
 
-        all = sample_lower + sample_upper + sample_numbers + sample_symbols
+        # all = sample_lower + sample_upper + sample_numbers + sample_symbols
+        all = sample_upper + sample_numbers
 
         random.shuffle(all)
 
