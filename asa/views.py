@@ -1192,6 +1192,112 @@ class ASAViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
+            
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="roles",
+            url_name="roles")
+    def roles(self, request):
+        # roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.RoleSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                system_id = payload['system']
+                roles = payload['roles']
+
+                try:
+                    system = models.System.objects.get(id=system_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown System"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    
+                    bulkRights = [
+                        models.Roles(
+                            system = system, 
+                            name = role
+                        )
+                        for role in roles
+                    ]
+                    models.Roles.objects.bulk_create(bulkRights)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.PutRoleSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                role_name = payload['role']
+
+                try:
+                    role = models.Roles.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown role"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+
+                    role.name = role_name
+                    role.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            system_id = request.query_params.get('system_id')
+            system_ids = request.query_params.get('system_ids')
+            if request_id:
+                try:
+                    resp = models.Roles.objects.get(Q(id=request_id))
+                    resp = serializers.FetchRoleSerializer(resp, many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            elif system_id:
+                try:
+                    resp = models.Roles.objects.filter(Q(system=system_id))
+                    resp = serializers.FetchRoleSerializer(resp, many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            elif system_ids:
+                system_ids = json.loads(system_ids)
+                try:
+                    resp = models.Roles.objects.filter(Q(system__in=system_ids))
+                    resp = serializers.FetchRoleSerializer(resp, many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+
+                    resp = models.Roles.objects.filter(Q(is_deleted=False)).order_by('name')
+                    resp = serializers.FetchRoleSerializer(resp, many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ReportsViewSet(viewsets.ViewSet):

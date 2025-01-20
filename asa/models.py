@@ -277,3 +277,20 @@ class Right(models.Model):
 
     class Meta:
         db_table = u'"{}\".\"rights"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+
+
+class Roles(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    system = models.ForeignKey(
+        System, on_delete=models.DO_NOTHING,
+        related_name="asa_system_role"
+    )
+    name = models.CharField(max_length=255)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} -- {self.system.name}"
+
+    class Meta:
+        db_table = u'"{}\".\"roles"'.format(settings.ACCESS_SERVICE_AGREEMENT)

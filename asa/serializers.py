@@ -52,9 +52,22 @@ class UpdateRequestSerializer(serializers.Serializer):
 
 
 class SlimFetchSystemsSerializer(serializers.ModelSerializer):
+    roles = serializers.SerializerMethodField()
     class Meta:
         model = models.System
         fields = '__all__'
+
+    def get_roles(self, obj):
+        try:
+            request = models.Roles.objects.get(system=obj)
+            serializer = SlimFetchRoleSerializer(request, many=False)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
 class FetchRequestSerializer(serializers.ModelSerializer):
     department = FetchSRRSDepartmentSerializer()
     access = serializers.SerializerMethodField()
@@ -339,3 +352,22 @@ class UpdateAdditionalRequestSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
     status = serializers.CharField(max_length=255)
     option = serializers.CharField(max_length=255)
+
+class RoleSerializer(serializers.Serializer):
+    system = serializers.CharField(max_length=255)
+    roles = serializers.ListField(min_length=1)
+
+class PutRoleSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=255)
+    role = serializers.CharField(max_length=255)
+
+class FetchRoleSerializer(serializers.ModelSerializer):
+    system = SlimFetchSystemsSerializer()
+    class Meta:
+        model = models.Roles
+        fields = '__all__' 
+
+class SlimFetchRoleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Roles
+        fields = '__all__' 
