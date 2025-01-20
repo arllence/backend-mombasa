@@ -1193,7 +1193,7 @@ class ASAViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
             
-    @action(methods=["POST", "GET", "PUT"],
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
             url_path="roles",
             url_name="roles")
@@ -1236,7 +1236,7 @@ class ASAViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 request_id = payload['request_id']
-                role_name = payload['role']
+                role_name = payload['name']
 
                 try:
                     role = models.Roles.objects.get(id=request_id)
@@ -1299,6 +1299,21 @@ class ASAViewSet(viewsets.ViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
 
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    user = models.Roles.objects.get(id=request_id)
+                    user.is_deleted = True
+                    user.save()
+                    return Response('200', status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
 
 class ReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]

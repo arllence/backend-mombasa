@@ -359,7 +359,7 @@ class RoleSerializer(serializers.Serializer):
 
 class PutRoleSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
-    role = serializers.CharField(max_length=255)
+    name = serializers.CharField(max_length=255)
 
 class FetchRoleSerializer(serializers.ModelSerializer):
     system = SlimFetchSystemsSerializer()

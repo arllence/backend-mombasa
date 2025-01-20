@@ -204,8 +204,19 @@ class GenericsViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['FMS_ADMIN'])).values_list('email', flat=True))
-                    subject = f"New Incident Reported: {uid} .  [FMS-AKHK]"
-                    message = f"Hello. \nNew Incident: {uid} from department: {department.name}, \nhas been raised by: {name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nFMS-AKHK"
+                    subject = subject
+                    message = f"""
+                        Feedback Details\n\n
+                        Type of Incident: {type_of_incident}\n
+                        Location: {location}\n
+                        Department: {department.name}\n
+                        Name of Person affected: {affected_person_name}\n
+                        Date and Time: {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n
+                        Subject: {subject}\n
+                        Message: {message}\n\n
+                        Regards\nIMS-AKHK"
+
+                    """
 
                     try:
                         if emails:
