@@ -68,6 +68,12 @@ class SlimFetchSystemsSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return []
+
+class MicroFetchSystemsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.System
+        fields = '__all__'
+
 class FetchRequestSerializer(serializers.ModelSerializer):
     department = FetchSRRSDepartmentSerializer()
     access = serializers.SerializerMethodField()
@@ -137,30 +143,14 @@ class FetchRequestSerializer(serializers.ModelSerializer):
             serializer = SlimFetchModuleAccessSerializer(request, many=False)
 
             modules = serializer.data['modules']
+            modules = models.Module.objects.filter(id__in=modules)
+            modules = SlimFetchModuleSerializer(modules, many=True).data
 
             serialized_modules = []
-            for module in modules:
-                selected_module = module['module']
-                selected_rights = module['rights']
-
-                selected_module = models.Module.objects.get(id=selected_module)
-                selected_module = SlimFetchModuleSerializer(selected_module, many=False).data
-                
-                rights = []
-                for right in selected_rights:
-                    right = models.Right.objects.get(id=right)
-                    right = SlimFetchRightSerializer(right,many=False).data
-                    rights.append(right)
-
-                module = {
-                    "module" : selected_module,
-                    "rights" : rights
-                }
-
-                serialized_modules.append(module)
+    
 
             serializer_data = serializer.data
-            serializer_data['modules'] = serialized_modules
+            serializer_data['modules'] = modules
             return serializer_data
         except (ValidationError, ObjectDoesNotExist):
             return {}
@@ -340,6 +330,7 @@ class FetchModuleSerializer(serializers.ModelSerializer):
             return {} 
         
 class SlimFetchModuleSerializer(serializers.ModelSerializer):
+    system = MicroFetchSystemsSerializer()
     class Meta:
         model = models.Module
         fields = '__all__'
