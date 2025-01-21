@@ -59,8 +59,8 @@ class SlimFetchSystemsSerializer(serializers.ModelSerializer):
 
     def get_roles(self, obj):
         try:
-            request = models.Roles.objects.get(system=obj)
-            serializer = SlimFetchRoleSerializer(request, many=False)
+            request = models.Roles.objects.filter(system=obj)
+            serializer = SlimFetchRoleSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return []

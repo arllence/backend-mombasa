@@ -139,6 +139,22 @@ class ModuleAccess(models.Model):
     class Meta:
         db_table = u'"{}\".\"module_access"'.format(settings.ACCESS_SERVICE_AGREEMENT)
 
+class RoleAccess(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(
+        Employee, on_delete=models.DO_NOTHING,
+        related_name="asa_role_employee"
+    )
+    roles = models.JSONField()
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.employee.name}"
+
+    class Meta:
+        db_table = u'"{}\".\"role_access"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+
 
 class AdditionalSystemAccess(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

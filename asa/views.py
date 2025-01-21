@@ -54,7 +54,6 @@ class ASAViewSet(viewsets.ViewSet):
             employee = payload['employee']
             doctor_info = payload['doctor_info']
             system_access = payload['system_access']
-            module_access = payload['module_access']
 
             # serialize employee payload
             employee_serializer = serializers.EmployeeSerializer(
@@ -83,12 +82,6 @@ class ASAViewSet(viewsets.ViewSet):
             except Exception as e:
                 return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
                         
-            systems = system_access['systems']
-            try:
-                systems = models.System.objects.filter(id__in=systems)
-                # system_access['systems'] = systems
-            except Exception as e:
-                return Response({"details": "Unknown selected system "}, status=status.HTTP_400_BAD_REQUEST)
             
             # if str(department.id) != str(authenticated_user.srrs_department.id):
             #     return Response({"details": "Request Must be within your department"}, status=status.HTTP_400_BAD_REQUEST)
@@ -136,31 +129,62 @@ class ASAViewSet(viewsets.ViewSet):
                 models.SystemAccess.objects.filter(
                         Q(employee=employeeInstance)
                     ).delete()
-                for system in systems:
-                    models.SystemAccess.objects.create(
-                        employee=employeeInstance, system=system
-                    )
+                
+                systems = system_access['systems']
 
-                # module access
-                modules = module_access.get('modules')
-                if modules:
-                    module_access.update({
-                        "employee" : employeeInstance
-                    })
-                    # check if is existing
-                    is_existing = models.ModuleAccess.objects.filter(
-                        employee=employeeInstance
-                    ).first()
-                    if is_existing:
-                        # current_modules = is_existing.modules
-                        # current_modules += modules
-                        is_existing.modules = modules
-                        is_existing.remarks = module_access.get('remarks')
-                        is_existing.save()
-                    else:
-                        module_access = models.ModuleAccess.objects.create(
-                            **module_access
+                
+                for item in systems:
+                    system = item['system']
+                    modules = item['modules']
+                    roles = item['roles']
+                    try:
+                        systemInstance = models.System.objects.get(id=system)
+                    except Exception as e:
+                        return Response({"details": "Unknown selected system "}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    is_existing = models.SystemAccess.objects.filter(
+                            employee=employeeInstance, system=systemInstance
+                        ).exists()
+                    if not is_existing:
+                        models.SystemAccess.objects.create(
+                            employee=employeeInstance, system=systemInstance
                         )
+
+                    # store roles
+                    if roles:
+                        r_raw = {
+                            "employee" : employeeInstance,
+                            "roles" : roles
+                        }
+                        # check if is existing
+                        is_existing = models.RoleAccess.objects.filter(
+                            employee=employeeInstance
+                        ).first()
+                        if is_existing:
+                            is_existing.roles = roles
+                            is_existing.save()
+                        else:
+                            module_access = models.RoleAccess.objects.create(
+                                **r_raw
+                            )
+
+                    # module access
+                    if modules:
+                        module_access.update({
+                            "employee" : employeeInstance
+                        })
+                        # check if is existing
+                        is_existing = models.ModuleAccess.objects.filter(
+                            employee=employeeInstance
+                        ).first()
+                        if is_existing:
+                            is_existing.modules = modules
+                            # is_existing.remarks = module_access.get('remarks')
+                            is_existing.save()
+                        else:
+                            module_access = models.ModuleAccess.objects.create(
+                                **module_access
+                            )
 
                 # create doctor info
                 if is_doctor:
