@@ -165,6 +165,8 @@ class ASAViewSet(viewsets.ViewSet):
                             employee=employeeInstance
                         ).first()
                         if is_existing:
+                            current_roles = is_existing.roles
+                            roles += current_roles
                             is_existing.roles = roles
                             is_existing.save()
                         else:
@@ -184,6 +186,8 @@ class ASAViewSet(viewsets.ViewSet):
                             employee=employeeInstance
                         ).first()
                         if is_existing:
+                            current_modules = is_existing.modules
+                            modules += current_modules
                             is_existing.modules = modules
                             is_existing.remarks = remarks
                             is_existing.save()
