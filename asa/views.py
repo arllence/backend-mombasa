@@ -130,13 +130,17 @@ class ASAViewSet(viewsets.ViewSet):
                         Q(employee=employeeInstance)
                     ).delete()
                 
+
+                # get system forms attribute
                 systems = system_access['systems']
+                remarks = system_access['remarks']
 
                 
                 for item in systems:
                     system = item['system']
                     modules = item['modules']
                     roles = item['roles']
+                    
                     try:
                         systemInstance = models.System.objects.get(id=system)
                     except Exception as e:
@@ -164,26 +168,28 @@ class ASAViewSet(viewsets.ViewSet):
                             is_existing.roles = roles
                             is_existing.save()
                         else:
-                            module_access = models.RoleAccess.objects.create(
+                            models.RoleAccess.objects.create(
                                 **r_raw
                             )
 
                     # module access
                     if modules:
-                        module_access.update({
-                            "employee" : employeeInstance
-                        })
+                        m_raw = {
+                            "employee" : employeeInstance,
+                            "modules" : modules,
+                            "remarks" : remarks
+                        }
                         # check if is existing
                         is_existing = models.ModuleAccess.objects.filter(
                             employee=employeeInstance
                         ).first()
                         if is_existing:
                             is_existing.modules = modules
-                            # is_existing.remarks = module_access.get('remarks')
+                            is_existing.remarks = remarks
                             is_existing.save()
                         else:
-                            module_access = models.ModuleAccess.objects.create(
-                                **module_access
+                            models.ModuleAccess.objects.create(
+                                **m_raw
                             )
 
                 # create doctor info
