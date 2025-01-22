@@ -45,7 +45,7 @@ class ASAViewSet(viewsets.ViewSet):
             url_name="access-request")
     def access_request(self, request):
         authenticated_user = request.user
-        roles = user_util.fetchusergroups(request.user.id) 
+        acl_roles = user_util.fetchusergroups(request.user.id) 
 
         if request.method == "POST":
 
@@ -270,7 +270,7 @@ class ASAViewSet(viewsets.ViewSet):
                     raw = {
                         "access": accessInstance,
                         "status": track_status,
-                        "status_for": '/'.join(roles),
+                        "status_for": '/'.join(acl_roles),
                         "action_by": authenticated_user
                     }
 
