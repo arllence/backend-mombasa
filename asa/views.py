@@ -87,14 +87,14 @@ class ASAViewSet(viewsets.ViewSet):
             #     return Response({"details": "Request Must be within your department"}, status=status.HTTP_400_BAD_REQUEST)
             
             user_exists = get_user_model().objects.filter(email=employee['email']).exists()
-            if user_exists:
-                return Response({'details': 'User With Credentials Already Exist'}, status=status.HTTP_400_BAD_REQUEST)
+            # if user_exists:
+            #     return Response({'details': 'User With Credentials Already Exist'}, status=status.HTTP_400_BAD_REQUEST)
 
     
             with transaction.atomic():
                 record_id = None if payload.get('record_id') == '' else payload.get('record_id')
                 employee_no = None if payload.get('employee_no') == '' else payload.get('employee_no')
-                # employee_no = employee['employee_no']
+
                 # check if employee exists
                 employeeInstance = models.Employee.objects.filter(
                     Q(employee_no=employee_no) | Q(id=record_id)
@@ -216,29 +216,30 @@ class ASAViewSet(viewsets.ViewSet):
 
 
                 # create user
-                name = employeeInstance.name.split()
-                password = 'welcome@123'
-                hashed_pwd = make_password(password)
-                newuser = {
-                    "email": employeeInstance.email,
-                    "first_name": name[0],
-                    "last_name": name[-1],
-                    "srrs_department": department,
-                    "is_active": True,
-                    "password": hashed_pwd,
-                    "is_defaultpassword": True
-                }
-                created_user = get_user_model().objects.create(**newuser)
+                if not user_exists:
+                    name = employeeInstance.name.split()
+                    password = 'welcome@123'
+                    hashed_pwd = make_password(password)
+                    newuser = {
+                        "email": employeeInstance.email,
+                        "first_name": name[0],
+                        "last_name": name[-1],
+                        "srrs_department": department,
+                        "is_active": True,
+                        "password": hashed_pwd,
+                        "is_defaultpassword": True
+                    }
+                    created_user = get_user_model().objects.create(**newuser)
 
-                try:
-                    group_details = Group.objects.get(name='USER')
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({'details': 'Role User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-                
-                group_details.user_set.add(created_user)
-                user_util.log_account_activity(
-                    created_user, created_user, "Account Creation",
-                    "USER CREATED")
+                    try:
+                        group_details = Group.objects.get(name='USER')
+                    except (ValidationError, ObjectDoesNotExist):
+                        return Response({'details': 'Role User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    group_details.user_set.add(created_user)
+                    user_util.log_account_activity(
+                        created_user, created_user, "Account Creation",
+                        "USER CREATED")
                          
 
                 # create access instance
@@ -275,21 +276,22 @@ class ASAViewSet(viewsets.ViewSet):
 
 
                 # Notify New User
-                subject = f"Access Service Agreement [ASA-AKHK]"
-                message = f"Hello, \n\nA new access request has been created for you by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action. Kindly login to accept the agreement.\nYour password is: {password}\nPlatform link is: {settings.PLATFORM_LINK}\n\nRegards\nASA-AKHK"
-                
-                try:
-                    mail = {
-                        "email" : [created_user.email], 
-                        "subject" : subject,
-                        "message" : message,
-                    }
+                if not user_exists:
+                    subject = f"Access Service Agreement [ASA-AKHK]"
+                    message = f"Hello, \n\nA new access request has been created for you by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action. Kindly login to accept the agreement.\nYour password is: {password}\nPlatform link is: {settings.PLATFORM_LINK}\n\nRegards\nASA-AKHK"
+                    
+                    try:
+                        mail = {
+                            "email" : [created_user.email], 
+                            "subject" : subject,
+                            "message" : message,
+                        }
 
-                    Sendmail.objects.create(**mail)
+                        Sendmail.objects.create(**mail)
 
-                except Exception as e:
-                    logger.error(e)
-                    print("mail error: ", e)
+                    except Exception as e:
+                        logger.error(e)
+                        print("mail error: ", e)
 
             user_util.log_account_activity(
                 authenticated_user, authenticated_user, "Access Request created", f"Employee Id: {employeeInstance.id}")

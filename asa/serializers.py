@@ -81,6 +81,7 @@ class FetchRequestSerializer(serializers.ModelSerializer):
     system_access = serializers.SerializerMethodField()
     additional_system_access = serializers.SerializerMethodField()
     module_access = serializers.SerializerMethodField()
+    role_access = serializers.SerializerMethodField()
     additional_module_access = serializers.SerializerMethodField()
     approvals = serializers.SerializerMethodField()
     
@@ -151,6 +152,26 @@ class FetchRequestSerializer(serializers.ModelSerializer):
 
             serializer_data = serializer.data
             serializer_data['modules'] = modules
+            return serializer_data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {}
+        
+    def get_role_access(self, obj):
+        try:
+            request = models.RoleAccess.objects.get(employee=obj)
+            
+            serializer = SlimFetchRoleAccessSerializer(request, many=False)
+
+            roles = serializer.data['roles']
+            roles = models.Roles.objects.filter(id__in=roles)
+            roles = SlimFetchRoleSerializer(roles, many=True).data
+
+            serializer_data = serializer.data
+            serializer_data['roles'] = roles
             return serializer_data
         except (ValidationError, ObjectDoesNotExist):
             return {}
@@ -362,3 +383,8 @@ class SlimFetchRoleSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Roles
         fields = '__all__' 
+
+class SlimFetchRoleAccessSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.RoleAccess
+        fields = '__all__'
