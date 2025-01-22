@@ -100,6 +100,7 @@ class ASAViewSet(viewsets.ViewSet):
                     Q(employee_no=employee_no) | Q(id=record_id)
                 ).first()
                 if employeeInstance:
+                    
                     models.Employee.objects.filter(
                         Q(employee_no=employee_no) | Q(id=record_id)
                     ).update(**employee)
@@ -126,14 +127,16 @@ class ASAViewSet(viewsets.ViewSet):
                         return
 
                 # create system access
-                models.SystemAccess.objects.filter(
-                        Q(employee=employeeInstance)
-                    ).delete()
+                # models.SystemAccess.objects.filter(
+                #         Q(employee=employeeInstance)
+                #     ).delete()
                 
 
                 # get system forms attribute
                 systems = system_access['systems']
                 remarks = system_access['remarks']
+                print(system_access)
+                
 
                 
                 for item in systems:
@@ -149,6 +152,7 @@ class ASAViewSet(viewsets.ViewSet):
                     is_existing = models.SystemAccess.objects.filter(
                             employee=employeeInstance, system=systemInstance
                         ).exists()
+
                     if not is_existing:
                         models.SystemAccess.objects.create(
                             employee=employeeInstance, system=systemInstance
@@ -214,7 +218,7 @@ class ASAViewSet(viewsets.ViewSet):
                             **doctor_info
                         )
 
-
+                
                 # create user
                 if not user_exists:
                     name = employeeInstance.name.split()
@@ -260,7 +264,7 @@ class ASAViewSet(viewsets.ViewSet):
                 else:
                     accessInstance = models.Access.objects.get(employee=employeeInstance)
                     track_status = "EDITED"
-
+                
                 # create track status change
                 try:
                     raw = {
