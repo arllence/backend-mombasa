@@ -1479,10 +1479,13 @@ class ASAAnalyticsViewSet(viewsets.ViewSet):
             rejected = models.Access.objects.filter(status="REJECTED", is_deleted=False).count()
             pending = models.Access.objects.filter(status__in=active_status, is_deleted=False).count()
         else:
-            requests = models.Access.objects.filter(Q(created_by=request.user) & Q(is_deleted=False)).count()
-            approved = models.Access.objects.filter(Q(created_by=request.user) & Q(status="ICT APPROVED"), is_deleted=False).count()
-            rejected = models.Access.objects.filter(Q(created_by=request.user) & Q(status="REJECTED"), is_deleted=False).count()
-            pending = models.Access.objects.filter(Q(created_by=request.user) & Q(status__in=active_status), is_deleted=False).count()
+            requests = models.Access.objects.filter(Q(created_by=request.user) | Q(employee__email=request.user.email),is_deleted=False).count()
+            approved = models.Access.objects.filter(Q(created_by=request.user) | Q(employee__email=request.user.email) ,status="ICT APPROVED", is_deleted=False).count()
+            rejected = models.Access.objects.filter(Q(created_by=request.user) | Q(employee__email=request.user.email),status="REJECTED", is_deleted=False).count()
+            pending = models.Access.objects.filter(
+                (Q(created_by=request.user) | Q(employee__email=request.user.email)) & Q(status__in=active_status), 
+                is_deleted=False
+            ).count()
 
         resp = {
             "requests": requests,
