@@ -45,9 +45,10 @@ class ASAViewSet(viewsets.ViewSet):
             url_name="access-request")
     def access_request(self, request):
         authenticated_user = request.user
-        acl_roles = user_util.fetchusergroups(request.user.id) 
+        
 
         if request.method == "POST":
+            acl_roles = user_util.fetchusergroups(request.user.id) 
 
             payload = request.data
 
@@ -134,9 +135,7 @@ class ASAViewSet(viewsets.ViewSet):
 
                 # get system forms attribute
                 systems = system_access['systems']
-                remarks = system_access['remarks']
-                print(system_access)
-                
+                remarks = system_access['remarks']                
 
                 
                 for item in systems:
@@ -302,8 +301,8 @@ class ASAViewSet(viewsets.ViewSet):
             
             return Response('success', status=status.HTTP_200_OK)
             
-
         elif request.method == "PUT":
+            roles = user_util.fetchusergroups(request.user.id) 
             # endpoint approves / alters requests status
             payload = request.data
 
@@ -414,6 +413,7 @@ class ASAViewSet(viewsets.ViewSet):
             return
             
         elif request.method == "GET":
+            acl_roles = user_util.fetchusergroups(request.user.id) 
             request_id = request.query_params.get('request_id')
             employee_no = request.query_params.get('employee_no')
             query = request.query_params.get('q')
