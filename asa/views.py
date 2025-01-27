@@ -1354,6 +1354,38 @@ class ASAViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
+            
+    @action(methods=["POST"],
+            detail=False,
+            url_path="update-email",
+            url_name="update-email")
+    def update_email(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
+        if 'ICT' not in roles:
+            return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.UpdateEmailSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                user_id = payload['user_id']
+                email = payload['email']
+
+                try:
+                    user = get_user_model().objects.get(id=user_id)
+                except:
+                    return Response({"details": "Unknown User"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    user.email = email
+                    user.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        
 
 class ReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]

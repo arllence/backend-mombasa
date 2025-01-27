@@ -388,3 +388,7 @@ class SlimFetchRoleAccessSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.RoleAccess
         fields = '__all__'
+
+class UpdateEmailSerializer(serializers.Serializer):
+    user_id = serializers.CharField(max_length=255)
+    email = serializers.CharField(max_length=255)
