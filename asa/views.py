@@ -1368,20 +1368,48 @@ class ASAViewSet(viewsets.ViewSet):
             payload = request.data
             serializer = serializers.UpdateEmailSerializer(
                 data=payload, many=False)
+            
             if serializer.is_valid():
                 user_id = payload['user_id']
                 email = payload['email']
 
                 try:
                     user = get_user_model().objects.get(id=user_id)
+                    old_email = user.email
+                    with transaction.atomic():
+                        user.email = email
+                        user.save()
                 except:
                     return Response({"details": "Unknown User"}, status=status.HTTP_400_BAD_REQUEST)
+                
 
-                with transaction.atomic():
-                    user.email = email
-                    user.save()
+                try:
+                    employee = models.Employee.objects.get(email=old_email)
+                    with transaction.atomic():
+                        employee.email = email
+                        employee.save()
+                except Exception as e:
+                    print(e)
+                    pass
 
-                    return Response("Success", status=status.HTTP_200_OK)
+
+                # Notify Employee
+                subject = f"ICT Access Request Email Update [ASA-AKHK]"
+                message = f"Hello,\n\nYour email has been updated from: {old_email} to: {email},\nUse your new email to access the system\n\nRegards\nASA-AKHK"
+                # get emails
+                emails = [old_email, email]
+                
+                try:
+                    mail = {
+                        "email" : emails, 
+                        "subject" : subject,
+                        "message" : message
+                    }
+                    Sendmail.objects.create(**mail)
+                except Exception as e:
+                    logger.error(e)
+
+                return Response("Success", status=status.HTTP_200_OK)
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
