@@ -339,7 +339,7 @@ class ASAViewSet(viewsets.ViewSet):
             elif 'ICT' in roles:
                 if request_status == 'APPROVED':
                     accessInstance.is_ict_approved = True
-                    request_status = 'ICT APPROVED'
+                    request_status = 'ICT AUTHORIZED'
                     accessInstance.status = request_status
                     accessInstance.granted_by = authenticated_user
                     accessInstance.employee.status = 'ACTIVE'
@@ -843,7 +843,7 @@ class ASAViewSet(viewsets.ViewSet):
 
                     accessInstance.agreement_accepted = True
                     accessInstance.agreement_details = details
-                    accessInstance.status = 'STAFF APPROVED'
+                    accessInstance.status = 'STAFF SIGNED'
                     accessInstance.save()
 
                     # Notify ICT
@@ -866,7 +866,7 @@ class ASAViewSet(viewsets.ViewSet):
                     try:
                         raw = {
                             "access": accessInstance,
-                            "status": 'STAFF APPROVED',
+                            "status": 'STAFF SIGNED',
                             "status_for": 'USER',
                             "action_by": request.user
                         }
@@ -1466,21 +1466,21 @@ class ASAAnalyticsViewSet(viewsets.ViewSet):
             url_name="general")
     def general(self, request):
         roles = user_util.fetchusergroups(request.user.id)
-        active_status = ['REQUESTED','HOD APPROVED','STAFF APPROVED']
+        active_status = ['REQUESTED','HOD APPROVED','STAFF SIGNED']
 
         if 'HOD' in roles:
             requests = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
-            approved = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) |  Q(created_by=request.user), status="ICT APPROVED", is_deleted=False).count()
+            approved = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) |  Q(created_by=request.user), status="ICT AUTHORIZED", is_deleted=False).count()
             rejected = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) |  Q(created_by=request.user), status="REJECTED", is_deleted=False).count()
             pending = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) |  Q(created_by=request.user), status__in=active_status, is_deleted=False).count()
         elif 'ICT' in roles or 'SUPERUSER' in roles:
             requests = models.Access.objects.filter(is_deleted=False).count()
-            approved = models.Access.objects.filter(status="ICT APPROVED", is_deleted=False).count()
+            approved = models.Access.objects.filter(status="ICT AUTHORIZED", is_deleted=False).count()
             rejected = models.Access.objects.filter(status="REJECTED", is_deleted=False).count()
             pending = models.Access.objects.filter(status__in=active_status, is_deleted=False).count()
         else:
             requests = models.Access.objects.filter(Q(created_by=request.user) | Q(employee__email=request.user.email),is_deleted=False).count()
-            approved = models.Access.objects.filter(Q(created_by=request.user) | Q(employee__email=request.user.email) ,status="ICT APPROVED", is_deleted=False).count()
+            approved = models.Access.objects.filter(Q(created_by=request.user) | Q(employee__email=request.user.email) ,status="ICT AUTHORIZED", is_deleted=False).count()
             rejected = models.Access.objects.filter(Q(created_by=request.user) | Q(employee__email=request.user.email),status="REJECTED", is_deleted=False).count()
             pending = models.Access.objects.filter(
                 (Q(created_by=request.user) | Q(employee__email=request.user.email)) & Q(status__in=active_status), 
