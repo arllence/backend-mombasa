@@ -1514,7 +1514,8 @@ class ReportsViewSet(viewsets.ViewSet):
             resp = []
 
         if resp:
-            resp = serializers.FetchRequestSerializer(resp, many=True, context={"user_id":request.user.id}).data
+            resp = serializers.FetchRequestSerializer(
+                resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
     
