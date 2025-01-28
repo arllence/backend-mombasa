@@ -354,7 +354,7 @@ class VerificationStatusChange(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return str(self.access.uid)
+        return str(self.access.employee.name)
 
     class Meta:
         db_table = u'"{}\".\"verifications_status_change"'.format(settings.ACCESS_SERVICE_AGREEMENT)
