@@ -1495,6 +1495,7 @@ class ReportsViewSet(viewsets.ViewSet):
     def verifications(self, request):
                     
         employee_no = request.query_params.get('employee_no')
+        department = request.query_params.get('department')
 
 
         q_filters = Q()
@@ -1502,15 +1503,18 @@ class ReportsViewSet(viewsets.ViewSet):
         if employee_no:
             q_filters &= Q(employee_no=employee_no)
 
+        if department:
+            q_filters &= Q(department=department)
+
 
 
         if q_filters:
-            resp = models.Employee.objects.filter(q_filters).first() or []   
+            resp = models.Employee.objects.filter(q_filters) 
         else:
             resp = []
 
         if resp:
-            resp = serializers.FetchRequestSerializer(resp, many=False, context={"user_id":request.user.id}).data
+            resp = serializers.FetchRequestSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
     

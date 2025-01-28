@@ -212,8 +212,6 @@ class FetchRequestSerializer(serializers.ModelSerializer):
                     serialized_modules.append(module)
                 item['modules'] = serialized_modules
 
-            # serializer_data = serializer.data
-            # serializer_data['modules'] = serialized_modules
             return requested
         except (ValidationError, ObjectDoesNotExist):
             return {}
