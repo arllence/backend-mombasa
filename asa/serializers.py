@@ -390,3 +390,7 @@ class SlimFetchRoleAccessSerializer(serializers.ModelSerializer):
 class UpdateEmailSerializer(serializers.Serializer):
     user_id = serializers.CharField(max_length=255)
     email = serializers.CharField(max_length=255)
+
+class VerificationSerializer(serializers.Serializer):
+    access_id = serializers.CharField(max_length=255)
+    status = serializers.CharField(max_length=255)

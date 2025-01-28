@@ -1413,6 +1413,82 @@ class ASAViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
+    
+    @action(methods=["POST"],
+            detail=False,
+            url_path="verifications",
+            url_name="verifications")
+    def verifications(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
+        if not any(role in ['ICT','HOD'] for role in roles):
+            return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        is_hod = 'HOD' in roles
+        is_ict = 'ICT' in roles
+        
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.VerificationSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                access_id = payload['access_id']
+                r_status = payload['status']
+
+                try:
+                    access = models.Access.objects.get(id=access_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                current_year = datetime.datetime.now().year
+
+                existingInstance = models.Verifications.objects.filter(
+                    access=access, year=current_year
+                ).first()
+
+                if existingInstance:
+                    if is_hod:
+                        existingInstance.hod_status = r_status
+                        existingInstance.is_hod_verified = True
+                        status_for = 'HOD'
+
+                    if is_ict:
+                        existingInstance.ict_status = r_status
+                        existingInstance.is_ict_verified = True
+                        status_for = 'ICT'
+
+                    existingInstance.save()
+                else:
+                    if is_hod:
+                        raw = {
+                            "hod_status": r_status,
+                            "is_hod_verified": True
+                        }
+                        status_for = 'HOD'
+                    if is_ict:
+                        raw = {
+                            "ict_status": r_status,
+                            "is_ict_verified": True
+                        }
+                        status_for = 'ICT'
+                    models.Verifications.objects.create(**raw)
+
+                # create track status change
+                try:
+                    raw = {
+                        "access": access,
+                        "status": r_status,
+                        "status_for": status_for,
+                        "action_by": request.user
+                    }
+                    models.VerificationStatusChange.objects.create(**raw)
+                except Exception as e:
+                    print(e)
+
+                return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
         
 
 class ReportsViewSet(viewsets.ViewSet):

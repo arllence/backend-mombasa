@@ -324,13 +324,37 @@ class Verifications(models.Model):
     )
     is_hod_verified = models.BooleanField(default=False)
     is_ict_verified = models.BooleanField(default=False)
-    status = models.CharField(max_length=255)
+    hod_status = models.CharField(max_length=255)
+    ict_status = models.CharField(max_length=255)
     year = models.IntegerField()
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.access.employee.name
 
     class Meta:
         db_table = u'"{}\".\"verifications"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+
+    
+class VerificationStatusChange(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    access = models.ForeignKey(
+        Access, on_delete=models.DO_NOTHING,
+        related_name="status_change_access_instance"
+    )
+    status = models.CharField(max_length=255)
+    status_for = models.CharField(max_length=500, null=True, blank=True)
+    action_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="asa_action_by"
+    )
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.access.uid)
+
+    class Meta:
+        db_table = u'"{}\".\"status_change"'.format(settings.ACCESS_SERVICE_AGREEMENT)
