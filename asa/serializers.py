@@ -561,12 +561,33 @@ class FetchVerificationSerializer(serializers.ModelSerializer):
         current_year = datetime.datetime.now().year
         try:
             request = models.Verifications.objects.filter(access__employee=obj,year=current_year).first()
-            resp = {
-                "hod_status": request.hod_status,
-                "is_hod_verified": request.is_hod_verified,
-                "ict_status": request.ict_status,
-                "is_ict_verified": request.is_ict_verified,
-            }
+
+            can_verify = False
+            user_id = str(self.context["user_id"])
+            roles = get_user_roles(user_id)
+            if 'HOD' in roles:
+                if request:
+                    if not request.is_hod_verified:
+                        can_verify = True
+                else:
+                    can_verify = True
+            if 'ICT' in roles:
+                if request:
+                    if not request.is_ict_verified:
+                        can_verify = True
+                else:
+                    can_verify = True
+                    
+            resp.update({"can_verify":can_verify})
+
+            if request:
+                resp = {
+                    "hod_status": request.hod_status,
+                    "is_hod_verified": request.is_hod_verified,
+                    "ict_status": request.ict_status,
+                    "is_ict_verified": request.is_ict_verified,
+                    "can_verify": can_verify
+                }
 
             return resp
             
