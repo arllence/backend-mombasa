@@ -1,3 +1,4 @@
+import datetime
 from django.db.models import  Q
 from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, SlimFetchSRRSDepartmentSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
@@ -394,3 +395,184 @@ class UpdateEmailSerializer(serializers.Serializer):
 class VerificationSerializer(serializers.Serializer):
     access_id = serializers.CharField(max_length=255)
     status = serializers.CharField(max_length=255)
+
+
+class FetchVerificationSerializer(serializers.ModelSerializer):
+    department = FetchSRRSDepartmentSerializer()
+    access = serializers.SerializerMethodField()
+    doctor_info = serializers.SerializerMethodField()
+    system_access = serializers.SerializerMethodField()
+    additional_system_access = serializers.SerializerMethodField()
+    module_access = serializers.SerializerMethodField()
+    role_access = serializers.SerializerMethodField()
+    additional_module_access = serializers.SerializerMethodField()
+    approvals = serializers.SerializerMethodField()
+    verifications = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = models.Employee
+        fields = '__all__'
+
+    def get_access(self, obj):
+        try:
+            request = models.Access.objects.get(employee=obj)
+            serializer = SlimFetchAccessSerializer(request, many=False)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+        
+    def get_doctor_info(self, obj):
+        try:
+            request = models.DoctorInfo.objects.get(employee=obj)
+            serializer = SlimFetchDoctorInfoSerializer(request, many=False)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+        
+    def get_system_access(self, obj):
+        try:
+            request = models.SystemAccess.objects.filter(employee=obj)
+            serializer = SlimFetchSystemAccessSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+    
+    def get_additional_system_access(self, obj):
+        try:
+            request = models.AdditionalSystemAccess.objects.filter(employee=obj,status='REQUESTED')
+            serializer = SlimFetchAdditionalSystemAccessSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+        
+    def get_module_access(self, obj):
+        try:
+            request = models.ModuleAccess.objects.get(employee=obj)
+            
+            serializer = SlimFetchModuleAccessSerializer(request, many=False)
+
+            modules = serializer.data['modules']
+            modules = models.Module.objects.filter(id__in=modules)
+            modules = SlimFetchModuleSerializer(modules, many=True).data
+
+            serialized_modules = []
+    
+
+            serializer_data = serializer.data
+            serializer_data['modules'] = modules
+            return serializer_data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {}
+        
+    def get_role_access(self, obj):
+        try:
+            request = models.RoleAccess.objects.get(employee=obj)
+            
+            serializer = SlimFetchRoleAccessSerializer(request, many=False)
+
+            roles = serializer.data['roles']
+            roles = models.Roles.objects.filter(id__in=roles)
+            roles = SlimFetchRoleSerializer(roles, many=True).data
+
+            serializer_data = serializer.data
+            serializer_data['roles'] = roles
+            return serializer_data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {}
+
+    def get_additional_module_access(self, obj):
+        try:
+            request = models.AdditionalModuleAccess.objects.filter(employee=obj,status='REQUESTED')
+            serializer = SlimFetchAdditionalModuleAccessSerializer(request, many=True)
+            # return serializer.data
+            # print(serializer.data)
+            requested = shared_fxns.convert_to_json_serializable(serializer.data)
+            
+            for item in requested:
+                modules = item['modules']
+                serialized_modules = []
+                for module in modules:
+                    selected_module = module['module']
+                    selected_rights = module['rights']
+
+                    selected_module = models.Module.objects.get(id=selected_module)
+                    selected_module = SlimFetchModuleSerializer(selected_module, many=False).data
+                    
+                    rights = []
+                    for right in selected_rights:
+                        right = models.Right.objects.get(id=right)
+                        right = SlimFetchRightSerializer(right,many=False).data
+                        rights.append(right)
+
+                    module = {
+                        "module" : selected_module,
+                        "rights" : rights
+                    }
+
+                    serialized_modules.append(module)
+                item['modules'] = serialized_modules
+
+            return requested
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+        
+    def get_approvals(self, obj):
+        try:
+            request = models.StatusChange.objects.filter(access__employee=obj)
+            serializer = FetchStatusChangeSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+        
+    def get_verifications(self, obj):
+        resp = {}
+        current_year = datetime.datetime.now().year
+        try:
+            request = models.Verifications.objects.filter(access__employee=obj,year=current_year).first()
+            resp = {
+                "hod_status": request.hod_status,
+                "is_hod_verified": request.is_hod_verified,
+                "ict_status": request.ict_status,
+                "is_ict_verified": request.is_ict_verified,
+            }
+
+            return resp
+            
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
