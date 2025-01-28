@@ -1461,16 +1461,20 @@ class ASAViewSet(viewsets.ViewSet):
                 else:
                     if is_hod:
                         raw = {
+                            "access": access,
                             "hod_status": r_status,
                             "is_hod_verified": True,
-                            "year": current_year
+                            "year": current_year,
+                            "created_by": request.user
                         }
                         status_for = 'HOD'
                     if is_ict:
                         raw = {
+                            "access": access,
                             "ict_status": r_status,
                             "is_ict_verified": True,
-                            "year": current_year
+                            "year": current_year,
+                            "created_by": request.user
                         }
                         status_for = 'ICT'
                     models.Verifications.objects.create(**raw)
