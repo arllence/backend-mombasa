@@ -342,13 +342,13 @@ class VerificationStatusChange(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     access = models.ForeignKey(
         Access, on_delete=models.DO_NOTHING,
-        related_name="status_change_access_instance"
+        related_name="asa_status_change_access_instance"
     )
     status = models.CharField(max_length=255)
     status_for = models.CharField(max_length=500, null=True, blank=True)
     action_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="asa_action_by"
+       related_name="verification_action_by"
     )
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
@@ -357,4 +357,4 @@ class VerificationStatusChange(models.Model):
         return str(self.access.uid)
 
     class Meta:
-        db_table = u'"{}\".\"status_change"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+        db_table = u'"{}\".\"verifications_status_change"'.format(settings.ACCESS_SERVICE_AGREEMENT)
