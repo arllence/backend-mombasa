@@ -248,24 +248,6 @@ class FetchRequestApproverSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.RequestApprover
         fields = '__all__'   
-
-# class FetchAccessSerializer(serializers.ModelSerializer):
-#     employee = serializers.SerializerMethodField()
-#     class Meta:
-#         model = models.Access
-#         fields = '__all__'
-
-#     def get_employee(self, obj):
-#         try:
-#             request = models.ModuleAccess.objects.filter(employee=obj)
-#             serializer = SlimFetchModuleAccessSerializer(request, many=True)
-#             return serializer.data
-#         except (ValidationError, ObjectDoesNotExist):
-#             return {}
-#         except Exception as e:
-#             print(e)
-#             # logger.error(e)
-#             return {} 
         
 class SlimFetchAccessSerializer(serializers.ModelSerializer):
     class Meta:
@@ -597,3 +579,8 @@ class FetchVerificationSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return {} 
+        
+
+class NewRequestSerializer(serializers.Serializer):
+    employee_id = serializers.CharField(max_length=255)
+    system_access = serializers.JSONField()

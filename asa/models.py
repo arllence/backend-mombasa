@@ -358,3 +358,25 @@ class VerificationStatusChange(models.Model):
 
     class Meta:
         db_table = u'"{}\".\"verifications_status_change"'.format(settings.ACCESS_SERVICE_AGREEMENT)
+
+
+class  NewRequest(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    employee = models.ForeignKey(
+        Employee, on_delete=models.DO_NOTHING,
+        related_name="asa_new_request_employee"
+    )
+    request = models.JSONField()
+    request_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="requested_by"
+    )
+    is_approved = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.employee.name)
+
+    class Meta:
+        db_table = u'"{}\".\"new_requests"'.format(settings.ACCESS_SERVICE_AGREEMENT)

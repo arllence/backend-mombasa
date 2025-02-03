@@ -533,24 +533,42 @@ class ASAViewSet(viewsets.ViewSet):
                 return Response({"details": "Unknown staff"}, status=status.HTTP_400_BAD_REQUEST)
             
             system_access = payload['system_access']
-            module_access = payload['module_access']
-
             systems = system_access['systems']
-            try:
-                systems = models.System.objects.filter(id__in=systems)
-            except Exception as e:
-                return Response({"details": "Unknown selected system "}, status=status.HTTP_400_BAD_REQUEST)
- 
 
             with transaction.atomic():
                 # create system access
-                for system in systems:
+                for item in systems:
+                    system = item['system']
+                    modules = item['modules']
+                    roles = item['roles']
+
                     is_exists = models.SystemAccess.objects.filter(
                         employee=employeeInstance, system=system).exists()
                     if not is_exists:
                         models.AdditionalSystemAccess.objects.create(
                             employee=employeeInstance, system=system
                         )
+
+                    # store roles
+                    if roles:
+                        r_raw = {
+                            "employee" : employeeInstance,
+                            "roles" : roles
+                        }
+                        # check if is existing
+                        is_existing = models.RoleAccess.objects.filter(
+                            employee=employeeInstance
+                        ).first()
+                        if is_existing:
+                            current_roles = is_existing.roles
+                            roles += current_roles
+                            is_existing.roles = roles
+                            is_existing.save()
+                        else:
+                            models.RoleAccess.objects.create(
+                                **r_raw
+                            )
+
 
                 # module access
                 modules = module_access.get('modules')
@@ -815,6 +833,339 @@ class ASAViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
     
+    
+    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
+            detail=False,
+            url_path="new-access-request",
+            url_name="new-access-request")
+    def new_access_request(self, request):
+        authenticated_user = request.user
+        
+        if request.method == "POST":
+            acl_roles = user_util.fetchusergroups(request.user.id) 
+
+            payload = request.data
+
+            serializer = serializers.NewRequestSerializer(
+                    data=payload, many=False)
+            if not serializer.is_valid():
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+            employee_id = payload['employee_id']
+            system_access = payload['system_access']
+
+            try:
+                employeeInstance = models.Employee.objects.get(id=employee_id)
+            except (ObjectDoesNotExist):
+                return Response({"details": "Unknown employee"}, status=status.HTTP_400_BAD_REQUEST)
+
+    
+            with transaction.atomic():
+                
+                # get system forms attribute
+                systems = system_access['systems']
+                remarks = system_access['remarks']                
+
+                counter = 0
+                for item in systems:
+                    system = item['system']
+                    modules = item['modules']
+                    roles = item['roles']
+                    
+                    try:
+                        systemInstance = models.System.objects.get(id=system)
+                    except Exception as e:
+                        return Response({"details": "Unknown selected system "}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    is_existing = models.SystemAccess.objects.filter(
+                            employee=employeeInstance, system=systemInstance
+                        ).exists()
+                        
+
+                    # store roles
+                    if roles:
+                        # check if is existing
+                        is_existing = models.RoleAccess.objects.filter(
+                            employee=employeeInstance
+                        ).first()
+                        if is_existing:
+                            current_roles = is_existing.roles
+                            roles = [
+                                role for role in roles if role not in current_roles
+                            ]
+
+                            item['roles'] = roles
+
+
+                    # module access
+                    if modules:
+                        # check if is existing
+                        is_existing = models.ModuleAccess.objects.filter(
+                            employee=employeeInstance
+                        ).first()
+                        if is_existing:
+                            current_modules = is_existing.modules
+                            modules = [
+                                module for module in modules if module not in current_modules
+                            ]
+
+                            item['modules'] = modules
+
+                # store new request
+                raw_request = {
+                    "employee": employeeInstance,
+                    "request": systems,
+                    "requested_by": request.user
+                }
+                models.NewRequest.objects.create(**raw_request)
+
+
+                # create track status change
+                try:
+                    raw = {
+                        "access": accessInstance,
+                        "status": "NEW ACCESS REQUEST",
+                        "status_for": 'HOD' if 'HOD' in acl_roles else  '/'.join(acl_roles),
+                        "action_by": authenticated_user
+                    }
+
+                    models.StatusChange.objects.create(**raw)
+                except Exception as e:
+                    print(e)
+
+
+                # Notify ICT
+                subject = f"New Additional Access Request Received [ASA-AKHK]"
+                message = f"Hello, \n\nA new access request from department: {employeeInstance.department.name},\nhas been submitted by {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nASA-AKHK"
+                # get emails
+                emails = list(models.RequestApprover.objects.all().values_list('approver__email', flat=True))
+                
+                try:
+                    mail = {
+                        "email" : emails, 
+                        "subject" : subject,
+                        "message" : message
+                    }
+                    Sendmail.objects.create(**mail)
+                except Exception as e:
+                    logger.error(e)
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "New Access Request created", f"Employee Id: {employeeInstance.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+            
+        elif request.method == "PUT":
+            roles = user_util.fetchusergroups(request.user.id) 
+            # endpoint approves / alters requests status
+            payload = request.data
+
+            # serialize payload
+            serializer = serializers.UpdateRequestSerializer(
+                    data=payload, many=False)
+            if not serializer.is_valid():
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            # extrapolate
+            request_id = payload['request_id']
+            request_status = payload['status']
+            
+            try:
+                accessInstance = models.Access.objects.get(Q(id=request_id) | Q(employee=request_id))
+            except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                print(e)
+                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if 'HOD' in roles:
+                if request_status == 'APPROVED':
+                    accessInstance.is_hod_approved = True
+                    request_status = 'HOD APPROVED'
+                    accessInstance.status = request_status
+                else:
+                    accessInstance.status = request_status
+
+                status_for = 'HOD'
+
+            elif 'ICT' in roles:
+                if request_status == 'APPROVED':
+                    accessInstance.is_ict_approved = True
+                    request_status = 'ICT AUTHORIZED'
+                    accessInstance.status = request_status
+                    accessInstance.granted_by = authenticated_user
+                    accessInstance.employee.status = 'ACTIVE'
+                else:
+                    accessInstance.status = request_status
+
+                status_for = 'ICT'
+
+            else:
+                return Response({"details": "Permission denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+            # update instance
+            accessInstance.save()
+            accessInstance.employee.save()
+            
+            # Notify ICT
+            if status_for == 'HOD' and request_status == 'HOD APPROVED':
+                subject = f"New Access Request Received [ASA-AKHK]"
+                message = f"Hello, \n\nA new access request from department: {accessInstance.employee.department.name},\nhas been approved by {authenticated_user.first_name} {authenticated_user.last_name} for HOD on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nASA-AKHK"
+                # get emails
+                emails = list(models.RequestApprover.objects.all().values_list('approver__email', flat=True))
+                
+                try:
+                    mail = {
+                        "email" : emails, 
+                        "subject" : subject,
+                        "message" : message
+                    }
+                    Sendmail.objects.create(**mail)
+                except Exception as e:
+                    logger.error(e)
+                    print("mail error: ", e)
+
+            # Notify requestor
+            emails = [accessInstance.employee.email]
+
+            subject = f"Access Request Progress Update"
+            message = f"Hello, \nYour Access request has been marked as {request_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} for {status_for} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nASA-AKHK"
+
+            try:
+                mail = {
+                    "email" : emails, 
+                    "subject" : subject,
+                    "message" : message,
+                }
+                Sendmail.objects.create(**mail)
+            except Exception as e:
+                logger.error(e)
+
+
+            # create track status change
+            try:
+                raw = {
+                    "access": accessInstance,
+                    "status": request_status,
+                    "status_for": status_for,
+                    "action_by": authenticated_user
+                }
+                models.StatusChange.objects.create(**raw)
+            except Exception as e:
+                print(e)
+
+            return Response('success', status=status.HTTP_200_OK)
+     
+  
+        elif request.method == "PATCH":
+            payload = request.data
+            serializer = serializers.PatchRecruitSerializer(
+                data=payload, many=False)
+            
+            return
+            
+        elif request.method == "GET":
+            acl_roles = user_util.fetchusergroups(request.user.id) 
+            request_id = request.query_params.get('request_id')
+            employee_no = request.query_params.get('employee_no')
+            query = request.query_params.get('q')
+            slim = request.query_params.get('slim')
+
+            if request_id:
+                try:
+                    resp = models.Employee.objects.get(Q(id=request_id))
+
+                    if slim:
+                        resp = serializers.SlimFetchEmployeeSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.FetchRequestSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            elif employee_no:
+                try:
+                    resp = models.Employee.objects.get(Q(employee_no=employee_no))
+
+                    if slim:
+                        resp = serializers.SlimFetchEmployeeSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.FetchRequestSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            else:
+                try:
+
+                    if any(role in ['HOD','SLT'] for role in acl_roles):
+
+                        if query == 'pending':
+                            resp = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) | Q(created_by=request.user), agreement_accepted=False, is_deleted=False).order_by('-date_created')
+
+                        else:
+                            resp = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).order_by('-date_created')
+
+                        resp = [x.employee for x in resp]
+
+                    elif any(role in ['ICT'] for role in acl_roles):
+                        resp = models.Access.objects.filter(Q(is_deleted=False) & (Q(agreement_accepted=True)) ).order_by('-date_created')
+                        resp = [x.employee for x in resp]
+                    elif any(role in ['SUPERUSER'] for role in acl_roles):
+                        resp = models.Access.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
+                        resp = [x.employee for x in resp]
+                    else:
+                        if query == 'pending':
+                            resp = models.Access.objects.filter(Q(created_by=request.user) | Q(created_for=request.user), agreement_accepted=False, is_deleted=False).order_by('-date_created')
+
+                        else:
+                            resp = models.Access.objects.filter(Q(created_by=request.user) | Q(created_for=request.user), is_deleted=False).order_by('-date_created')
+
+                        resp = [x.employee for x in resp]
+
+
+                    paginator = PageNumberPagination()
+                    paginator.page_size = 50
+                    result_page = paginator.paginate_queryset(resp, request)
+                    serializer = serializers.FetchRequestSerializer(
+                        result_page, many=True, context={"user_id":request.user.id})
+                    return paginator.get_paginated_response(serializer.data)
+                
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.Access.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)    
+                except Exception as e:
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
     
     @action(methods=["POST", "GET", "PUT"],
             detail=False,

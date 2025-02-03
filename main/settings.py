@@ -57,7 +57,8 @@ INSTALLED_APPS = [
     'ams',
     'sls',
     'dbmanager',
-    'fms'
+    'fms',
+    'cms'
 ]
 
 MIDDLEWARE = [
@@ -126,6 +127,7 @@ STAFF_SICK_SHEET = 'sls'
 INTRANET = 'intranet'
 DB_MANAGER = 'db_manager'
 FEEDBACK_MANAGEMENT_SYSTEM = 'fms'
+CONTRACT_MANAGEMENT_SYSTEM = 'cms'
 
 
 
