@@ -50,7 +50,7 @@ class FetchContractSerializer(serializers.ModelSerializer):
 
     def get_documents(self, obj):
         try:
-            request = models.Document.objects.filter(contract=obj)
+            request = models.Document.objects.filter(contract=obj, is_deleted=False)
             serializer = SlimFetchDocumentSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
@@ -60,3 +60,6 @@ class FetchContractSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return [] 
         
+class UploadFileSerializer(serializers.Serializer):
+    contract_id = serializers.CharField()
+    file_type = serializers.CharField()
