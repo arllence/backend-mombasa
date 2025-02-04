@@ -239,6 +239,29 @@ class CoreViewSet(viewsets.ViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
                 
+            elif query:
+                try:
+                    resp = models.Contract.objects.filter(
+                        Q(title__icontains=query) |
+                        Q(uid__icontains=query) |
+                        Q(department__name__icontains=query)
+                    )
+
+                    if slim:
+                        resp = serializers.SlimFetchContractSerializer(resp, many=True, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.SlimFetchContractSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
             else:
                 try:
 
@@ -406,7 +429,7 @@ class CoreViewSet(viewsets.ViewSet):
                     resp = models.Document.objects.filter(
                         Q(file_name__icontains=query) |
                         Q(file_type__icontains=query) |
-                        Q(uid__icontains=query) |
+                        Q(contract__uid__icontains=query) |
                         Q(contract__title__icontains=query) |
                         Q(contract__department__name__icontains=query)
                     )
