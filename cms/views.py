@@ -1,6 +1,8 @@
 import datetime
 import json
 import logging
+from datetime import timedelta
+from django.utils import timezone
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
 from django.contrib.auth.hashers import make_password
@@ -547,20 +549,23 @@ class AnalyticsViewSet(viewsets.ViewSet):
             url_path="general",
             url_name="general")
     def general(self, request):
-        # roles = user_util.fetchusergroups(request.user.id)
-        # active_status = ['REQUESTED','HOD APPROVED','CLOSED']
+   
+        # Get the current date
+        now = timezone.now().date()
+
+        # Calculate the date 4 months from now
+        four_months_from_now = now + timedelta(days=4*30)  # Approximating 4 months as 120 days
 
         total = models.Contract.objects.filter(Q(is_deleted=False)).count()
-        is_fit = models.Medical.objects.filter(Q(is_fit_to_work='YES') & Q(is_deleted=False)).count()
-        un_fit = models.Medical.objects.filter(Q(is_fit_to_work='NO') & Q(is_deleted=False)).count()
-        # approved = models.Medical.objects.aggregate(total=Sum('days'))['total']
-        referred = models.Refer.objects.filter(consultant_name__isnull=False).exclude(consultant_name="").count()
+        almost = models.Contract.objects.filter(Q(is_deleted=False),expiry_date__gte=now, expiry_date__lte=four_months_from_now).count()
+        expired = models.Contract.objects.filter(Q(is_deleted=False),expiry_date__lt=now).count()
+        renewed = models.Contract.objects.filter(Q(is_deleted=False)).exclude(previous__isnull=False).count()
 
         resp = {
             "total": total,
             "almost": almost,
             "expired": expired,
-            "referred": referred,
+            "renewed": renewed,
         }
 
         return Response(resp, status=status.HTTP_200_OK)
