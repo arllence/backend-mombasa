@@ -22,6 +22,7 @@ class Contract(models.Model):
     commencement_date = models.DateField()
     expiry_date = models.DateField()
     previous = models.CharField(max_length=255,null=True, blank=True)
+    is_expired = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 

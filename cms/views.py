@@ -223,7 +223,7 @@ class CoreViewSet(viewsets.ViewSet):
                 
             elif previous:
                 try:
-                    resp = models.Contract.objects.filter(Q(previous_contract=previous))
+                    resp = models.Contract.objects.filter(Q(previous=previous))
 
                     if slim:
                         resp = serializers.FetchStaffSerializer(resp, many=True, context={"user_id":request.user.id}).data
@@ -408,7 +408,7 @@ class CoreViewSet(viewsets.ViewSet):
                 
             elif previous:
                 try:
-                    resp = models.Document.objects.filter(Q(contract__previous_contract=previous))
+                    resp = models.Document.objects.filter(Q(contract__previous=previous))
 
                     if slim:
                         resp = serializers.SlimFetchDocumentSerializer(resp, many=True, context={"user_id":request.user.id}).data
@@ -550,16 +550,16 @@ class AnalyticsViewSet(viewsets.ViewSet):
         # roles = user_util.fetchusergroups(request.user.id)
         # active_status = ['REQUESTED','HOD APPROVED','CLOSED']
 
-        applications = models.Medical.objects.filter( Q(is_deleted=False)).count()
+        total = models.Contract.objects.filter(Q(is_deleted=False)).count()
         is_fit = models.Medical.objects.filter(Q(is_fit_to_work='YES') & Q(is_deleted=False)).count()
         un_fit = models.Medical.objects.filter(Q(is_fit_to_work='NO') & Q(is_deleted=False)).count()
         # approved = models.Medical.objects.aggregate(total=Sum('days'))['total']
         referred = models.Refer.objects.filter(consultant_name__isnull=False).exclude(consultant_name="").count()
 
         resp = {
-            "applications": applications,
-            "is_fit": is_fit,
-            "un_fit": un_fit,
+            "total": total,
+            "almost": almost,
+            "expired": expired,
             "referred": referred,
         }
 
