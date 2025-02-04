@@ -3,9 +3,9 @@ from cms import views
 
 router = DefaultRouter(trailing_slash=False)
 
-router.register('core', views.CoreViewSet, basename='core')
-# router.register('s3-reports',views.ReportsViewSet, basename='s3-reports')
-# router.register('s3-analytics',views.AnalyticsViewSet, basename='s3-analytics')
+router.register('cms', views.CoreViewSet, basename='cms')
+router.register('cms-reports',views.ReportsViewSet, basename='cms-reports')
+router.register('cms-analytics',views.AnalyticsViewSet, basename='cms-analytics')
    
                          
 urlpatterns = router.urls

@@ -498,66 +498,40 @@ class ReportsViewSet(viewsets.ViewSet):
 
     @action(methods=["GET",],
             detail=False,
-            url_path="applications",
-            url_name="applications")
-    def applications(self, request):
+            url_path="contracts",
+            url_name="contracts")
+    def contracts(self, request):
                     
         department = request.query_params.get('department')
-        location = request.query_params.get('location')
-        ohc = request.query_params.get('ohc')
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
-        # r_status = request.query_params.get('status')
-        date = False
+        commencement_date = request.query_params.get('date_from')
+        expiry_date = request.query_params.get('date_to')
 
-        if date_to and date_from:
-            date = True
-
-        def create_date_range(date_from,date_to):
-            # Convert the string dates to datetime objects
-            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
-            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
-
-            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
-
-            return q_filters
-
-        # try:
         q_filters = Q()
 
         if department:
             q_filters &= Q(department=department)
 
-        if date_from or date_to:
-            if not date:
-                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
-            q_filters &= create_date_range(date_from,date_to)
-            
-        # if r_status:
-        #     q_filters &= Q(status=r_status)
+        if commencement_date:
+            commencement_date = datetime.datetime.strptime(commencement_date, '%Y-%m-%d')
+            q_filters &= Q(commencement_date=commencement_date)
 
-        if location:
-            q_filters &= Q(location=location)
-
-        if ohc:
-            q_filters &= Q(ohc=ohc)
-
+        if expiry_date:
+            expiry_date = datetime.datetime.strptime(expiry_date, '%Y-%m-%d')
+            q_filters &= Q(expiry_date=expiry_date)
 
         if q_filters:
-
-            resp = models.Staff.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-
+            resp = models.Contract.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
         else:
             roles = user_util.fetchusergroups(request.user.id)  
 
-            if "OSH" in roles or "SUPERUSER" in roles:
-                resp = models.Staff.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+            if "MMD" in roles or "SUPERUSER" in roles:
+                resp = models.Contract.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
                 
             else:
-                resp = models.Staff.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('-date_created')[:50]
+                resp = models.Contract.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('-date_created')[:50]
 
 
-        resp = serializers.FetchStaffSerializer(resp, many=True, context={"user_id":request.user.id}).data
+        resp = serializers.FetchContractSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
     
