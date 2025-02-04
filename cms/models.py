@@ -46,6 +46,7 @@ class Document(models.Model):
 
     document = models.FileField(upload_to='documents/contracts')
     file_name = models.CharField(max_length=500)
+    file_type = models.CharField(max_length=255, default='contract')
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 

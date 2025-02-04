@@ -120,10 +120,77 @@ class CoreViewSet(viewsets.ViewSet):
             
 
         elif request.method == "PUT":
-            payload = request.data
-
+            payload = json.loads(request.data['payload'])
+           
+            # serialize contract payload
+            serializer = serializers.UpdateContractSerializer(
+                    data=payload, many=False)
+            if not serializer.is_valid():
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
-     
+            request_id = payload['request_id']
+            title = payload['title']
+            description = payload['description']
+            commencement_date = payload['commencement_date']
+            expiry_date = payload['expiry_date']
+            department = payload['department']
+            previous_contract = payload['previous_contract']
+            
+ 
+            # validate off period
+            period = shared_fxns.find_date_difference(commencement_date,expiry_date,'days')
+            if period < 0:
+                return Response({"details": "Invalid contract duration / dates"}, status=status.HTTP_400_BAD_REQUEST)
+                 
+            try:
+                contractInstance = models.Contract.objects.get(id=request_id)
+            except Exception as e:
+                return Response({"details": "Unknown contract"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                department = SRRSDepartment.objects.get(id=department)
+            except Exception as e:
+                return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    
+            with transaction.atomic():
+                # create contract instance
+                raw = {
+                    "title" : title,
+                    "description" : description,
+                    "commencement_date" : commencement_date,
+                    "expiry_date" : expiry_date,
+                    "department" : department,
+                    "previous" : previous_contract
+                }
+                models.Contract.objects.filter(id=request_id).update(**raw)
+
+                for f in request.FILES.getlist('documents'):
+                    exts = ['pdf']
+                    original_file_name = f.name
+                    ext = original_file_name.split('.')[-1].strip().lower()
+                    if ext not in exts:
+                        return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                    try:
+                        original_file_name = f.name.upper()                        
+                        models.Document.objects.create(
+                            document=f,
+                            file_name=original_file_name, 
+                            contract=contractInstance, 
+                            uploaded_by=request.user
+                        )
+
+                    except Exception as e:
+                        logger.error(e)
+                        print(e)
+                        return Response({"details": "Error saving files"}, status=status.HTTP_400_BAD_REQUEST)  
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Contract updated", f"Contract Id: {contractInstance.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+
   
         elif request.method == "PATCH":
             payload = request.data

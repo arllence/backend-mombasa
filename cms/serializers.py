@@ -21,6 +21,14 @@ class CreateContractSerializer(serializers.Serializer):
     expiry_date = serializers.DateField()
     department = serializers.CharField(max_length=255)
 
+class UpdateContractSerializer(serializers.Serializer):
+    request_id = serializers.CharField()
+    title = serializers.CharField()
+    description = serializers.CharField()
+    commencement_date = serializers.DateField()
+    expiry_date = serializers.DateField()
+    department = serializers.CharField(max_length=255)
+
 class SlimFetchContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Contract
@@ -34,6 +42,7 @@ class SlimFetchDocumentSerializer(serializers.ModelSerializer):
 class FetchContractSerializer(serializers.ModelSerializer):
     department = FetchSRRSDepartmentSerializer()
     documents = serializers.SerializerMethodField()
+    created_by = SlimUsersSerializer()
     
     class Meta:
         model = models.Contract
