@@ -1,7 +1,7 @@
 from datetime import datetime
 import string
 import random
-from fms.models import Incident
+from mhs.models import Issue
 
 def find_date_difference(start_date,end_date,period):
     try:
@@ -32,26 +32,11 @@ def find_date_difference(start_date,end_date,period):
         return 'error'
 
 
-def identify_file_type(ext):
-    images = ['jpeg', 'jpg', 'png', 'tiff']
-    videos = ['mp4','webm', 'mkv']
-    files = ['pdf']
-
-    if ext.lower() in images:
-        return 'IMAGE'
-    elif ext.lower() in videos:
-        return 'VIDEO'
-    elif ext.lower() in files:
-        return 'FILE'
-    else:
-        return 'UNKNOWN'
-
-
 def generate_unique_identifier():
     characters = string.ascii_uppercase + string.digits
-    uid ='AKHK-' + ''.join(random.choices(characters, k=6))
+    uid =''.join(random.choices(characters, k=6))
 
-    is_existing = Incident.objects.filter(uid=uid).exists()
+    is_existing = Issue.objects.filter(uid=uid).exists()
     if is_existing:
         generate_unique_identifier()
     else:

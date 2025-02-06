@@ -13,12 +13,12 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.contrib.auth import get_user_model
 from django.db.models import  Q
 from django.db import transaction
-from fms import models
-from fms import serializers
+from mhs import models
+from mhs import serializers
+from mhs.utils import shared_fxns
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
 from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
-from fms.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
 from django.utils import timezone
@@ -240,7 +240,7 @@ class GenericsViewSet(viewsets.ViewSet):
 
 
 
-class FmsViewSet(viewsets.ViewSet):
+class MHSViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     search_fields = ['id', ]
     
@@ -248,11 +248,275 @@ class FmsViewSet(viewsets.ViewSet):
     def get_queryset(self):
         return []
     
+
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
+            detail=False,
+            url_path="sections",
+            url_name="sections")
+    def Sections(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+
+                with transaction.atomic():
+                    raw = {
+                        "name": name
+                    }
+                    models.Section.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateGeneralNameSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                name = payload['name']
+
+                try:
+                    requestInstance = models.Section.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown Section"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    requestInstance.name = name
+                    requestInstance.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.Section.objects.get(Q(id=request_id))
+                    resp = serializers.FetchSectionSerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Section"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    resp = models.Section.objects.filter(is_deleted=False).order_by('name')
+                    resp = serializers.FetchSectionSerializer(resp,many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                raw = {"is_deleted":True}
+                models.Section.objects.filter(id=request_id).update(**raw)
+                return Response('200', status=status.HTTP_200_OK)
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                print(e)
+                return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+                
+    
+
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
+            detail=False,
+            url_path="job-types",
+            url_name="job-types")
+    def JobType(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+
+                with transaction.atomic():
+                    raw = {
+                        "name": name
+                    }
+                    models.JobType.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateGeneralNameSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                name = payload['name']
+
+                try:
+                    requestInstance = models.JobType.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown Job Type"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    requestInstance.name = name
+                    requestInstance.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.JobType.objects.get(Q(id=request_id))
+                    resp = serializers.FetchJobTypeSerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Job Type"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    resp = models.JobType.objects.filter(is_deleted=False).order_by('name')
+                    resp = serializers.FetchJobTypeSerializer(resp,many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                raw = {"is_deleted":True}
+                models.JobType.objects.filter(id=request_id).update(**raw)
+                return Response('200', status=status.HTTP_200_OK)
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                print(e)
+                return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
+            detail=False,
+            url_path="equipment-types",
+            url_name="equipment-types")
+    def EquipmentType(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+
+                with transaction.atomic():
+                    raw = {
+                        "name": name
+                    }
+                    models.EquipmentType.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateGeneralNameSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                name = payload['name']
+
+                try:
+                    requestInstance = models.EquipmentType.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown Equipment Type"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    requestInstance.name = name
+                    requestInstance.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.EquipmentType.objects.get(Q(id=request_id))
+                    resp = serializers.FetchJobTypeSerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Equipment Type"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    resp = models.EquipmentType.objects.filter(is_deleted=False).order_by('name')
+                    resp = serializers.FetchEquipmentTypeSerializer(resp,many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                raw = {"is_deleted":True}
+                models.EquipmentType.objects.filter(id=request_id).update(**raw)
+                return Response('200', status=status.HTTP_200_OK)
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                print(e)
+                return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+
+
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
-            url_path="incident",
-            url_name="incident")
-    def incident(self, request):
+            url_path="issue",
+            url_name="issue")
+    def issue(self, request):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
 
@@ -263,30 +527,17 @@ class FmsViewSet(viewsets.ViewSet):
             payload = json.loads(request.data['payload'])
             attachment = request.FILES.get('attachments', None)
 
-            serializer = serializers.IncidentSerializer(
+            serializer = serializers.IssueSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
-                type_of_incident = payload['type_of_incident']
-                priority = payload['priority']
+                job_type = payload['job_type']
+                equipment_type = payload['equipment_type']
                 department = payload['department']
-                location = payload['location']
-                affected_person_name = payload['affected_person_name']
-                person_affected = payload['person_affected']
-                date_of_incident = payload['date_of_incident']
-                time_of_incident = payload['time_of_incident']
-                type_of_issue = payload['type_of_issue']
-                subject = payload['subject']
-                message = payload['message']
-
-                ohc = payload.get('ohc') or None
-                ks_number = payload.get('ks_number') or None
-                affected_person_phone = payload.get('affected_person_phone') or None
-
+                section = payload['section']
+                issue = payload['issue']
 
                 uid = shared_fxns.generate_unique_identifier()
-
-
 
                 try:
                     department = SRRSDepartment.objects.get(id=department)
@@ -294,45 +545,39 @@ class FmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    location = SubDepartment.objects.get(id=location)
+                    job_type = models.JobType.objects.get(id=job_type)
                 except Exception as e:
-                    return Response({"details": "Unknown Location"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                if ohc:
-                    try:
-                        ohc = OHC.objects.get(id=ohc)
-                    except Exception as e:
-                        return Response({"details": "Unknown OHC "}, status=status.HTTP_400_BAD_REQUEST)
-
+                try:
+                    equipment_type = models.EquipmentType.objects.get(id=equipment_type)
+                except Exception as e:
+                    return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
+ 
+                try:
+                    section = models.Section.objects.get(id=section)
+                except Exception as e:
+                    return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
                     raw = {
                         "department": department,
-                        "location": location,
+                        "section": section,
+                        "job_type": job_type,
+                        "equipment_type": equipment_type,
                         "created_by": authenticated_user,
-                        "type_of_incident": type_of_incident,
-                        "priority": priority,
                         "attachment": attachment,
-                        "affected_person_name": affected_person_name,
-                        "person_affected": person_affected,
-                        "date_of_incident": date_of_incident,
-                        "time_of_incident": time_of_incident,
-                        "type_of_issue": type_of_issue,
-                        "ohc": ohc,
-                        "subject": subject,
-                        "message": message,
-                        "ks_number": ks_number,
-                        "affected_person_phone": affected_person_phone,
+                        "issue": issue,
                         "uid": uid
                     }
 
-                    incident = models.Incident.objects.create(
+                    issue = models.Issue.objects.create(
                         **raw
                     )
 
                     # create track status change
                     raw = {
-                        "incident": incident,
+                        "issue": issue,
                         "status": "SUBMITTED",
                         "status_for": "/".join(roles),
                         "action_by": authenticated_user
@@ -341,9 +586,9 @@ class FmsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                     # Notify Platform Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['FMS_ADMIN'])).values_list('email', flat=True))
-                    subject = f"New Incident Reported: {uid} .  [FMS-AKHK]"
-                    message = f"Hello. \nNew Incident: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nFMS-AKHK"
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
+                    subject = f"New Issue Reported: {uid} .  [MHS-AKHK]"
+                    message = f"Hello. \nNew Issue: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nFMS-AKHK"
 
                     try:
                         if emails:
@@ -358,7 +603,7 @@ class FmsViewSet(viewsets.ViewSet):
                         logger.error(e)
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Incident Request created", f"Incident Request Id: {incident.id}")
+                    authenticated_user, authenticated_user, "Issue Request created", f"Issue Request Id: {issue.id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -371,77 +616,65 @@ class FmsViewSet(viewsets.ViewSet):
             attachment = request.FILES.get('attachment', None)
 
             
-            serializer = serializers.PutIncidentSerializer(
+            serializer = serializers.PutIssueSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
                 request_id = payload['request_id']
-                type_of_incident = payload['type_of_incident']
-                priority = payload['priority']
+                job_type = payload['job_type']
+                equipment_type = payload['equipment_type']
                 department = payload['department']
-                location = payload['location']
-                affected_person_name = payload['affected_person_name']
-                person_affected = payload['person_affected']
-                date_of_incident = payload['date_of_incident']
-                time_of_incident = payload['time_of_incident']
-                type_of_issue = payload['type_of_issue']
-                subject = payload['subject']
-                message = payload['message']
+                section = payload['section']
+                issue = payload['issue']
 
-                ohc = payload.get('ohc') or None
-                ks_number = payload.get('ks_number') or None
-                affected_person_phone = payload.get('affected_person_phone') or None
 
                 try:
-                    incidentInstance = models.Incident.objects.get(id=request_id)
+                    issueInstance = models.Issue.objects.get(id=request_id)
                 except Exception as e:
-                    return Response({"details": "Unknown Incident"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Issue"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     department = SRRSDepartment.objects.get(id=department)
                 except Exception as e:
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                try:
-                    location = SubDepartment.objects.get(id=location)
-                except Exception as e:
-                    return Response({"details": "Unknown Location"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                if ohc:
-                    try:
-                        ohc = OHC.objects.get(id=ohc)
-                    except Exception as e:
-                        return Response({"details": "Unknown OHC "}, status=status.HTTP_400_BAD_REQUEST)
+                try:
+                    job_type = models.JobType.objects.get(id=job_type)
+                except Exception as e:
+                    return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    equipment_type = models.EquipmentType.objects.get(id=equipment_type)
+                except Exception as e:
+                    return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
+ 
+                try:
+                    section = models.Section.objects.get(id=section)
+                except Exception as e:
+                    return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 with transaction.atomic():
                     raw = {
                         "department": department,
-                        "location": location,
+                        "section": section,
+                        "job_type": job_type,
+                        "equipment_type": equipment_type,
                         "created_by": authenticated_user,
-                        "type_of_incident": type_of_incident,
-                        "priority": priority,
-                        "affected_person_name": affected_person_name,
-                        "person_affected": person_affected,
-                        "date_of_incident": date_of_incident,
-                        "time_of_incident": time_of_incident,
-                        "type_of_issue": type_of_issue,
-                        "ohc": ohc,
-                        "subject": subject,
-                        "message": message,
-                        "ks_number": ks_number,
-                        "affected_person_phone": affected_person_phone,
+                        "attachment": attachment,
+                        "issue": issue,
                     }  
 
-                    models.Incident.objects.filter(Q(id=request_id)).update(**raw)
+                    models.Issue.objects.filter(Q(id=request_id)).update(**raw)
 
                     if attachment:
-                        incidentInstance.attachment = attachment
-                        incidentInstance.save()
+                        issueInstance.attachment = attachment
+                        issueInstance.save()
 
                     # create track status change
                     raw = {
-                        "incident": incidentInstance,
+                        "incident": issueInstance,
                         "status": "EDITED",
                         "status_for": "/".join(roles),
                         "action_by": authenticated_user
@@ -450,7 +683,7 @@ class FmsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Incident Request updated", f"Incident Id: {incidentInstance.id}")
+                    authenticated_user, authenticated_user, "Issue Request updated", f"Issue Id: {issueInstance.id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -461,26 +694,27 @@ class FmsViewSet(viewsets.ViewSet):
         elif request.method == "PATCH":
             # close this incident
             payload = request.data           
-            serializer = serializers.PatchIncidentSerializer(
+            serializer = serializers.PatchIssueSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
                 request_id = payload['request_id']
                 comments = payload.get('comments') or None
+
                 try:
-                    incidentInstance = models.Incident.objects.get(id=request_id)
+                    issueInstance = models.Issue.objects.get(id=request_id)
                 except Exception as e:
-                    return Response({"details": "Unknown Incident"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Issue"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
-                    incidentInstance.status = 'CLOSED'
-                    incidentInstance.closed_by = request.user
-                    incidentInstance.date_closed = datetime.datetime.now()
-                    incidentInstance.save()
+                    issueInstance.status = 'CLOSED'
+                    issueInstance.closed_by = request.user
+                    issueInstance.date_closed = datetime.datetime.now()
+                    issueInstance.save()
 
                     # track status change
                     raw = {
-                        "incident": incidentInstance,
+                        "incident": issueInstance,
                         "status": "CLOSED",
                         "status_for": '/'.join(roles),
                         "action_by": request.user,
@@ -491,21 +725,21 @@ class FmsViewSet(viewsets.ViewSet):
                     if comments:
                         raw = {
                             "owner": request.user,
-                            "incident": incidentInstance,
+                            "issue": issueInstance,
                             "note": comments,
                         }
                         models.Note.objects.create(**raw)
 
 
                     # Notify Platform Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['FMS_ADMIN'])).values_list('email', flat=True))
-                    subject = f"Incident {incidentInstance.uid} Closed [FMS-AKHK]"
-                    message = f"Hello. \nIncident: {incidentInstance.uid} from department: {incidentInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nFMS-AKHK"
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
+                    subject = f"Issue {issueInstance.uid} Closed [MHS-AKHK]"
+                    message = f"Hello. \nIssue: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nFMS-AKHK"
 
-                    if incidentInstance.created_by:
-                        emails.append(str(incidentInstance.created_by.email))
-                    elif incidentInstance.email:
-                        emails.append(str(incidentInstance.email))
+                    if issueInstance.created_by:
+                        emails.append(str(issueInstance.created_by.email))
+                    elif issueInstance.email:
+                        emails.append(str(issueInstance.email))
 
                     try:
                         if emails:
@@ -532,7 +766,7 @@ class FmsViewSet(viewsets.ViewSet):
 
             if request_id:
                 try:
-                    resp = models.Incident.objects.get(Q(id=request_id))
+                    resp = models.Issue.objects.get(Q(id=request_id))
                     if slim:
                         resp = serializers.SlimFetchIncidentSerializer(resp, many=False, context={"user_id":request.user.id}).data
                     else:
@@ -548,14 +782,14 @@ class FmsViewSet(viewsets.ViewSet):
             else:
                 try:
 
-                    if "FMS_ADMIN" in roles or "SUPERUSER" in roles:
+                    if "MHS_ADMIN" in roles or "SUPERUSER" in roles:
 
-                        resp = models.Incident.objects.filter(
+                        resp = models.Issue.objects.filter(
                                 is_deleted=False
                             ).order_by('-date_created')
 
                     else:
-                        resp = models.Incident.objects.filter(
+                        resp = models.Issue.objects.filter(
                                 Q(assigned_to=request.user) |
                                 Q(created_by=request.user) 
                             ).order_by('-date_created')
@@ -564,7 +798,7 @@ class FmsViewSet(viewsets.ViewSet):
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
                     result_page = paginator.paginate_queryset(resp, request)
-                    serializer = serializers.SlimFetchIncidentSerializer(
+                    serializer = serializers.SlimFetchIssueSerializer(
                         result_page, many=True, context={"user_id":request.user.id})
                     return paginator.get_paginated_response(serializer.data)
                 
@@ -585,7 +819,7 @@ class FmsViewSet(viewsets.ViewSet):
             
             with transaction.atomic():
                 try:
-                    recordInstance = models.Incident.objects.get(id=request_id,created_by=request.user)
+                    recordInstance = models.Issue.objects.get(id=request_id,created_by=request.user)
                     recordInstance.is_deleted = True
                     recordInstance.status = "DELETED"
                     recordInstance.save()
@@ -613,7 +847,7 @@ class FmsViewSet(viewsets.ViewSet):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
 
-        allowed = ["FMS_ADMIN", "SUPERUSER"]
+        allowed = ["MHS_ADMIN", "SUPERUSER"]
 
         if not any(role in allowed for role in roles):
             return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
@@ -632,9 +866,9 @@ class FmsViewSet(viewsets.ViewSet):
                 comment = payload.get('comment') or None
 
                 try:
-                    incidentInstance = models.Incident.objects.get(id=request_id)
+                    issueInstance = models.Issue.objects.get(id=request_id)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown incident"}, 
+                    return Response({"details": "Unknown issue"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
@@ -644,14 +878,14 @@ class FmsViewSet(viewsets.ViewSet):
                                     status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
-                    incidentInstance.assigned_to = assigned_to
-                    incidentInstance.assignee_comment = comment
-                    incidentInstance.status = 'ASSIGNED'
-                    incidentInstance.save()
+                    issueInstance.assigned_to = assigned_to
+                    issueInstance.assignee_comment = comment
+                    issueInstance.status = 'ASSIGNED'
+                    issueInstance.save()
 
                     # track status change
                     raw = {
-                        "incident": incidentInstance,
+                        "incident": issueInstance,
                         "status": 'ASSIGNED',
                         "status_for": '/'.join(roles),
                         "action_by": authenticated_user
@@ -662,8 +896,8 @@ class FmsViewSet(viewsets.ViewSet):
 
                     # Notify the assignee
                     emails = [assigned_to.email]
-                    subject = f"Incident {incidentInstance.uid}  Assigned To You  [FMS-AKHK]"
-                    message = f"Hello, \nAn incident of id: {incidentInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending your action.\n\nRegards\nFMS-AKHK"
+                    subject = f"Issue {issueInstance.uid}  Assigned To You  [MHS-AKHK]"
+                    message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending your action.\n\nRegards\nFMS-AKHK"
                     
                     try:
                         mail = {
@@ -678,8 +912,8 @@ class FmsViewSet(viewsets.ViewSet):
 
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Incident Request Assigned", 
-                    f"Assigning Executed UID: {str(incidentInstance.id)}")
+                    authenticated_user, authenticated_user, "Issue Request Assigned", 
+                    f"Assigning Executed UID: {str(issueInstance.id)}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -697,11 +931,6 @@ class FmsViewSet(viewsets.ViewSet):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
 
-        # allowed = ["FMS_ADMIN", "SUPERUSER"]
-
-        # if not any(role in allowed for role in roles):
-        #     return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
-
         if request.method == "POST":
 
             payload = request.data
@@ -715,15 +944,15 @@ class FmsViewSet(viewsets.ViewSet):
                 comment = payload.get('comments')
 
                 try:
-                    incidentInstance = models.Incident.objects.get(id=request_id)
+                    issueInstance = models.Issue.objects.get(id=request_id)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown incident"}, 
+                    return Response({"details": "Unknown issue"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
                     raw = {
                         "owner": request.user,
-                        "incident": incidentInstance,
+                        "issue": issueInstance,
                         "note": comment,
                     }
                     models.Note.objects.create(**raw)
@@ -774,9 +1003,9 @@ class FmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 # assign FMS_ADMIN role
-                assign_role = user_util.award_role('FMS_ADMIN', str(admin.id))
+                assign_role = user_util.award_role('MHS_ADMIN', str(admin.id))
                 if not assign_role:
-                    return Response({"details": "Unable to assign role FMS_ADMIN"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unable to assign role MHS_ADMIN"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
                     raw = {
@@ -847,7 +1076,7 @@ class FmsViewSet(viewsets.ViewSet):
             if request_id:
                 try:
                     user = models.PlatformAdmin.objects.get(id=request_id)
-                    user_util.revoke_role('FMS_ADMIN', str(user.admin.id))
+                    user_util.revoke_role('MHS_ADMIN', str(user.admin.id))
                     user.delete()
                     return Response('200', status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -858,102 +1087,6 @@ class FmsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=["POST","GET"],
-            detail=False,
-            url_path="rca",
-            url_name="rca")
-    def rca(self, request):
-
-        authenticated_user = request.user
-        roles = user_util.fetchusergroups(request.user.id) 
-
-        # allowed = ["FMS_ADMIN", "SUPERUSER"]
-
-        # if not any(role in allowed for role in roles):
-        #     return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
-
-        if request.method == "POST":
-
-            payload = request.data
-
-            serializer = serializers.RCASerializer(
-                    data=payload, many=False)
-            
-            if serializer.is_valid():
-                request_id = payload['request_id']
-                try:
-                    incidentInstance = models.Incident.objects.get(id=request_id)
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown incident"}, 
-                                    status=status.HTTP_400_BAD_REQUEST)
-                
-                del payload['request_id']
-
-                # already added
-                is_existing = models.Rca.objects.filter(Q(incident=request_id)).exists()
-                if is_existing:
-                    return Response({"details": "RCA for this incident already added"}, 
-                                    status=status.HTTP_400_BAD_REQUEST)
-            
-                with transaction.atomic():
-                    raw = {
-                        "incident": incidentInstance,
-                        "created_by": request.user,
-                        "data": payload
-                    }
-                    models.Rca.objects.create(**raw)
-                
-                return Response('success', status=status.HTTP_200_OK)
-            else:
-                return Response({"details": serializer.errors}, 
-                                status=status.HTTP_400_BAD_REQUEST)
-        
-        elif request.method == "PUT":
-
-            payload = request.data
-            roles = user_util.fetchusergroups(request.user.id) 
-
-            serializer = serializers.RCASerializer(
-                    data=payload, many=False)
-            
-            if serializer.is_valid():
-                request_id = payload['request_id']
-
-                try:
-                    incidentInstance = models.Rca.objects.get(id=request_id)
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown incident rca"}, 
-                                    status=status.HTTP_400_BAD_REQUEST)
-                
-                del payload['request_id']
-                
-                with transaction.atomic():
-                    incidentInstance.data = payload
-                    incidentInstance.save()
-                
-                return Response('success', status=status.HTTP_200_OK)
-            
-            else:
-                return Response({"details": serializer.errors}, 
-                                status=status.HTTP_400_BAD_REQUEST)
-            
-            
-        elif request.method == "GET":
-            request_id = request.query_params.get('request_id')
-            if request_id:
-                try:
-                    resp = models.Rca.objects.filter(Q(incident=request_id))
-
-                    resp = serializers.FetchRCASerializer(
-                        resp, many=True, context={"user_id":request.user.id}).data
-                    return Response(resp, status=status.HTTP_200_OK)
-                
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                return Response([], status=status.HTTP_200_OK)
-            
 
    
 class ReportsViewSet(viewsets.ViewSet):
@@ -963,17 +1096,17 @@ class ReportsViewSet(viewsets.ViewSet):
 
     @action(methods=["GET",],
             detail=False,
-            url_path="incidents",
-            url_name="incidents")
-    def incidents(self, request):
+            url_path="issues",
+            url_name="issues")
+    def issues(self, request):
                     
         department = request.query_params.get('department')
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
         r_status = request.query_params.get('status')
-        priority = request.query_params.get('priority')
-        type_of_incident = request.query_params.get('incident_type')
-        issue_type = request.query_params.get('issue_type')
+        job_type = request.query_params.get('job_type')
+        equipment_type = request.query_params.get('equipment_type')
+        section = request.query_params.get('section')
         date = False
 
         if date_to and date_from:
@@ -1001,78 +1134,27 @@ class ReportsViewSet(viewsets.ViewSet):
         if r_status:
             q_filters &= Q(status=r_status)
 
-        if type_of_incident:
-            q_filters &= Q(type_of_incident=type_of_incident)
+        if job_type:
+            q_filters &= Q(job_type=job_type)
 
-        if priority:
-            q_filters &= Q(priority=priority)
+        if equipment_type:
+            q_filters &= Q(equipment_type=equipment_type)
 
-        if issue_type:
-            q_filters &= Q(type_of_issue=issue_type)
+        if section:
+            q_filters &= Q(section=section)
 
 
         if q_filters:
 
-            resp = models.Incident.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            resp = models.Issue.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
             
         else:
-            resp = models.Incident.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+            resp = models.Issue.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
 
-        resp = serializers.FetchIncidentSerializer(resp, many=True, context={"user_id":request.user.id}).data
+        resp = serializers.FetchIssueSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
     
-        
-    @action(methods=["GET",],
-            detail=False,
-            url_path="replacements",
-            url_name="replacements")
-    def replacements(self, request):
-                    
-        department = request.query_params.get('department')
-        date_from = request.query_params.get('date_from')
-        date_to = request.query_params.get('date_to')
-        # quote_status = request.query_params.get('status')
-        date = False
-
-        if date_to and date_from:
-            date = True
-
-        def create_date_range(date_from,date_to):
-            # Convert the string dates to datetime objects
-            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
-            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
-
-            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
-
-            return q_filters
-
-        q_filters = Q(nature_of_hiring='Replacement')
-
-        if department:
-            q_filters &= Q(department=department)
-
-        if date_from or date_to:
-            if not date:
-                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
-            q_filters &= create_date_range(date_from,date_to)
-            
-        # if quote_status:
-        #     q_filters &= Q(status=quote_status)
-
-
-        if q_filters:
-
-            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-            
-        else:
-            roles = user_util.fetchusergroups(request.user.id)  
-
-            resp = models.Recruit.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')[:50]
-
-        resp = serializers.FetchRecruitSerializer(resp, many=True, context={"user_id":request.user.id}).data
-
-        return Response(resp, status=status.HTTP_200_OK)
     
 
 class AnalyticsViewSet(viewsets.ViewSet):
@@ -1091,15 +1173,15 @@ class AnalyticsViewSet(viewsets.ViewSet):
 
         
         if any(role in ['FMS_ADMIN', 'SUPERUSER'] for role in roles):
-            requests = models.Incident.objects.filter(Q(is_deleted=False)).count()
-            assigned = models.Incident.objects.filter(Q(status="ASSIGNED"), is_deleted=False).count()
-            closed = models.Incident.objects.filter(status="CLOSED", is_deleted=False).count()
-            pending = models.Incident.objects.filter(Q(status__in=active_status), is_deleted=False).count()
+            requests = models.Issue.objects.filter(Q(is_deleted=False)).count()
+            assigned = models.Issue.objects.filter(Q(status="ASSIGNED"), is_deleted=False).count()
+            closed = models.Issue.objects.filter(status="CLOSED", is_deleted=False).count()
+            pending = models.Issue.objects.filter(Q(status__in=active_status), is_deleted=False).count()
         else:
-            requests = models.Incident.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user) | Q(assigned_to=request.user), is_deleted=False).count()
-            assigned = models.Incident.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(assigned_to=request.user), status="ASSIGNED", is_deleted=False).count()
-            closed = models.Incident.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(assigned_to=request.user), status="CLOSED", is_deleted=False).count()
-            pending = models.Incident.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(assigned_to=request.user), status__in=active_status, is_deleted=False).count()
+            requests = models.Issue.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user) | Q(assigned_to=request.user), is_deleted=False).count()
+            assigned = models.Issue.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(assigned_to=request.user), status="ASSIGNED", is_deleted=False).count()
+            closed = models.Issue.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(assigned_to=request.user), status="CLOSED", is_deleted=False).count()
+            pending = models.Issue.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(assigned_to=request.user), status__in=active_status, is_deleted=False).count()
 
         resp = {
             "requests": requests,
