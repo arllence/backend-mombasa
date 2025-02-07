@@ -862,7 +862,7 @@ class MHSViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 assigned_to = payload['assign_to']
-                comment = payload.get('comment') or None
+                comment = payload.get('comment') or 'N/A'
 
                 try:
                     issueInstance = models.Issue.objects.get(id=request_id)
@@ -878,7 +878,7 @@ class MHSViewSet(viewsets.ViewSet):
                 
                 with transaction.atomic():
                     issueInstance.assigned_to = assigned_to
-                    issueInstance.assignee_comment = comment
+                    # issueInstance.assignee_comment = comment
                     issueInstance.status = 'ASSIGNED'
                     issueInstance.save()
 
@@ -896,7 +896,7 @@ class MHSViewSet(viewsets.ViewSet):
                     # Notify the assignee
                     emails = [assigned_to.email]
                     subject = f"Issue {issueInstance.uid}  Assigned To You  [MHS-AKHK]"
-                    message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending your action.\n\nRegards\nFMS-AKHK"
+                    message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nFMS-AKHK"
                     
                     try:
                         mail = {
