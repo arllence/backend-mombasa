@@ -721,6 +721,7 @@ class TrsViewSet(viewsets.ViewSet):
                     resps += resp
 
                     resps = list(set(resps))
+                    resps = sorted(resps, key=lambda x: x.date_created, reverse=True)
 
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
