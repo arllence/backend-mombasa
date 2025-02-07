@@ -623,22 +623,11 @@ class TrsViewSet(viewsets.ViewSet):
 
                         resps += resp
 
-                    if "SLTs" in roles:
+                    if "SLT" in roles:
                         resp = []
-                        if "HOF" in roles:
 
-                            if query == 'salary-advance':
-                                targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
-                                resp = [x.traveler for x in targets]
-
-                            elif query == 'pending':
-                                resp = models.Traveler.objects.filter((Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)) | Q(requires_hof_approval=True), is_deleted=False,is_hof_approved=False).order_by('-date_created')
-
-                            else:
-                                resp = models.Traveler.objects.filter((Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)) | Q(requires_hof_approval=True), is_deleted=False).order_by('-date_created')
-
-                        else:
-                            resp = models.Traveler.objects.filter(Q(is_deleted=False) & Q(department__slt__lead=authenticated_user) & Q(requires_slt_approval=True)).order_by('-date_created')
+                        resp = models.Traveler.objects.filter(
+                            Q(department=request.user.srrs_department) |  Q(traveler=authenticated_user), is_deleted=False).order_by('-date_created')
 
                         resps += resp
 
