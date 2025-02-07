@@ -60,8 +60,10 @@ class FetchIssueSerializer(serializers.ModelSerializer):
     created_by = UsersSerializer()
     closed_by = UsersSerializer()
     assigned_to = UsersSerializer()
+    job_type = FetchJobTypeSerializer()
+    equipment_type = FetchEquipmentTypeSerializer()
+    section = FetchSectionSerializer()
     department = FetchSRRSDepartmentSerializer()
-    location = FetchSubDepartmentSerializer()
     approvals = serializers.SerializerMethodField()
     is_owner = serializers.SerializerMethodField()
     is_assigned = serializers.SerializerMethodField()
@@ -72,7 +74,7 @@ class FetchIssueSerializer(serializers.ModelSerializer):
 
     def get_approvals(self, obj):
         try:
-            request = models.StatusChange.objects.filter(incident=obj)
+            request = models.StatusChange.objects.filter(issue=obj)
             serializer = FetchStatusChangeSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
@@ -123,7 +125,9 @@ class FetchIssueSerializer(serializers.ModelSerializer):
 
 class SlimFetchIssueSerializer(serializers.ModelSerializer):
     department = SlimFetchSRRSDepartmentSerializer()
-    location = FetchSubDepartmentSerializer()
+    job_type = FetchJobTypeSerializer()
+    equipment_type = FetchEquipmentTypeSerializer()
+    section = FetchSectionSerializer()
     is_owner = serializers.SerializerMethodField()
 
     class Meta:

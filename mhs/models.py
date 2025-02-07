@@ -51,11 +51,13 @@ class Issue(models.Model):
     )
     closed_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="mhs_closed_by"
+       related_name="mhs_closed_by",
+       null=True, blank=True
     )
     assigned_to = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="mhs_assigned_to"
+       related_name="mhs_assigned_to",
+       null=True, blank=True
     )
     department = models.ForeignKey(
        SRRSDepartment, on_delete=models.DO_NOTHING, 

@@ -514,8 +514,8 @@ class MHSViewSet(viewsets.ViewSet):
 
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
-            url_path="issue",
-            url_name="issue")
+            url_path="issues",
+            url_name="issues")
     def issue(self, request):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
@@ -662,7 +662,6 @@ class MHSViewSet(viewsets.ViewSet):
                         "job_type": job_type,
                         "equipment_type": equipment_type,
                         "created_by": authenticated_user,
-                        "attachment": attachment,
                         "issue": issue,
                     }  
 
@@ -674,7 +673,7 @@ class MHSViewSet(viewsets.ViewSet):
 
                     # create track status change
                     raw = {
-                        "incident": issueInstance,
+                        "issue": issueInstance,
                         "status": "EDITED",
                         "status_for": "/".join(roles),
                         "action_by": authenticated_user
@@ -768,9 +767,9 @@ class MHSViewSet(viewsets.ViewSet):
                 try:
                     resp = models.Issue.objects.get(Q(id=request_id))
                     if slim:
-                        resp = serializers.SlimFetchIncidentSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                        resp = serializers.SlimFetchIssueSerializer(resp, many=False, context={"user_id":request.user.id}).data
                     else:
-                        resp = serializers.FetchIncidentSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                        resp = serializers.FetchIssueSerializer(resp, many=False, context={"user_id":request.user.id}).data
                     return Response(resp, status=status.HTTP_200_OK)
                 
                 except (ValidationError, ObjectDoesNotExist):
@@ -967,7 +966,7 @@ class MHSViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             if request_id:
                 try:
-                    resp = models.Note.objects.filter(Q(incident=request_id))
+                    resp = models.Note.objects.filter(Q(issue=request_id))
 
                     resp = serializers.FetchNoteSerializer(
                         resp, many=True, context={"user_id":request.user.id}).data
