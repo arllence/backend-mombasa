@@ -713,7 +713,7 @@ class MHSViewSet(viewsets.ViewSet):
 
                     # track status change
                     raw = {
-                        "incident": issueInstance,
+                        "issue": issueInstance,
                         "status": "CLOSED",
                         "status_for": '/'.join(roles),
                         "action_by": request.user,
@@ -884,7 +884,7 @@ class MHSViewSet(viewsets.ViewSet):
 
                     # track status change
                     raw = {
-                        "incident": issueInstance,
+                        "issue": issueInstance,
                         "status": 'ASSIGNED',
                         "status_for": '/'.join(roles),
                         "action_by": authenticated_user
