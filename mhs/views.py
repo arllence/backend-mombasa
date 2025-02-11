@@ -48,29 +48,29 @@ class GenericsViewSet(viewsets.ViewSet):
     
     @action(methods=["POST", "GET", "PUT"],
             detail=False,
-            url_path="sub-departments",
-            url_name="sub-departments")
-    def sub_department(self, request):
+            url_path="job-types",
+            url_name="job-types")
+    def job_types(self, request):
         if request.method == "GET":
             request_id = request.query_params.get('request_id')
             if request_id:
                 try:
-                    department = SubDepartment.objects.get(Q(id=request_id))
-                    department = serializers.FetchSubDepartmentSerializer(department,many=False).data
-                    return Response(department, status=status.HTTP_200_OK)
+                    resp = models.JobType.objects.get(Q(id=request_id))
+                    resp = serializers.FetchJobTypeSerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Job Type"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
-                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    departments = SubDepartment.objects.filter(is_deleted=False).order_by('name')
-                    departments = serializers.FetchSubDepartmentSerializer(departments,many=True).data
-                    return Response(departments, status=status.HTTP_200_OK)
+                    resp = models.JobType.objects.filter(is_deleted=False).order_by('name')
+                    resp = serializers.FetchJobTypeSerializer(resp,many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
                     
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 except Exception as e:
                     print(e)
@@ -79,75 +79,97 @@ class GenericsViewSet(viewsets.ViewSet):
 
     @action(methods=["POST", "GET", "PUT"],
             detail=False,
-            url_path="ohc",
-            url_name="ohc")
-    def ohc(self, request): 
+            url_path="equipment-types",
+            url_name="equipment-types")
+    def equipment_types(self, request): 
         if request.method == "GET":
             request_id = request.query_params.get('request_id')
             if request_id:
                 try:
-                    ohc = OHC.objects.get(Q(id=request_id))
-                    ohc = serializers.FetchOHCSerializer(ohc,many=False).data
-                    return Response(ohc, status=status.HTTP_200_OK)
+                    resp = models.EquipmentType.objects.get(Q(id=request_id))
+                    resp = serializers.FetchJobTypeSerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown ohc!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Equipment Type"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
-                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    ohcs = OHC.objects.filter(is_deleted=False).order_by('name')
-                    ohcs = serializers.FetchOHCSerializer(ohcs,many=True).data
-                    return Response(ohcs, status=status.HTTP_200_OK)
+                    resp = models.EquipmentType.objects.filter(is_deleted=False).order_by('name')
+                    resp = serializers.FetchEquipmentTypeSerializer(resp,many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
                     
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
-            
+
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="sections",
+            url_name="sections")
+    def sections(self, request): 
+        if request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.Section.objects.get(Q(id=request_id))
+                    resp = serializers.FetchSectionSerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Section"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    resp = models.Section.objects.filter(is_deleted=False).order_by('name')
+                    resp = serializers.FetchSectionSerializer(resp,many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)     
 
     
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
-            url_path="incident",
-            url_name="incident")
-    def incident(self, request):
+            url_path="issues",
+            url_name="issues")
+    def issues(self, request):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
 
         if request.method == "POST":
-
-            # payload = request.data
-
             payload = json.loads(request.data['payload'])
             attachment = request.FILES.get('attachments', None)
 
-            serializer = serializers.GenericIncidentSerializer(
+            serializer = serializers.IssueSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
-                type_of_incident = payload['type_of_incident']
-                priority = payload['priority']
+                job_type = payload['job_type']
+                equipment_type = payload['equipment_type']
                 department = payload['department']
-                location = payload['location']
-                affected_person_name = payload['affected_person_name']
-                person_affected = payload['person_affected']
-                date_of_incident = payload['date_of_incident']
-                time_of_incident = payload['time_of_incident']
-                type_of_issue = payload['type_of_issue']
-                subject = payload['subject']
-                message = payload['message']
-
-                ohc = payload.get('ohc') or None
-                ks_number = payload.get('ks_number') or None
-                affected_person_phone = payload.get('affected_person_phone') or None
-                name = payload.get('name') or 'Anonymous'
+                section = payload['section']
+                issue = payload['issue']
+                name = payload.get('name') or None
                 email = payload.get('email') or None
 
-
                 uid = shared_fxns.generate_unique_identifier()
+
+                user = None
+                if email:
+                    try:
+                        user = get_user_model().objects.get(email=email)
+                    except:
+                        pass
 
                 try:
                     department = SRRSDepartment.objects.get(id=department)
@@ -155,46 +177,46 @@ class GenericsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    location = SubDepartment.objects.get(id=location)
+                    job_type = models.JobType.objects.get(id=job_type)
                 except Exception as e:
-                    return Response({"details": "Unknown Location"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                if ohc:
-                    try:
-                        ohc = OHC.objects.get(id=ohc)
-                    except Exception as e:
-                        return Response({"details": "Unknown OHC "}, status=status.HTTP_400_BAD_REQUEST)
-
+                try:
+                    equipment_type = models.EquipmentType.objects.get(id=equipment_type)
+                except Exception as e:
+                    return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
+ 
+                try:
+                    section = models.Section.objects.get(id=section)
+                except Exception as e:
+                    return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
                     raw = {
                         "department": department,
-                        "location": location,
-                        "type_of_incident": type_of_incident,
-                        "priority": priority,
+                        "section": section,
+                        "job_type": job_type,
+                        "equipment_type": equipment_type,
+                        "created_by": user,
                         "attachment": attachment,
-                        "affected_person_name": affected_person_name,
-                        "person_affected": person_affected,
-                        "date_of_incident": date_of_incident,
-                        "time_of_incident": time_of_incident,
-                        "type_of_issue": type_of_issue,
-                        "ohc": ohc,
-                        "subject": subject,
-                        "message": message,
-                        "ks_number": ks_number,
-                        "name": name,
-                        "email": email,
-                        "affected_person_phone": affected_person_phone,
+                        "issue": issue,
                         "uid": uid
                     }
+                    if not user:
+                        raw.update(
+                            {
+                                "email": email,
+                                "name": name
+                            }
+                        )
 
-                    incident = models.Incident.objects.create(
+                    issue = models.Issue.objects.create(
                         **raw
                     )
 
                     # create track status change
                     raw = {
-                        "incident": incident,
+                        "issue": issue,
                         "status": "SUBMITTED",
                         "status_for": "/".join(roles),
                         # "action_by": authenticated_user
@@ -203,18 +225,17 @@ class GenericsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                     # Notify Platform Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['FMS_ADMIN'])).values_list('email', flat=True))
-                    subject = subject
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
+                    subject = f"New Issue Reported: {uid} .  [MHD-AKHK]"
                     message = f"""
-                        Feedback Details\n\n
-                        Type of Incident: {type_of_incident}\n
-                        Location: {location}\n
+                        Issue Details\n\n
+                        Section: {section.name}\n
+                        Job Type: {job_type.name}\n
+                        Equipment Type: {equipment_type.name}\n
                         Department: {department.name}\n
-                        Name of Person affected: {affected_person_name}\n
                         Date and Time: {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n
-                        Subject: {subject}\n
-                        Message: {message}\n\n
-                        Regards\nIMS-AKHK"
+                        Issue: {issue}\n\n
+                        Regards\nMHD-AKHK"
 
                     """
 
@@ -230,8 +251,9 @@ class GenericsViewSet(viewsets.ViewSet):
                     except Exception as e:
                         logger.error(e)
 
-                # user_util.log_account_activity(
-                #     authenticated_user, authenticated_user, "Incident Request created", f"Incident Request Id: {incident.id}")
+                if user:
+                    user_util.log_account_activity(
+                        user, user, "Issue Request created", f"Issue Request Id: {issue.id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -587,7 +609,7 @@ class MHSViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
-                    subject = f"New Issue Reported: {uid} .  [MHS-AKHK]"
+                    subject = f"New Issue Reported: {uid} .  [MHD-AKHK]"
                     message = f"Hello. \nNew Issue: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nFMS-AKHK"
 
                     try:
@@ -732,7 +754,7 @@ class MHSViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
-                    subject = f"Issue {issueInstance.uid} Closed [MHS-AKHK]"
+                    subject = f"Issue {issueInstance.uid} Closed [MHD-AKHK]"
                     message = f"Hello. \nIssue: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nFMS-AKHK"
 
                     if issueInstance.created_by:
@@ -824,7 +846,7 @@ class MHSViewSet(viewsets.ViewSet):
                     recordInstance.save()
                     # track status change
                     raw = {
-                        "incident": recordInstance,
+                        "issue": recordInstance,
                         "status": "DELETED",
                         "status_for": '/'.join(roles),
                         "action_by": authenticated_user,
@@ -895,7 +917,7 @@ class MHSViewSet(viewsets.ViewSet):
 
                     # Notify the assignee
                     emails = [assigned_to.email]
-                    subject = f"Issue {issueInstance.uid}  Assigned To You  [MHS-AKHK]"
+                    subject = f"Issue {issueInstance.uid}  Assigned To You  [MHD-AKHK]"
                     message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nFMS-AKHK"
                     
                     try:

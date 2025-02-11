@@ -80,6 +80,8 @@ class Issue(models.Model):
     status = models.CharField(max_length=255, default='SUBMITTED')
     attachment = models.FileField(upload_to='documents/mhs/attachments/', null=True, blank=True)
     issue = models.TextField()
+    name = models.CharField(max_length=255, null=True, blank=True)
+    email = models.CharField(max_length=255, null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
     date_closed = models.DateTimeField(null=True, blank=True)
@@ -123,7 +125,8 @@ class StatusChange(models.Model):
     status_for = models.CharField(max_length=255, null=True, blank=True)
     action_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="mhs_action_by"
+       related_name="mhs_action_by",
+       null=True, blank=True
     )
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
