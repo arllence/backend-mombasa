@@ -43,6 +43,8 @@ def main(emails):
             )
             email_to_send.content_subtype = 'html'  # Set the content type to HTML
             email_to_send.send(fail_silently=False)
+            target.status = "SENT"
+            target.save()
 			
         time.sleep(1)
 # get_emails()
