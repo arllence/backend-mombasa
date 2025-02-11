@@ -14,7 +14,6 @@ def get_emails():
 def main(emails):
     print("Main starting...")
     count = 0
-    is_html =True
       
     for target in emails:
 		
