@@ -293,8 +293,8 @@ class FullFetchSurveySerializer(serializers.ModelSerializer):
         
     def get_link(self, obj):
         try:
-            request = models.SurveyLink.objects.get(topic=obj)
-            if request.link:
+            request = models.SurveyLink.objects.filter(topic=obj).order_by('-date_created').first()
+            if request:
                 return request.link 
             return ""
         except (ValidationError, ObjectDoesNotExist):
@@ -339,8 +339,8 @@ class FetchSurveySubTopicSerializer(serializers.ModelSerializer):
         
     def get_link(self, obj):
         try:
-            request = models.SurveyLink.objects.get(sub_topic=obj,is_deleted=False)
-            if request.link:
+            request = models.SurveyLink.objects.filter(sub_topic=obj,is_deleted=False).order_by('-date_created').first()
+            if request:
                 return request.link 
             return ""
         except (ValidationError, ObjectDoesNotExist):
@@ -436,8 +436,8 @@ class FullFetchModuleSerializer(serializers.ModelSerializer):
         
     def get_link(self, obj):
         try:
-            request = models.ModuleLink.objects.get(topic=obj)
-            if request.link:
+            request = models.ModuleLink.objects.filter(topic=obj).order_by('-date_created').first()
+            if request:
                 return request.link 
             return ""
         except (ValidationError, ObjectDoesNotExist):
