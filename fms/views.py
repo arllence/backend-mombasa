@@ -19,9 +19,8 @@ from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
 from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
 from fms.utils import shared_fxns
-from django.db.models import Sum
-from django.core.mail import send_mail
 from django.utils import timezone
+from string import Template
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -29,6 +28,10 @@ from intranet.serializers import FullFetchDepartmentSerializer
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
+def read_template(filename):
+    with open("acl/emails/" + filename, 'r', encoding='utf8') as template_file:
+        template_file_content = template_file.read()
+        return Template(template_file_content)
 class GenericsViewSet(viewsets.ViewSet):
     permission_classes = (AllowAny,)
     search_fields = ['id', ]
@@ -206,17 +209,52 @@ class GenericsViewSet(viewsets.ViewSet):
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['FMS_ADMIN'])).values_list('email', flat=True))
                     subject = subject
                     message = f"""
-                        Feedback Details\n\n
-                        Type of Incident: {type_of_incident}\n
-                        Location: {location}\n
-                        Department: {department.name}\n
-                        Name of Person affected: {affected_person_name}\n
-                        Date and Time: {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n
-                        Subject: {subject}\n
-                        Message: {message}\n\n
-                        Regards\nIMS-AKHK"
+                        <table border="1" class='signature-table'>
+                            <tr>
+                                <th colspan='5'>Feedback Details</th>
+                            </tr>
+                            <tr>
+                                <th>Type of Incident</th>
+                                <td>{type_of_incident}</td>
+                            </tr>
+                            <tr>
+                                <th>Location</th>
+                                <td>{location}</td>
+                            </tr>
+                            <tr>
+                                <th>Department</th>
+                                <td>{department.name}</td>
+                            </tr>
+                            <tr>
+                                <th>Name of Person Affected</th>
+                                <td>{affected_person_name}</td>
+                            </tr>
+                            <tr>
+                                <th>Date and Time</th>
+                                <td>{str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}</td>
+                            </tr>
+                            <tr>
+                                <th>Subject</th>
+                                <td>{subject}</td>
+                            </tr>
+                            <tr>
+                                <th>Message</th>
+                                <td>{message}</td>
+                            </tr>
+                        </table>
+
 
                     """
+                    link = "http://172.20.0.42:8006/generic/home"
+                    platform = 'IMS'
+
+                    message_template = read_template("general_template.html")
+                    message = message_template.substitute(
+                        # NAME=name, 
+                        CONTENT=message,
+                        LINK=link,
+                        PLATFORM=platform
+                    )
 
                     try:
                         if emails:
@@ -224,8 +262,18 @@ class GenericsViewSet(viewsets.ViewSet):
                                 "email" : list(set(emails)), 
                                 "subject" : subject,
                                 "message" : message,
+                                "is_html" : True
                             }
                             
+                            Sendmail.objects.create(**mail)
+
+                            # html test: To remove after
+                            mail = {
+                                "email" : ["bobkings.otieno@akhskenya.org"], 
+                                "subject" : subject,
+                                "message" : message,
+                                "is_html" : True
+                            }
                             Sendmail.objects.create(**mail)
                     except Exception as e:
                         logger.error(e)

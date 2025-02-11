@@ -197,6 +197,7 @@ class Sendmail(models.Model):
     subject = models.CharField(max_length=500)
     message = models.TextField()
     status = models.CharField(max_length=55, default="PENDING")
+    is_html = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
