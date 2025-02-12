@@ -28,6 +28,10 @@ class FetchEquipmentTypeSerializer(serializers.ModelSerializer):
         model = models.EquipmentType
         fields = '__all__'
 
+class FetchFacilitySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Facility
+        fields = '__all__'
 
 class GenericIssueSerializer(serializers.Serializer):
     job_type = serializers.CharField()
