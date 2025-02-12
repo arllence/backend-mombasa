@@ -62,24 +62,29 @@ class Issue(models.Model):
     department = models.ForeignKey(
        SRRSDepartment, on_delete=models.DO_NOTHING, 
        related_name="srrs_mhs_department"
+       null=True, blank=True
     )
     section = models.ForeignKey(
        Section, on_delete=models.DO_NOTHING, 
-       related_name="mhs_section"
+       related_name="mhs_section",
+       null=True, blank=True
     )
     job_type = models.ForeignKey(
        JobType, on_delete=models.DO_NOTHING, 
-       related_name="mhs_job_type"
+       related_name="mhs_job_type",
+       null=True, blank=True
     )
     equipment_type = models.ForeignKey(
        EquipmentType, on_delete=models.DO_NOTHING, 
-       related_name="mhs_equipment_type"
+       related_name="mhs_equipment_type",
+       null=True, blank=True
     )
 
     uid = models.CharField(max_length=50, unique=True)
     status = models.CharField(max_length=255, default='SUBMITTED')
     attachment = models.FileField(upload_to='documents/mhs/attachments/', null=True, blank=True)
     issue = models.TextField()
+    subject = models.CharField(max_length=255, null=True, blank=True)
     name = models.CharField(max_length=255, null=True, blank=True)
     email = models.CharField(max_length=255, null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
