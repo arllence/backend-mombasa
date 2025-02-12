@@ -61,7 +61,7 @@ class Issue(models.Model):
     )
     department = models.ForeignKey(
        SRRSDepartment, on_delete=models.DO_NOTHING, 
-       related_name="srrs_mhs_department"
+       related_name="srrs_mhs_department",
        null=True, blank=True
     )
     section = models.ForeignKey(
