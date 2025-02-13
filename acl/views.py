@@ -1116,7 +1116,7 @@ class DepartmentViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
-                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
