@@ -1098,9 +1098,14 @@ class DepartmentViewSet(viewsets.ViewSet):
                 try:
 
                     if 'USER' in roles:
-                        department = request.user.department
-                        department = serializers.FetchDepartmentSerializer(department,many=False).data
-                        return Response([department], status=status.HTTP_200_OK)
+                        if department:
+                            department = request.user.department
+                            department = serializers.FetchDepartmentSerializer(department,many=False).data
+                            return Response([department], status=status.HTTP_200_OK)
+                        else:
+                            departments = models.Department.objects.all().order_by('name')
+                            departments = serializers.FetchDepartmentSerializer(departments,many=True).data
+                            return Response(departments, status=status.HTTP_200_OK)
                     else:
                         departments = models.Department.objects.all().order_by('name')
                         departments = serializers.FetchDepartmentSerializer(departments,many=True).data

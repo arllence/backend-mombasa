@@ -90,6 +90,11 @@ class Issue(models.Model):
        related_name="mhs_equipment_type",
        null=True, blank=True
     )
+    facility = models.ForeignKey(
+       Facility, on_delete=models.DO_NOTHING, 
+       related_name="mhs_facility",
+       null=True, blank=True
+    )
 
     uid = models.CharField(max_length=50, unique=True)
     status = models.CharField(max_length=255, default='SUBMITTED')
