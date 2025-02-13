@@ -1098,8 +1098,9 @@ class DepartmentViewSet(viewsets.ViewSet):
                 try:
 
                     if 'USER' in roles:
+                        
+                        department = request.user.department
                         if department:
-                            department = request.user.department
                             department = serializers.FetchDepartmentSerializer(department,many=False).data
                             return Response([department], status=status.HTTP_200_OK)
                         else:
@@ -1116,7 +1117,7 @@ class DepartmentViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
-                    return Response({"details": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
