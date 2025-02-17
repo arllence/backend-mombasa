@@ -136,6 +136,36 @@ class GenericsViewSet(viewsets.ViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+    @action(methods=["POST", "GET", "PUT"],
+            detail=False,
+            url_path="facilities",
+            url_name="facilities")
+    def facilities(self, request): 
+        if request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.Facility.objects.get(Q(id=request_id))
+                    resp = serializers.FetchJobTypeSerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    resp = models.Facility.objects.filter(is_deleted=False).order_by('name')
+                    resp = serializers.FetchFacilitySerializer(resp,many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=["POST", "GET", "PUT"],
             detail=False,
