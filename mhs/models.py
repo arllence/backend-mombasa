@@ -53,6 +53,18 @@ class Facility(models.Model):
     class Meta:
         db_table = u'"{}\".\"facilities"'.format(settings.MAINTENANCE_HELPDESK_SYSTEM)
 
+class Category(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = u'"{}\".\"categories"'.format(settings.MAINTENANCE_HELPDESK_SYSTEM)
+
 class Issue(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     created_by = models.ForeignKey(

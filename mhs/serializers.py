@@ -33,6 +33,11 @@ class FetchFacilitySerializer(serializers.ModelSerializer):
         model = models.Facility
         fields = '__all__'
 
+class FetchCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Category
+        fields = '__all__'
+
 class GenericIssueSerializer(serializers.Serializer):
     job_type = serializers.CharField()
     equipment_type = serializers.CharField()
