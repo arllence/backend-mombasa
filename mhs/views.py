@@ -1467,7 +1467,7 @@ class MHSViewSet(viewsets.ViewSet):
                     subject = f"Issue {issueInstance.uid}  Completed  [MHD-AKHK]"
                     message = f"Hello. \nYour Issue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nClick on the button below to close it.\n"
 
-                    uri = f"requests/view/{str(issueInstance.id)}"
+                    uri = f"generics/acknowledgement/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8008/" + uri
                     platform = 'Close Issue'
 
