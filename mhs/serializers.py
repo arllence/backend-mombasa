@@ -47,18 +47,17 @@ class GenericIssueSerializer(serializers.Serializer):
 
 
 class IssueSerializer(serializers.Serializer):
-    job_type = serializers.CharField()
-    equipment_type = serializers.CharField()
     department = serializers.CharField()
     section = serializers.CharField()
+    facility = serializers.CharField()
+    category = serializers.CharField()
     issue = serializers.CharField(style={'type': 'textarea'})
 
 class PutIssueSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
-    job_type = serializers.CharField()
-    equipment_type = serializers.CharField()
     department = serializers.CharField()
-    section = serializers.CharField()
+    facility = serializers.CharField()
+    category = serializers.CharField()
     issue = serializers.CharField(style={'type': 'textarea'})
 
 

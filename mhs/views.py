@@ -785,11 +785,13 @@ class MHSViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
-                job_type = payload['job_type']
-                equipment_type = payload['equipment_type']
+                job_type = payload['job_type'] or None
+                equipment_type = payload['equipment_type'] or None
+                section = payload['section'] or None
                 department = payload['department']
-                section = payload['section']
                 issue = payload['issue']
+                category = payload['category']
+                facility = payload['facility']
 
                 uid = shared_fxns.generate_unique_identifier()
 
@@ -798,21 +800,34 @@ class MHSViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
+                if job_type:
+                    try:
+                        job_type = models.JobType.objects.get(id=job_type)
+                    except Exception as e:
+                        return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if equipment_type:   
+                    try:
+                        equipment_type = models.EquipmentType.objects.get(id=equipment_type)
+                    except Exception as e:
+                        return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if section:
+                    try:
+                        section = models.Section.objects.get(id=section)
+                    except Exception as e:
+                        return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
+
                 try:
-                    job_type = models.JobType.objects.get(id=job_type)
+                    category = models.Category.objects.get(id=category)
                 except Exception as e:
-                    return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    equipment_type = models.EquipmentType.objects.get(id=equipment_type)
+                    facility = models.Facility.objects.get(id=facility)
                 except Exception as e:
-                    return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
- 
-                try:
-                    section = models.Section.objects.get(id=section)
-                except Exception as e:
-                    return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
-
+                    return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
+                
                 with transaction.atomic():
                     raw = {
                         "department": department,
@@ -822,6 +837,8 @@ class MHSViewSet(viewsets.ViewSet):
                         "created_by": authenticated_user,
                         "attachment": attachment,
                         "issue": issue,
+                        "category": category,
+                        "facility": facility,
                         "uid": uid
                     }
 
@@ -908,7 +925,16 @@ class MHSViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
 
-
+                try:
+                    category = models.Category.objects.get(id=category)
+                except Exception as e:
+                    return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    facility = models.Facility.objects.get(id=facility)
+                except Exception as e:
+                    return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
+                
                 with transaction.atomic():
                     raw = {
                         "department": department,
@@ -917,6 +943,8 @@ class MHSViewSet(viewsets.ViewSet):
                         "equipment_type": equipment_type,
                         "created_by": authenticated_user,
                         "issue": issue,
+                        "facility": facility,
+                        "category": category,
                     }  
 
                     models.Issue.objects.filter(Q(id=request_id)).update(**raw)
@@ -1010,8 +1038,7 @@ class MHSViewSet(viewsets.ViewSet):
 
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
-
-            
+      
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             query = request.query_params.get('q')

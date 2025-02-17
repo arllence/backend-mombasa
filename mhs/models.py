@@ -107,6 +107,11 @@ class Issue(models.Model):
        related_name="mhs_facility",
        null=True, blank=True
     )
+    category = models.ForeignKey(
+       Category, on_delete=models.DO_NOTHING, 
+       related_name="mhs_category",
+       null=True, blank=True
+    )
 
     uid = models.CharField(max_length=50, unique=True)
     status = models.CharField(max_length=255, default='SUBMITTED')
