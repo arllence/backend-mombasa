@@ -69,6 +69,8 @@ def convert_to_json_serializable(data):
         return {key: convert_to_json_serializable(value) for key, value in data.items()}
     elif isinstance(data, UUID):
         return str(data)
+    elif isinstance(data, datetime):
+        return data.isoformat()  # Convert datetime to string in ISO 8601 format
     elif hasattr(data, '__dict__'):
         return convert_to_json_serializable(data.__dict__)
     else:

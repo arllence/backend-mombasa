@@ -2,7 +2,7 @@ import requests
 def send_mail(name, email, subject, message):
 	send =  requests.post(
 			"https://api.mailgun.net/v3/communications.youthadapt.africa/messages",
-			auth=("api", "key-615596a3eb7952ba602d1aef3301c2b1"),
+			auth=("api", "key-615596a3eb7952ba602d1aef3301c2b1-xcd"),
 			data={"from": "PSMDQS-AKHK <no-reply@communications.youthadapt.africa>",
 				"to": f"{name} <{email}>",
 				"subject": subject,
