@@ -2,6 +2,7 @@ import calendar
 import datetime
 import json
 import logging
+from string import Template
 import uuid
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
@@ -28,6 +29,11 @@ from rest_framework.pagination import PageNumberPagination
 from intranet.serializers import FullFetchDepartmentSerializer
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
+
+def read_template(filename):
+    with open("acl/emails/" + filename, 'r', encoding='utf8') as template_file:
+        template_file_content = template_file.read()
+        return Template(template_file_content)
 
 class GenericsViewSet(viewsets.ViewSet):
     permission_classes = (AllowAny,)
@@ -214,13 +220,16 @@ class GenericsViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
-                job_type = payload['job_type']
-                equipment_type = payload['equipment_type']
+                job_type = payload['job_type'] or None
+                equipment_type = payload['equipment_type'] or None
+                section = payload['section'] or None
                 department = payload['department']
-                section = payload['section']
                 issue = payload['issue']
-                name = payload.get('name') or None
-                email = payload.get('email') or None
+                name = payload.get('name')
+                email = payload.get('email')
+                category = payload['category']
+                facility = payload['facility']
+                subject = payload['subject']
 
                 uid = shared_fxns.generate_unique_identifier()
 
@@ -236,20 +245,33 @@ class GenericsViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
+                if job_type:
+                    try:
+                        job_type = models.JobType.objects.get(id=job_type)
+                    except Exception as e:
+                        return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if equipment_type:   
+                    try:
+                        equipment_type = models.EquipmentType.objects.get(id=equipment_type)
+                    except Exception as e:
+                        return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if section:
+                    try:
+                        section = models.Section.objects.get(id=section)
+                    except Exception as e:
+                        return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
+
                 try:
-                    job_type = models.JobType.objects.get(id=job_type)
+                    category = models.Category.objects.get(id=category)
                 except Exception as e:
-                    return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    equipment_type = models.EquipmentType.objects.get(id=equipment_type)
+                    facility = models.Facility.objects.get(id=facility)
                 except Exception as e:
-                    return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
- 
-                try:
-                    section = models.Section.objects.get(id=section)
-                except Exception as e:
-                    return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
                     raw = {
@@ -260,6 +282,9 @@ class GenericsViewSet(viewsets.ViewSet):
                         "created_by": user,
                         "attachment": attachment,
                         "issue": issue,
+                        "facility": facility,
+                        "category": category,
+                        "subject": subject,
                         "uid": uid
                     }
                     if not user:
@@ -286,18 +311,50 @@ class GenericsViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
-                    subject = f"New Issue Reported: {uid} .  [MHD-AKHK]"
+                    subject = subject
                     message = f"""
-                        Issue Details\n\n
-                        Section: {section.name}\n
-                        Job Type: {job_type.name}\n
-                        Equipment Type: {equipment_type.name}\n
-                        Department: {department.name}\n
-                        Date and Time: {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n
-                        Issue: {issue}\n\n
-                        Regards\nMHD-AKHK"
+                        <table border="1" class='signature-table'>
+                            <tr>
+                                <th colspan='5'>Issue Details</th>
+                            </tr>
+                            <tr>
+                                <th>Facility</th>
+                                <td>{facility.name}</td>
+                            </tr>
+                            <tr>
+                                <th>Category</th>
+                                <td>{category.name}</td>
+                            </tr>
+                            <tr>
+                                <th>Department</th>
+                                <td>{department.name}</td>
+                            </tr>
+                            <tr>
+                                <th>Date and Time</th>
+                                <td>{str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}</td>
+                            </tr>
+                            <tr>
+                                <th>Subject</th>
+                                <td>{subject}</td>
+                            </tr>
+                            <tr>
+                                <th>Issue</th>
+                                <td>{issue}</td>
+                            </tr>
+                        </table>
+
 
                     """
+                    link = "http://172.20.0.42:8008/generic/home"
+                    platform = 'MHD'
+
+                    message_template = read_template("general_template.html")
+                    message = message_template.substitute(
+                        # NAME=name, 
+                        CONTENT=message,
+                        LINK=link,
+                        PLATFORM=platform
+                    )
 
                     try:
                         if emails:
@@ -792,6 +849,7 @@ class MHSViewSet(viewsets.ViewSet):
                 issue = payload['issue']
                 category = payload['category']
                 facility = payload['facility']
+                subject = payload['subject']
 
                 uid = shared_fxns.generate_unique_identifier()
 
@@ -839,6 +897,7 @@ class MHSViewSet(viewsets.ViewSet):
                         "issue": issue,
                         "category": category,
                         "facility": facility,
+                        "subject": subject,
                         "uid": uid
                     }
 
@@ -897,6 +956,9 @@ class MHSViewSet(viewsets.ViewSet):
                 department = payload['department']
                 section = payload['section']
                 issue = payload['issue']
+                category = payload['category']
+                facility = payload['facility']
+                subject = payload['subject']
 
 
                 try:
@@ -945,6 +1007,7 @@ class MHSViewSet(viewsets.ViewSet):
                         "issue": issue,
                         "facility": facility,
                         "category": category,
+                        "subject": subject
                     }  
 
                     models.Issue.objects.filter(Q(id=request_id)).update(**raw)

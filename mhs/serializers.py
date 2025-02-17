@@ -39,24 +39,27 @@ class FetchCategorySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class GenericIssueSerializer(serializers.Serializer):
-    job_type = serializers.CharField()
-    equipment_type = serializers.CharField()
+    name = serializers.CharField()
+    email = serializers.CharField()
     department = serializers.CharField()
-    section = serializers.CharField()
+    facility = serializers.CharField()
+    category = serializers.CharField()
+    subject = serializers.CharField()
     issue = serializers.CharField(style={'type': 'textarea'})
 
 
 class IssueSerializer(serializers.Serializer):
     department = serializers.CharField()
-    section = serializers.CharField()
     facility = serializers.CharField()
     category = serializers.CharField()
+    subject = serializers.CharField()
     issue = serializers.CharField(style={'type': 'textarea'})
 
 class PutIssueSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
     department = serializers.CharField()
     facility = serializers.CharField()
+    subject = serializers.CharField()
     category = serializers.CharField()
     issue = serializers.CharField(style={'type': 'textarea'})
 
@@ -70,6 +73,8 @@ class FetchIssueSerializer(serializers.ModelSerializer):
     assigned_to = UsersSerializer()
     job_type = FetchJobTypeSerializer()
     equipment_type = FetchEquipmentTypeSerializer()
+    category = FetchCategorySerializer()
+    facility = FetchFacilitySerializer()
     section = FetchSectionSerializer()
     department = FetchSRRSDepartmentSerializer()
     approvals = serializers.SerializerMethodField()
@@ -135,6 +140,8 @@ class SlimFetchIssueSerializer(serializers.ModelSerializer):
     department = SlimFetchSRRSDepartmentSerializer()
     job_type = FetchJobTypeSerializer()
     equipment_type = FetchEquipmentTypeSerializer()
+    section = FetchSectionSerializer()
+    facility = FetchFacilitySerializer()
     section = FetchSectionSerializer()
     is_owner = serializers.SerializerMethodField()
 
