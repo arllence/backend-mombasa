@@ -1220,6 +1220,11 @@ class MHSViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown assignee"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
                 
+                if issueInstance.assigned_to:
+                    if issueInstance.assigned_to == assigned_to:
+                        return Response({"details": "Already Assigned"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
                 with transaction.atomic():
                     issueInstance.assigned_to = assigned_to
                     # issueInstance.assignee_comment = comment
