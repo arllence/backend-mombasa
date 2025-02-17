@@ -345,12 +345,12 @@ class GenericsViewSet(viewsets.ViewSet):
 
 
                     """
-                    link = "http://172.20.0.42:8008/generic/home"
-                    platform = 'MHD'
+                    uri = f"requests/view/{str(issue.id)}"
+                    link = "http://172.20.0.42:8008/" + uri
+                    platform = 'View Issue'
 
                     message_template = read_template("general_template.html")
                     message = message_template.substitute(
-                        # NAME=name, 
                         CONTENT=message,
                         LINK=link,
                         PLATFORM=platform
@@ -918,7 +918,7 @@ class MHSViewSet(viewsets.ViewSet):
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
                     subject = f"New Issue Reported: {uid} .  [MHD-AKHK]"
-                    message = f"Hello. \nNew Issue: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nFMS-AKHK"
+                    message = f"Hello. \nNew Issue: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nMHD-AKHK"
 
                     try:
                         if emails:
@@ -1078,7 +1078,7 @@ class MHSViewSet(viewsets.ViewSet):
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
                     subject = f"Issue {issueInstance.uid} Closed [MHD-AKHK]"
-                    message = f"Hello. \nIssue: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nFMS-AKHK"
+                    message = f"Hello. \nIssue: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nMHD-AKHK"
 
                     if issueInstance.created_by:
                         emails.append(str(issueInstance.created_by.email))
@@ -1245,11 +1245,11 @@ class MHSViewSet(viewsets.ViewSet):
                     # Notify the assignee
                     emails = [assigned_to.email]
                     subject = f"Issue {issueInstance.uid}  Assigned To You  [MHD-AKHK]"
-                    message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nFMS-AKHK"
+                    message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nMHD-AKHK"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8008/" + uri
-                    platform = 'MHD'
+                    platform = 'View Issue'
 
                     message_template = read_template("general_template.html")
                     message = message_template.substitute(
@@ -1269,8 +1269,6 @@ class MHSViewSet(viewsets.ViewSet):
                     except Exception as e:
                         logger.error(e)
 
-
-
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Issue Request Assigned", 
                     f"Assigning Executed UID: {str(issueInstance.id)}")
@@ -1280,7 +1278,113 @@ class MHSViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, 
                                 status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=["POST"],
+            detail=False,
+            url_path="completed",
+            url_name="completed")
+    def completed(self, request):
+
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+            roles = user_util.fetchusergroups(request.user.id) 
+
+            serializer = serializers.MarkAsCompleteSerializer(
+                    data=payload, many=False)
             
+            if serializer.is_valid():
+                request_id = payload['request_id']
+
+                try:
+                    issueInstance = models.Issue.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown issue"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    issueInstance.status = 'COMPLETED'
+                    issueInstance.save()
+
+                    # track status change
+                    raw = {
+                        "issue": issueInstance,
+                        "status": 'COMPLETED',
+                        "status_for": '/'.join(roles),
+                        "action_by": authenticated_user
+                    }
+
+                    models.StatusChange.objects.create(**raw)
+
+
+                    # Notify Admins
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
+                    subject = f"Issue {issueInstance.uid}  Completed  [MHD-AKHK]"
+                    message = f"Hello. \nIssue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
+
+                    uri = f"requests/view/{str(issueInstance.id)}"
+                    link = "http://172.20.0.42:8008/" + uri
+                    platform = 'View Issue'
+
+                    message_template = read_template("general_template.html")
+                    message = message_template.substitute(
+                        # NAME=name, 
+                        CONTENT=message,
+                        LINK=link,
+                        PLATFORM=platform
+                    )
+                    
+                    try:
+                        mail = {
+                            "email" : list(set(emails)), 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+                    # Notify requestor
+                    if issueInstance.email:
+                        emails = [issueInstance.email]
+                    else:
+                        emails = [issueInstance.created_by.email]
+                    subject = f"Issue {issueInstance.uid}  Completed  [MHD-AKHK]"
+                    message = f"Hello. \nYour Issue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nClick on the button below to close it.\n"
+
+                    uri = f"requests/view/{str(issueInstance.id)}"
+                    link = "http://172.20.0.42:8008/" + uri
+                    platform = 'Close Issue'
+
+                    message_template = read_template("general_template.html")
+                    message = message_template.substitute(
+                        CONTENT=message,
+                        LINK=link,
+                        PLATFORM=platform
+                    )
+                    
+                    try:
+                        mail = {
+                            "email" : list(set(emails)), 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Issue Request Solved / Completed", 
+                    f"Completeness Executed UID: {str(issueInstance.id)}")
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)    
 
     @action(methods=["POST","GET"],
             detail=False,

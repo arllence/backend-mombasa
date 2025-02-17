@@ -173,6 +173,8 @@ class AssignSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
     assign_to = serializers.CharField(max_length=500)
 
+class MarkAsCompleteSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
 
 class FetchStatusChangeSerializer(serializers.ModelSerializer):
     action_by = SlimUsersSerializer()

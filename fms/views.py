@@ -245,8 +245,9 @@ class GenericsViewSet(viewsets.ViewSet):
 
 
                     """
-                    link = "http://172.20.0.42:8006/generic/home"
-                    platform = 'IMS'
+                    uri = f"requests/view/{str(incident.id)}"
+                    link = "http://172.20.0.42:8006/" + uri
+                    platform = 'View Incident'
 
                     message_template = read_template("general_template.html")
                     message = message_template.substitute(
