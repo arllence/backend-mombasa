@@ -1241,6 +1241,18 @@ class MHSViewSet(viewsets.ViewSet):
                     emails = [assigned_to.email]
                     subject = f"Issue {issueInstance.uid}  Assigned To You  [MHD-AKHK]"
                     message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nFMS-AKHK"
+
+                    uri = f"requests/view/{str(issueInstance.id)}"
+                    link = "http://172.20.0.42:8008/" + uri
+                    platform = 'MHD'
+
+                    message_template = read_template("general_template.html")
+                    message = message_template.substitute(
+                        # NAME=name, 
+                        CONTENT=message,
+                        LINK=link,
+                        PLATFORM=platform
+                    )
                     
                     try:
                         mail = {
