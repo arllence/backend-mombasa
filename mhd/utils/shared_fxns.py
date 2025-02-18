@@ -1,7 +1,7 @@
 from datetime import datetime
 import string
 import random
-from mhs.models import Issue
+from mhd.models import Issue
 
 def find_date_difference(start_date,end_date,period):
     try:

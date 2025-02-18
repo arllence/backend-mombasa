@@ -18,7 +18,7 @@ urlpatterns = [
     path(API_VERSION, include('dbmanager.urls')),
     path(API_VERSION, include('fms.urls')),
     path(API_VERSION, include('cms.urls')),
-    path(API_VERSION, include('mhs.urls')),
+    path(API_VERSION, include('mhd.urls')),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
 

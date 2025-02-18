@@ -115,7 +115,7 @@ class Issue(models.Model):
 
     uid = models.CharField(max_length=50, unique=True)
     status = models.CharField(max_length=255, default='SUBMITTED')
-    attachment = models.FileField(upload_to='documents/mhs/attachments/', null=True, blank=True)
+    attachment = models.FileField(upload_to='documents/mhd/attachments/', null=True, blank=True)
     issue = models.TextField()
     subject = models.CharField(max_length=255, null=True, blank=True)
     name = models.CharField(max_length=255, null=True, blank=True)

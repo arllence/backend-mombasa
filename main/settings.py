@@ -59,7 +59,7 @@ INSTALLED_APPS = [
     'dbmanager',
     'fms',
     'cms',
-    'mhs'
+    'mhd'
 ]
 
 MIDDLEWARE = [
@@ -129,7 +129,7 @@ INTRANET = 'intranet'
 DB_MANAGER = 'db_manager'
 FEEDBACK_MANAGEMENT_SYSTEM = 'fms'
 CONTRACT_MANAGEMENT_SYSTEM = 'cms'
-MAINTENANCE_HELPDESK_SYSTEM = 'mhs'
+MAINTENANCE_HELPDESK_SYSTEM = 'mhd'
 
 
 

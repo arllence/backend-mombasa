@@ -1,7 +1,7 @@
 from django.db.models import  Q
 from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, SlimFetchSRRSDepartmentSerializer, FetchSubDepartmentSerializer, FetchOHCSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
-from mhs import models
+from mhd import models
 from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 

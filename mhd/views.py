@@ -14,9 +14,9 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.contrib.auth import get_user_model
 from django.db.models import  Q
 from django.db import transaction
-from mhs import models
-from mhs import serializers
-from mhs.utils import shared_fxns
+from mhd import models
+from mhd import serializers
+from mhd.utils import shared_fxns
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
 from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
