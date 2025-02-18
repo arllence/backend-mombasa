@@ -346,7 +346,7 @@ class GenericsViewSet(viewsets.ViewSet):
 
                     """
                     uri = f"requests/view/{str(issue.id)}"
-                    link = "http://172.20.0.42:8008/" + uri
+                    link = "http://172.20.0.42:8009/" + uri
                     platform = 'View Issue'
 
                     message_template = read_template("general_template.html")
@@ -429,7 +429,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     message = f"Hello. \nIssue of id: {issueInstance.uid} has been Acknowledged by owner as Completed / Solved\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
-                    link = "http://172.20.0.42:8008/" + uri
+                    link = "http://172.20.0.42:8009/" + uri
                     platform = 'View Issue'
 
                     message_template = read_template("general_template.html")
@@ -459,7 +459,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     message = f"Hello. \nYour Issue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nClick on the button below to close it.\n"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
-                    link = "http://172.20.0.42:8008/" + uri
+                    link = "http://172.20.0.42:8009/" + uri
                     platform = 'Close Issue'
 
                     message_template = read_template("general_template.html")
@@ -1360,7 +1360,7 @@ class MHSViewSet(viewsets.ViewSet):
                     message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nMHD-AKHK"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
-                    link = "http://172.20.0.42:8008/" + uri
+                    link = "http://172.20.0.42:8009/" + uri
                     platform = 'View Issue'
 
                     message_template = read_template("general_template.html")
@@ -1438,7 +1438,7 @@ class MHSViewSet(viewsets.ViewSet):
                     message = f"Hello. \nIssue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
-                    link = "http://172.20.0.42:8008/" + uri
+                    link = "http://172.20.0.42:8009/" + uri
                     platform = 'View Issue'
 
                     message_template = read_template("general_template.html")
@@ -1468,7 +1468,7 @@ class MHSViewSet(viewsets.ViewSet):
                     message = f"Hello. \nYour Issue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nClick on the button below to close it.\n"
 
                     uri = f"generics/acknowledgement/{str(issueInstance.id)}"
-                    link = "http://172.20.0.42:8008/" + uri
+                    link = "http://172.20.0.42:8009/" + uri
                     platform = 'Close Issue'
 
                     message_template = read_template("general_template.html")
@@ -1683,6 +1683,8 @@ class ReportsViewSet(viewsets.ViewSet):
         job_type = request.query_params.get('job_type')
         equipment_type = request.query_params.get('equipment_type')
         section = request.query_params.get('section')
+        category = request.query_params.get('category')
+        facility = request.query_params.get('facility')
         date = False
 
         if date_to and date_from:
@@ -1718,6 +1720,12 @@ class ReportsViewSet(viewsets.ViewSet):
 
         if section:
             q_filters &= Q(section=section)
+
+        if facility:
+            q_filters &= Q(facility=facility)
+
+        if category:
+            q_filters &= Q(category=category)
 
 
         if q_filters:
