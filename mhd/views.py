@@ -310,7 +310,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                     # Notify Platform Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
                     subject = subject
                     message = f"""
                         <table border="1" class='signature-table'>
@@ -424,7 +424,7 @@ class GenericsViewSet(viewsets.ViewSet):
 
 
                     # Notify Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
                     subject = f"Issue {issueInstance.uid}  Acknowledged  [MHD-AKHK]"
                     message = f"Hello. \nIssue of id: {issueInstance.uid} has been Acknowledged by owner as Completed / Solved\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
 
@@ -1028,7 +1028,7 @@ class MHSViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                     # Notify Platform Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
                     subject = f"New Issue Reported: {uid} .  [MHD-AKHK]"
                     message = f"Hello. \nNew Issue: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nMHD-AKHK"
 
@@ -1188,7 +1188,7 @@ class MHSViewSet(viewsets.ViewSet):
 
 
                     # Notify Platform Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
                     subject = f"Issue {issueInstance.uid} Closed [MHD-AKHK]"
                     message = f"Hello. \nIssue: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nMHD-AKHK"
 
@@ -1237,7 +1237,7 @@ class MHSViewSet(viewsets.ViewSet):
             else:
                 try:
 
-                    if "MHS_ADMIN" in roles or "SUPERUSER" in roles:
+                    if "MHD_ADMIN" in roles or "SUPERUSER" in roles:
 
                         resp = models.Issue.objects.filter(
                                 is_deleted=False
@@ -1302,7 +1302,7 @@ class MHSViewSet(viewsets.ViewSet):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
 
-        allowed = ["MHS_ADMIN", "SUPERUSER"]
+        allowed = ["MHD_ADMIN", "SUPERUSER"]
 
         if not any(role in allowed for role in roles):
             return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
@@ -1433,7 +1433,7 @@ class MHSViewSet(viewsets.ViewSet):
 
 
                     # Notify Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHS_ADMIN'])).values_list('email', flat=True))
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
                     subject = f"Issue {issueInstance.uid}  Completed  [MHD-AKHK]"
                     message = f"Hello. \nIssue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
 
@@ -1579,9 +1579,9 @@ class MHSViewSet(viewsets.ViewSet):
                     return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 # assign FMS_ADMIN role
-                assign_role = user_util.award_role('MHS_ADMIN', str(admin.id))
+                assign_role = user_util.award_role('MHD_ADMIN', str(admin.id))
                 if not assign_role:
-                    return Response({"details": "Unable to assign role MHS_ADMIN"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unable to assign role MHD_ADMIN"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
                     raw = {
@@ -1652,7 +1652,7 @@ class MHSViewSet(viewsets.ViewSet):
             if request_id:
                 try:
                     user = models.PlatformAdmin.objects.get(id=request_id)
-                    user_util.revoke_role('MHS_ADMIN', str(user.admin.id))
+                    user_util.revoke_role('MHD_ADMIN', str(user.admin.id))
                     user.delete()
                     return Response('200', status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
