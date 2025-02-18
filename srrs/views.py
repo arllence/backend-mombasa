@@ -296,12 +296,12 @@ class SrrsViewSet(viewsets.ViewSet):
 
 
                     
-                if nature_of_hiring == 'Replacement':
-                    if replacement:
-                        for key, value in replacement.items():
-                            if not value:
-                                return Response({"details": "Staff Replacement Details Required"}, 
-                                status=status.HTTP_400_BAD_REQUEST)
+                # if nature_of_hiring == 'Replacement':
+                #     if replacement:
+                #         for key, value in replacement.items():
+                #             if not value:
+                #                 return Response({"details": "Staff Replacement Details Required"}, 
+                #                 status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     recruit = models.Recruit.objects.get(id=request_id)
