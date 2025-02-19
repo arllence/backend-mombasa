@@ -1,3 +1,4 @@
+import datetime
 import time
 import requests
 from django.db.models import Q
@@ -22,6 +23,7 @@ def main(emails):
         subject = target.subject
         message = target.message
         email = target.email
+        timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
 
 
         if not is_html:
@@ -29,11 +31,11 @@ def main(emails):
                 send_mail(subject, message, 'notification@akhskenya.org', email, fail_silently=False)
                 target.status = "SENT"
                 target.save()
-                print(f'{count}-<200>-{email[0]}: Email sent successfully.')
+                print(f'{count}-{timestamp}-<200>-{email[0]}: Email sent successfully.')
             except BadHeaderError:
-                print(f'{count}-<400>-{email[0]}: Invalid header found.')
+                print(f'{count}-{timestamp}-<400>-{email[0]}: Invalid header found.')
             except Exception as e:
-                print(f'<500>-An error occurred: {str(e)}')
+                print(f'<500>-{timestamp}-An error occurred: {str(e)}')
         else:
             email_to_send = EmailMessage(
                 subject,
@@ -42,9 +44,13 @@ def main(emails):
                 email
             )
             email_to_send.content_subtype = 'html'  # Set the content type to HTML
-            email_to_send.send(fail_silently=False)
-            target.status = "SENT"
-            target.save()
+            try:
+                email_to_send.send(fail_silently=False)
+                target.status = "SENT"
+                target.save()
+                print(f'(HTML)-<200>-{timestamp}-{email[0]}: Email sent successfully.')
+            except Exception as e:
+                print(f'(HTML)-<500>-{timestamp}-An error occurred: {str(e)}')
 			
         time.sleep(1)
 # get_emails()
