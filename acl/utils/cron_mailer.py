@@ -7,16 +7,21 @@ from django.core.mail import send_mail, EmailMessage, BadHeaderError
 # exec(open('acl/utils/cron_mailer.py').read())
 
 def get_emails():
-    print("into get emails")
+    print("Fetching emails ...")
     emails = models.Sendmail.objects.filter(Q(status='PENDING') | Q(status='FAILED'))
+
     for email in emails:
         email.status = 'FETCHED'
         email.save()
-    print("got emails", len(emails))
-    main(emails)
+
+    print(f"Got {len(emails)} emails ...")
+
+    if len(emails) > 0:
+        main(emails)
+    
 
 def main(emails):
-    print("Main starting...")
+    print("Main Fn Starting...")
     count = 0
       
     for target in emails:
@@ -56,4 +61,9 @@ def main(emails):
                 print(f'(HTML)-<500>-{timestamp}-An error occurred: {str(e)}')
 			
         time.sleep(1)
+
+    timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
+    print(f">>> Sent {count} Emails | {timestamp}")
+
+
 # get_emails()
