@@ -832,7 +832,10 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 subject = "Platform Access Details"
                 message = f"Dear {first_name}, \nYour email is {email}\nYour password is: {password}\nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nPSMDQS-AKHK"
 
-                send_mail(subject, message, 'notification@akhskenya.org', [email])
+                try:
+                    send_mail(subject, message, 'notification@akhskenya.org', [email])
+                except Exception as e:
+                    logger.error(e)
 
                 user_util.log_account_activity(
                     authenticated_user, create_user, "Account Creation",
