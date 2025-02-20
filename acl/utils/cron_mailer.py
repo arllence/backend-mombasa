@@ -34,11 +34,11 @@ def main(emails):
                 send_mail(subject, message, 'notification@akhskenya.org', email, fail_silently=False)
                 target.status = "SENT"
                 target.save()
-                print(f'{count}-{timestamp}-<200>-{str(email)}: Email sent successfully.')
+                print(f'(PLAIN)-<200>-{timestamp}-{str(email)}')
             except BadHeaderError:
-                print(f'{count}-{timestamp}-<400>-{str(email)}: Invalid header found.')
+                print(f'(PLAIN)-<400>-{timestamp}-{str(email)}: Invalid header found.')
             except Exception as e:
-                print(f'<500>-{timestamp}-An error occurred: {str(e)}')
+                print(f'(PLAIN)-<500>-{timestamp}-An error occurred: {str(e)}')
         else:
             email_to_send = EmailMessage(
                 subject,
@@ -51,7 +51,7 @@ def main(emails):
                 email_to_send.send(fail_silently=False)
                 target.status = "SENT"
                 target.save()
-                print(f'(HTML)-<200>-{timestamp}-{str(email)}: Email sent successfully.')
+                print(f'(HTML)-<200>-{timestamp}-{str(email)}')
             except Exception as e:
                 print(f'(HTML)-<500>-{timestamp}-An error occurred: {str(e)}')
 			
