@@ -9,6 +9,9 @@ from django.core.mail import send_mail, EmailMessage, BadHeaderError
 def get_emails():
     print("into get emails")
     emails = models.Sendmail.objects.filter(Q(status='PENDING') | Q(status='FAILED'))
+    for email in emails:
+        email.status = 'FETCHED'
+        email.save()
     print("got emails", len(emails))
     main(emails)
 
