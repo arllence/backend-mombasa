@@ -362,6 +362,7 @@ class GenericsViewSet(viewsets.ViewSet):
                                 "email" : list(set(emails)), 
                                 "subject" : subject,
                                 "message" : message,
+                                "is_html": True
                             }
                             
                             Sendmail.objects.create(**mail)
