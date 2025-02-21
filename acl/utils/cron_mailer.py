@@ -17,8 +17,8 @@ def get_emails():
 
     print(f"[{timestamp}] Got {len(emails)} emails ...")
 
-    # if len(emails) > 0:
-    main(emails)
+    if len(emails) > 0:
+        main(emails)
     
 def get_fetched():
     timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
@@ -27,10 +27,11 @@ def get_fetched():
 
     print(f"[{timestamp}] Got {len(emails)} emails ...")
 
-    # if len(emails) > 0:
-    main(emails)
+    if len(emails) > 0:
+        main(emails)
 
 def main(emails):
+    timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
     print(f"[{timestamp}] Main Fn Starting...")
     count = 0
       
