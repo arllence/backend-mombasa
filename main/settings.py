@@ -59,7 +59,7 @@ INSTALLED_APPS = [
     'dbmanager',
     'fms',
     'cms',
-    'mhd'
+    'mhd', 'system_directory'
 ]
 
 MIDDLEWARE = [
@@ -130,6 +130,7 @@ DB_MANAGER = 'db_manager'
 FEEDBACK_MANAGEMENT_SYSTEM = 'fms'
 CONTRACT_MANAGEMENT_SYSTEM = 'cms'
 MAINTENANCE_HELPDESK_SYSTEM = 'mhd'
+SYSTEM_DIRECTORY = 'system_directory'
 
 
 

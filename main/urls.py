@@ -19,6 +19,7 @@ urlpatterns = [
     path(API_VERSION, include('fms.urls')),
     path(API_VERSION, include('cms.urls')),
     path(API_VERSION, include('mhd.urls')),
+    path(API_VERSION, include('system_directory.urls')),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
 
