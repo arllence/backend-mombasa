@@ -80,6 +80,7 @@ class FetchIssueSerializer(serializers.ModelSerializer):
     approvals = serializers.SerializerMethodField()
     is_owner = serializers.SerializerMethodField()
     is_assigned = serializers.SerializerMethodField()
+    tat = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Issue
@@ -134,6 +135,25 @@ class FetchIssueSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return False
+        
+    def get_tat(self, obj):
+        try:
+            diff = (obj.date_closed - obj.date_created).days
+            if diff == 0:
+                diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
+                if diff < 1:
+                    diff = str(int((obj.date_closed - obj.date_created).total_seconds() // 60)) + " Minutes"
+                else:
+                 diff = str(diff) + " Hours"
+            else:
+                diff = str(diff) + " Days"
+
+            return diff
+        
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return ""
     
 
 class SlimFetchIssueSerializer(serializers.ModelSerializer):
