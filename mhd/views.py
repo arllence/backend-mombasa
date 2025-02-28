@@ -1086,21 +1086,23 @@ class MHSViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
+                if job_type:
+                    try:
+                        job_type = models.JobType.objects.get(id=job_type)
+                    except Exception as e:
+                        return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                try:
-                    job_type = models.JobType.objects.get(id=job_type)
-                except Exception as e:
-                    return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
+                if equipment_type:    
+                    try:
+                        equipment_type = models.EquipmentType.objects.get(id=equipment_type)
+                    except Exception as e:
+                        return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                try:
-                    equipment_type = models.EquipmentType.objects.get(id=equipment_type)
-                except Exception as e:
-                    return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
- 
-                try:
-                    section = models.Section.objects.get(id=section)
-                except Exception as e:
-                    return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
+                if section:
+                    try:
+                        section = models.Section.objects.get(id=section)
+                    except Exception as e:
+                        return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     category = models.Category.objects.get(id=category)
