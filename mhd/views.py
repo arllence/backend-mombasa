@@ -216,7 +216,7 @@ class GenericsViewSet(viewsets.ViewSet):
             payload = json.loads(request.data['payload'])
             attachment = request.FILES.get('attachments', None)
 
-            serializer = serializers.IssueSerializer(
+            serializer = serializers.GenericIssueSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
@@ -311,7 +311,7 @@ class GenericsViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
-                    subject = subject
+                    subject = f"[MHD] {subject}"
                     message = f"""
                         <table border="1" class='signature-table'>
                             <tr>
@@ -426,7 +426,7 @@ class GenericsViewSet(viewsets.ViewSet):
 
                     # Notify Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
-                    subject = f"Issue {issueInstance.uid}  Acknowledged  [MHD-AKHK]"
+                    subject = f"[MHD] Issue {issueInstance.uid}  Acknowledged"
                     message = f"Hello. \nIssue of id: {issueInstance.uid} has been Acknowledged by owner as Completed / Solved\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
@@ -457,7 +457,7 @@ class GenericsViewSet(viewsets.ViewSet):
                         emails = [issueInstance.email]
                     else:
                         emails = [issueInstance.created_by.email]
-                    subject = f"Issue {issueInstance.uid}  Completed  [MHD-AKHK]"
+                    subject = f"[MHD] Issue {issueInstance.uid}  Completed  "
                     message = f"Hello. \nYour Issue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nClick on the button below to close it.\n"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
@@ -1032,7 +1032,7 @@ class MHSViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
-                    subject = f"New Issue Reported: {uid} .  [MHD-AKHK]"
+                    subject = f"[MHD] New Issue Reported: {uid} ."
                     message = f"Hello. \nNew Issue: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nMHD-AKHK"
 
                     try:
@@ -1192,7 +1192,7 @@ class MHSViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
-                    subject = f"Issue {issueInstance.uid} Closed [MHD-AKHK]"
+                    subject = f"[MHD] Issue {issueInstance.uid} Closed "
                     message = f"Hello. \nIssue: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nMHD-AKHK"
 
                     if issueInstance.created_by:
@@ -1359,7 +1359,7 @@ class MHSViewSet(viewsets.ViewSet):
 
                     # Notify the assignee
                     emails = [assigned_to.email]
-                    subject = f"Issue {issueInstance.uid}  Assigned To You  [MHD-AKHK]"
+                    subject = f"[MHD] Issue {issueInstance.uid}  Assigned To You  "
                     message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nMHD-AKHK"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
@@ -1438,7 +1438,7 @@ class MHSViewSet(viewsets.ViewSet):
 
                     # Notify Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
-                    subject = f"Issue {issueInstance.uid}  Completed  [MHD-AKHK]"
+                    subject = f"[MHD] Issue {issueInstance.uid}  Completed  "
                     message = f"Hello. \nIssue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
@@ -1469,7 +1469,7 @@ class MHSViewSet(viewsets.ViewSet):
                         emails = [issueInstance.email]
                     else:
                         emails = [issueInstance.created_by.email]
-                    subject = f"Issue {issueInstance.uid}  Completed  [MHD-AKHK]"
+                    subject = f"[MHD] Issue {issueInstance.uid}  Completed "
                     message = f"Hello. \nYour Issue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nClick on the button below to close it.\n"
 
                     uri = f"generics/acknowledgement/{str(issueInstance.id)}"
