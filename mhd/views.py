@@ -1120,7 +1120,6 @@ class MHSViewSet(viewsets.ViewSet):
                         "section": section,
                         "job_type": job_type,
                         "equipment_type": equipment_type,
-                        "created_by": authenticated_user,
                         "issue": issue,
                         "facility": facility,
                         "category": category,
