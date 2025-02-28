@@ -747,8 +747,56 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
         elif request.method == "PUT":
+            uploaded_files = request.FILES
+            if not uploaded_files:
+                return Response({"details": f"No files attached"}, status=status.HTTP_400_BAD_REQUEST)
 
-            pass
+            payload = json.loads(request.data['payload'])
+
+            serializer = serializers.UpdateUploadGeneralDocumentSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                title = payload.get('title')
+                tag = payload.get('tag')
+                file_type = payload.get('file_type')
+                is_quick_link = payload.get('is_quick_link') == "YES"
+
+                if not is_quick_link:
+                    return Response({"details": "Not a quick link"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                exts = ['pdf']
+                for f in request.FILES.getlist('documents'):
+                    original_file_name = f.name
+                    ext = original_file_name.split('.')[-1].strip().lower()
+                    if ext not in exts:
+                        return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if file_type == 'MULTIPLE': 
+                    bulkDocuments = [
+                        models.GeneralDocument(
+                            document=f,
+                            file_name=f.name, 
+                            title=title, 
+                            tag=tag, 
+                            is_quick_link=is_quick_link, 
+                            uploaded_by=request.user
+                        )
+                        for f in request.FILES.getlist('documents')
+                    ]
+                    try:
+                        with transaction.atomic():
+                            models.GeneralDocument.objects.bulk_create(bulkDocuments)
+                    except Exception as e:
+                        logger.error(e)
+                        print(f"Error during bulk creation: {e}")
+                                        
+
+                return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
 
         elif request.method == "PATCH":
             payload = request.data

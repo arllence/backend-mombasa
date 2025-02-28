@@ -21,6 +21,8 @@ class UploadDocumentSerializer(serializers.Serializer):
 class UploadGeneralDocumentSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=500)
 
+class UpdateUploadGeneralDocumentSerializer(serializers.Serializer):
+    tag = serializers.CharField(max_length=500)
 class FetchGeneralDocumentSerializer(serializers.ModelSerializer):
     uploaded_by = UsersSerializer()
     class Meta:
