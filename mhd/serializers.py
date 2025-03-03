@@ -162,7 +162,7 @@ class SlimFetchIssueSerializer(serializers.ModelSerializer):
     equipment_type = FetchEquipmentTypeSerializer()
     section = FetchSectionSerializer()
     facility = FetchFacilitySerializer()
-    section = FetchSectionSerializer()
+    category = FetchCategorySerializer()
     is_owner = serializers.SerializerMethodField()
 
     class Meta:
