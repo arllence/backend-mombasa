@@ -225,13 +225,17 @@ class GenericsViewSet(viewsets.ViewSet):
                 section = payload['section'] or None
                 department = payload['department']
                 issue = payload['issue']
-                name = payload.get('name')
-                email = payload.get('email')
+                name = payload['name']
+                email = payload['email']
                 category = payload['category']
                 facility = payload['facility']
                 subject = payload['subject']
 
                 uid = shared_fxns.generate_unique_identifier()
+
+                if not name or not email:
+                    return Response({"details": "Name and Email Required"}, status=status.HTTP_400_BAD_REQUEST)
+
 
                 user = None
                 if email:
