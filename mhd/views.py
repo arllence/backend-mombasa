@@ -1540,34 +1540,38 @@ class MHSViewSet(viewsets.ViewSet):
                     }
                     models.Note.objects.create(**raw)
 
-                if issueInstance.assigned_to.email == request.user.email:
-                    # Notify Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
-                    subject = f"[MHD] Note Issued for {issueInstance.uid}"
-                    message = f"Hello. \nA note has been added for Issue of id: {issueInstance.uid} \nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nThe Note:\n {comment}.\n"
+                # Send Note Notifications
+                emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                emails.append(issueInstance.assigned_to.email)
+                try:
+                    emails.remove(request.user.email)
+                except:
+                    pass
+                subject = f"[MHD] Note Issued for {issueInstance.uid}"
+                message = f"Hello. \nA note has been added for Issue of id: {issueInstance.uid} \nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nThe Note:\n {comment}.\n"
 
-                    uri = f"requests/view/{str(issueInstance.id)}"
-                    link = "http://172.20.0.42:8009/" + uri
-                    platform = 'View Issue'
+                uri = f"requests/view/{str(issueInstance.id)}"
+                link = "http://172.20.0.42:8009/" + uri
+                platform = 'View Issue'
 
-                    message_template = read_template("general_template.html")
-                    message = message_template.substitute(
-                        # NAME=name, 
-                        CONTENT=message,
-                        LINK=link,
-                        PLATFORM=platform
-                    )
-                    
-                    try:
-                        mail = {
-                            "email" : list(set(emails)), 
-                            "subject" : subject,
-                            "message" : message,
-                            "is_html": True
-                        }
-                        Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        logger.error(e)
+                message_template = read_template("general_template.html")
+                message = message_template.substitute(
+                    # NAME=name, 
+                    CONTENT=message,
+                    LINK=link,
+                    PLATFORM=platform
+                )
+                
+                try:
+                    mail = {
+                        "email" : list(set(emails)), 
+                        "subject" : subject,
+                        "message" : message,
+                        "is_html": True
+                    }
+                    Sendmail.objects.create(**mail)
+                except Exception as e:
+                    logger.error(e)
 
                 return Response('success', status=status.HTTP_200_OK)
             
