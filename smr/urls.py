@@ -4,8 +4,8 @@ from mhd import views
 router = DefaultRouter(trailing_slash=False)
 
 router.register('smr', views.MHSViewSet, basename='smr')
-router.register('mhd-reports',views.ReportsViewSet, basename='mhd-reports')
-router.register('mhd-analytics',views.AnalyticsViewSet, basename='mhd-analytics')
+router.register('smr-reports',views.ReportsViewSet, basename='smr-reports')
+router.register('smr-analytics',views.AnalyticsViewSet, basename='smr-analytics')
 router.register('smr-generics',views.GenericsViewSet, basename='smr-generics')
    
                          
