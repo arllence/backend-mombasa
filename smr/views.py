@@ -23,6 +23,7 @@ from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
 from django.db.models import Sum
 from django.core.mail import send_mail
 from django.utils import timezone
+from django.contrib.auth.models import Group
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -51,6 +52,20 @@ class GenericsViewSet(viewsets.ViewSet):
             resp, many=True, context={"user_id":request.user.id})
         
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    @action(methods=["GET"], detail=False, url_path="list-users-with-role", url_name="list-users-with-role")
+    def list_users_with_role(self, request):
+        authenticated_user = request.user
+        role_name = request.query_params.get('role_name')
+        if role_name is None:
+            return Response({'details': 'Role is Required'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            role = Group.objects.get(name=role_name)
+        except (ValidationError, ObjectDoesNotExist):
+            return Response({'details': 'Role does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+        selected_users = get_user_model().objects.filter(groups__name=role.name)
+        user_info = serializers.SlimUsersSerializer(selected_users, many=True)
+        return Response(user_info.data, status=status.HTTP_200_OK)
     
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
