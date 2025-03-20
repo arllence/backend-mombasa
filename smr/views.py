@@ -368,37 +368,38 @@ class SMRViewSet(viewsets.ViewSet):
                             <tr>
                                 <th>AM Tea</th>
                                 <td>
-                                    <strong>Description:</strong><br>
-                                    {am_tea.get('description') or 'N/A'} <br>
-                                    <strong>Time:</strong><br>
+                                    <strong>Time: </strong>
                                     {am_tea.get('time') or 'N/A'} <br>
+                                    <strong>Description:</strong><br>
+                                    {am_tea.get('description') or 'N/A'}                                    
                                 </td>
                             </tr>
                             <tr>
                                 <th>Lunch</th>
                                 <td>
-                                    <strong>Description:</strong><br>
-                                    {lunch.get('description') or 'N/A'} <br>
-                                    <strong>Time:</strong><br>
+                                    <strong>Time: </strong>
                                     {lunch.get('time') or 'N/A'} <br>
+                                    <strong>Description:</strong><br>
+                                    {lunch.get('description') or 'N/A'}
                                 </td>
                             </tr>
                             <tr>
                                 <th>PM Tea</th>
                                 <td>
-                                    <strong>Description:</strong><br>
-                                    {pm_tea.get('description') or 'N/A'} <br>
-                                    <strong>Time:</strong><br>
+                                    <strong>Time: </strong>
                                     {pm_tea.get('time') or 'N/A'} <br>
+                                    <strong>Description:</strong><br>
+                                    {pm_tea.get('description') or 'N/A'}
+                                    
                                 </td>
                             </tr>
                             <tr>
                                 <th>Dinner</th>
                                 <td>
-                                    <strong>Description:</strong><br>
-                                    {dinner.get('description') or 'N/A'} <br>
-                                    <strong>Time:</strong><br>
+                                    <strong>Time: </strong>
                                     {dinner.get('time') or 'N/A'} <br>
+                                    <strong>Description:</strong><br>
+                                    {dinner.get('description') or 'N/A'}
                                 </td>
                             </tr>
                         </table>
