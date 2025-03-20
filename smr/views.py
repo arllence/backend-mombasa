@@ -533,7 +533,7 @@ class SMRViewSet(viewsets.ViewSet):
   
         elif request.method == "PATCH":
             # Request approvals
-            payload = request.data['payload']
+            payload = request.data
             serializer = serializers.PatchMealSerializer(
                     data=payload, many=False)
             
@@ -561,7 +561,7 @@ class SMRViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
 
-                if action == 'APPROVED':
+                if action == 'SLT APPROVED':
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['SMR_ADMIN'])).values_list('email', flat=True))
                     subject = f"[SMR] New Meal Request: {mealInstance.uid}"
                     message = f"""
@@ -918,6 +918,7 @@ class ReportsViewSet(viewsets.ViewSet):
             return q_filters
 
         q_filters = Q()
+        e_filters = Q()
 
         if department:
             q_filters &= Q(department=department)
