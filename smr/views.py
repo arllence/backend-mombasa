@@ -26,6 +26,7 @@ from django.utils import timezone
 from django.contrib.auth.models import Group
 
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import NotFound, ParseError
 
 from intranet.serializers import FullFetchDepartmentSerializer
 # Get an instance of a logger
@@ -217,7 +218,7 @@ class GenericsViewSet(viewsets.ViewSet):
 
                     """
                     uri = f"requests/view/{str(meal.id)}"
-                    link = "http://172.20.0.42:8009/" + uri
+                    link = "http://172.20.0.42:8010/" + uri
                     platform = 'View Meal'
 
                     message_template = read_template("general_template.html")
@@ -276,9 +277,9 @@ class SMRViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 department = payload['department']
-                slt = payload['slt']
-                name = payload['name']
-                email = payload['email']
+                # slt = payload['slt']
+                # name = payload['name']
+                # email = payload['email']
                 am_tea = payload['am_tea']
                 pm_tea = payload['pm_tea']
                 lunch = payload['lunch']
@@ -289,26 +290,30 @@ class SMRViewSet(viewsets.ViewSet):
 
                 uid = shared_fxns.generate_unique_identifier()
 
-                if not name or not email:
-                    return Response({"details": "Name and Email Required"}, status=status.HTTP_400_BAD_REQUEST)
-
-
-                user = None
-                if email:
-                    try:
-                        user = get_user_model().objects.get(email=email)
-                    except:
-                        pass
-
                 try:
                     department = SRRSDepartment.objects.get(id=department)
                 except Exception as e:
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                try:
-                    slt = get_user_model().objects.get(id=slt)
-                except Exception as e:
-                    return Response({"details": "Unknown SLT"}, status=status.HTTP_400_BAD_REQUEST)
+                slt = department.slt
+                
+                def check_items(meal,name):
+                    found_meal = True
+                    items = 2
+                    for k, v in meal.items():
+                        if not v:
+                            found_meal = False
+                            items -= 1
+                    if found_meal:
+                        meals.append(name)
+                    if items == 1:
+                        raise ParseError({"details": f"Both Description and time required for {name}"})
+
+                meals =  []
+                check_items(am_tea,"AM TEA")
+                check_items(pm_tea,"PM TEA")
+                check_items(lunch,"LUNCH")
+                check_items(dinner,"DINNER")
 
                 with transaction.atomic():
                     raw = {
@@ -318,7 +323,8 @@ class SMRViewSet(viewsets.ViewSet):
                         "pm_tea": pm_tea,
                         "lunch": lunch,
                         "dinner": dinner,
-                        "created_by": user,
+                        "meals": meals,
+                        "created_by": request.user,
                         "date_of_event": date_of_event,
                         "location_of_function": location_of_function,
                         "number_of_participants": number_of_participants,
@@ -400,7 +406,7 @@ class SMRViewSet(viewsets.ViewSet):
 
                     """
                     uri = f"requests/view/{str(meal.id)}"
-                    link = "http://172.20.0.42:8009/" + uri
+                    link = "http://172.20.0.42:8010/" + uri
                     platform = 'View Meal'
 
                     message_template = read_template("general_template.html")
@@ -424,7 +430,7 @@ class SMRViewSet(viewsets.ViewSet):
                         logger.error(e)
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Issue Request created", f"Issue Request Id: {issue.id}")
+                    authenticated_user, authenticated_user, "Meal Request created", f"Meal Request Id: {meal.id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
@@ -441,9 +447,9 @@ class SMRViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 department = payload['department']
-                slt = payload['slt']
-                name = payload['name']
-                email = payload['email']
+                # slt = payload['slt']
+                # name = payload['name']
+                # email = payload['email']
                 am_tea = payload['am_tea']
                 pm_tea = payload['pm_tea']
                 lunch = payload['lunch']
@@ -458,16 +464,17 @@ class SMRViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                try:
-                    slt = get_user_model().objects.get(id=slt)
-                except Exception as e:
-                    return Response({"details": "Unknown SLT"}, status=status.HTTP_400_BAD_REQUEST)
+                # try:
+                #     slt = get_user_model().objects.get(id=slt)
+                # except Exception as e:
+                #     return Response({"details": "Unknown SLT"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     department = SRRSDepartment.objects.get(id=department)
                 except Exception as e:
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
+                slt = department.slt                
                 
                 with transaction.atomic():
                     raw = {
@@ -477,7 +484,7 @@ class SMRViewSet(viewsets.ViewSet):
                         "pm_tea": pm_tea,
                         "lunch": lunch,
                         "dinner": dinner,
-                        "created_by": user,
+                        "created_by": request.user,
                         "date_of_event": date_of_event,
                         "location_of_function": location_of_function,
                         "number_of_participants": number_of_participants,
@@ -595,7 +602,7 @@ class SMRViewSet(viewsets.ViewSet):
 
                     """
                     uri = f"requests/view/{str(mealInstance.id)}"
-                    link = "http://172.20.0.42:8009/" + uri
+                    link = "http://172.20.0.42:8010/" + uri
                     platform = 'View Meal'
 
                     message_template = read_template("general_template.html")
@@ -693,11 +700,14 @@ class SMRViewSet(viewsets.ViewSet):
                 try:
 
                     if "SMR_ADMIN" in roles or "SUPERUSER" in roles:
-
-                        resp = models.Meal.objects.filter(
-                                is_deleted=False
-                            ).order_by('-date_created')
-
+                        if query == 'pending':
+                            resp = models.Meal.objects.filter(
+                                    Q(status='REQUESTED'), is_deleted=False
+                                ).order_by('-date_created')
+                        else:
+                            resp = models.Meal.objects.filter(
+                                    is_deleted=False
+                                ).order_by('-date_created')
                     else:
                         resp = models.Meal.objects.filter(
                                 Q(email=request.user.email) |

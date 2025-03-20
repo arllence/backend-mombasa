@@ -28,6 +28,7 @@ class Meal(models.Model):
     pm_tea = models.JSONField(null=True, blank=True)
     lunch = models.JSONField(null=True, blank=True)
     dinner = models.JSONField(null=True, blank=True)
+    meals = models.JSONField(null=True, blank=True)
     name = models.CharField(max_length=255, null=True, blank=True)
     email = models.CharField(max_length=255, null=True, blank=True)
     is_deleted = models.BooleanField(default=False)

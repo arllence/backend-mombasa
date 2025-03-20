@@ -16,21 +16,21 @@ class UpdateGeneralNameSerializer(serializers.Serializer):
 class GenericMealSerializer(serializers.Serializer):
     name = serializers.CharField()
     email = serializers.CharField()
-    slt = serializers.CharField()
+    # slt = serializers.CharField()
     department = serializers.CharField()
     date_of_event = serializers.DateField()
     number_of_participants = serializers.CharField()
 
 class MealSerializer(serializers.Serializer):
     department = serializers.CharField()
-    slt = serializers.CharField()
+    # slt = serializers.CharField()
     department = serializers.CharField()
     date_of_event = serializers.DateField()
     number_of_participants = serializers.CharField()
 
 class PutMealSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
-    slt = serializers.CharField()
+    # slt = serializers.CharField()
     department = serializers.CharField()
     date_of_event = serializers.DateField()
     number_of_participants = serializers.CharField()
