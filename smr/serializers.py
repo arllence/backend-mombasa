@@ -52,7 +52,7 @@ class FetchMealSerializer(serializers.ModelSerializer):
 
     def get_approvals(self, obj):
         try:
-            request = models.StatusChange.objects.filter(issue=obj)
+            request = models.StatusChange.objects.filter(meal=obj)
             serializer = FetchStatusChangeSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):

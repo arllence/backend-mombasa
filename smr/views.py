@@ -440,7 +440,7 @@ class SMRViewSet(viewsets.ViewSet):
 
         if request.method == "PUT":
 
-            payload = request.data['payload']
+            payload = request.data
             
             serializer = serializers.PutMealSerializer(
                     data=payload, many=False)
@@ -475,7 +475,25 @@ class SMRViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                slt = department.slt                
+                slt = department.slt    
+
+                def check_items(meal,name):
+                    found_meal = True
+                    items = 2
+                    for k, v in meal.items():
+                        if not v:
+                            found_meal = False
+                            items -= 1
+                    if found_meal:
+                        meals.append(name)
+                    if items == 1:
+                        raise ParseError({"details": f"Both Description and time required for {name}"})
+
+                meals =  []
+                check_items(am_tea,"AM TEA")
+                check_items(pm_tea,"PM TEA")
+                check_items(lunch,"LUNCH")
+                check_items(dinner,"DINNER")            
                 
                 with transaction.atomic():
                     raw = {
@@ -485,6 +503,7 @@ class SMRViewSet(viewsets.ViewSet):
                         "pm_tea": pm_tea,
                         "lunch": lunch,
                         "dinner": dinner,
+                        "meals": meals,
                         "created_by": request.user,
                         "date_of_event": date_of_event,
                         "location_of_function": location_of_function,
@@ -495,7 +514,7 @@ class SMRViewSet(viewsets.ViewSet):
 
                     # create track status change
                     raw = {
-                        "issue": mealInstance,
+                        "meal": mealInstance,
                         "status": "EDITED",
                         "status_for": "/".join(roles),
                         "action_by": authenticated_user
@@ -533,7 +552,7 @@ class SMRViewSet(viewsets.ViewSet):
 
                     # create track status change
                     raw = {
-                        "issue": mealInstance,
+                        "meal": mealInstance,
                         "status": action,
                         "status_for": "SLT",
                         "action_by": authenticated_user
@@ -746,7 +765,7 @@ class SMRViewSet(viewsets.ViewSet):
                     recordInstance.save()
                     # track status change
                     raw = {
-                        "issue": recordInstance,
+                        "meal": recordInstance,
                         "status": "DELETED",
                         "status_for": '/'.join(roles),
                         "action_by": authenticated_user,
