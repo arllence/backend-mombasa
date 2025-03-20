@@ -565,37 +565,37 @@ class SMRViewSet(viewsets.ViewSet):
                             <tr>
                                 <th>AM Tea</th>
                                 <td>
-                                    <strong>Description:</strong><br>
-                                    {mealInstance.am_tea.get('description') or 'N/A'} <br>
-                                    <strong>Time:</strong><br>
+                                    <strong>Time: </strong>
                                     {mealInstance.am_tea.get('time') or 'N/A'} <br>
+                                    <strong>Description:</strong><br>
+                                    {mealInstance.am_tea.get('description') or 'N/A'}
                                 </td>
                             </tr>
                             <tr>
                                 <th>Lunch</th>
                                 <td>
-                                    <strong>Description:</strong><br>
-                                    {mealInstance.lunch.get('description') or 'N/A'} <br>
-                                    <strong>Time:</strong><br>
+                                    <strong>Time: </strong>
                                     {mealInstance.lunch.get('time') or 'N/A'} <br>
+                                    <strong>Description:</strong><br>
+                                    {mealInstance.lunch.get('description') or 'N/A'}
                                 </td>
                             </tr>
                             <tr>
                                 <th>PM Tea</th>
                                 <td>
-                                    <strong>Description:</strong><br>
-                                    {mealInstance.pm_tea.get('description') or 'N/A'} <br>
-                                    <strong>Time:</strong><br>
+                                    <strong>Time: </strong>
                                     {mealInstance.pm_tea.get('time') or 'N/A'} <br>
+                                    <strong>Description:</strong><br>
+                                    {mealInstance.pm_tea.get('description') or 'N/A'}
                                 </td>
                             </tr>
                             <tr>
                                 <th>Dinner</th>
                                 <td>
-                                    <strong>Description:</strong><br>
-                                    {mealInstance.dinner.get('description') or 'N/A'} <br>
-                                    <strong>Time:</strong><br>
+                                    <strong>Time: </strong>
                                     {mealInstance.dinner.get('time') or 'N/A'} <br>
+                                    <strong>Description:</strong><br>
+                                    {mealInstance.dinner.get('description') or 'N/A'} 
                                 </td>
                             </tr>
                         </table>
