@@ -902,7 +902,7 @@ class ReportsViewSet(viewsets.ViewSet):
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
         r_status = request.query_params.get('status')
-        meal_type = request.query_params.get('job_type')
+        meal_type = request.query_params.get('meal_type')
         date = False
 
         if date_to and date_from:
@@ -934,17 +934,23 @@ class ReportsViewSet(viewsets.ViewSet):
         if meal_type:
             if meal_type == 'AMTEA':
                 q_filters &= Q(am_tea__description__isnull=False)
+                e_filters &= Q(am_tea__description="")
             if meal_type == 'PMTEA':
                 q_filters &= Q(pm_tea__description__isnull=False)
+                e_filters &= Q(pm_tea__description="")
             if meal_type == 'LUNCH':
                 q_filters &= Q(lunch__description__isnull=False)
+                e_filters &= Q(lunch__description="")
             if meal_type == 'DINNER':
                 q_filters &= Q(dinner__description__isnull=False)
+                e_filters &= Q(dinner__description="")
 
 
         if q_filters:
-
-            resp = models.Meal.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            if e_filters:
+                resp = models.Meal.objects.filter(Q(is_deleted=False) & q_filters).exclude(e_filters).order_by('-date_created')
+            else:
+                resp = models.Meal.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
             
         else:
             resp = models.Meal.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
