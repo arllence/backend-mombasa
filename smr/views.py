@@ -970,7 +970,7 @@ class AnalyticsViewSet(viewsets.ViewSet):
         active_status = ['REQUESTED']
 
         
-        if any(role in ['FMS_ADMIN', 'SUPERUSER'] for role in roles):
+        if any(role in ['SMR_ADMIN', 'SUPERUSER'] for role in roles):
             requests = models.Meal.objects.filter(Q(is_deleted=False)).count()
             approved = models.Meal.objects.filter(Q(status="SLT APPROVED"), is_deleted=False).count()
             rejected = models.Meal.objects.filter(status="REJECTED", is_deleted=False).count()
