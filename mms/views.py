@@ -343,8 +343,7 @@ class MmsViewSet(viewsets.ViewSet):
                             resp = models.Quote.objects.filter(Q(department=request.user.department) | Q(uploader=request.user), is_deleted=False).order_by('-date_created')
 
                         else:
-                            pass
-                            # resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')
+                            resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
