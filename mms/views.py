@@ -334,14 +334,11 @@ class MmsViewSet(viewsets.ViewSet):
                         resp = models.Quote.objects.filter(
                             Q(is_deleted=False)).exclude(Q(status__in=['REJECTED','CLOSED'])).order_by('date_created')
                     else:
-                        if "MMD" in roles:
+                        if "MMD" in roles or "SUPERUSER":
                             resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')
 
-                        elif "USER_MANAGER" in roles:
-                            resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')
-
-                        elif "HOD" in roles:
-                            resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(department=request.user.department)).order_by('-date_created')
+                        elif "HOD" in roles or "SLT" in roles:
+                            resp = models.Quote.objects.filter(Q(department=request.user.department) | Q(uploader=request.user), is_deleted=False).order_by('-date_created')
 
                         else:
                             resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')
@@ -676,7 +673,6 @@ class MMQSReportsViewSet(viewsets.ViewSet):
 
             return q_filters
 
-        # try:
         q_filters = Q()
 
         if department:
@@ -690,43 +686,24 @@ class MMQSReportsViewSet(viewsets.ViewSet):
         if quote_status:
             q_filters &= Q(status=quote_status)
 
+        resp = models.Quote.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
         if not q_filters:
             roles = user_util.fetchusergroups(request.user.id)  
 
             if assigned:
                 quote_ids = models.QuoteAssignee.objects.filter(Q(assigned=request.user) & Q(is_deleted=False)).values_list('quote__id', flat=True)
-                resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(id__in=quote_ids)).order_by('-date_created')[:50]
+                resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(id__in=quote_ids)).order_by('-date_created')[:20]
 
 
             if "MMD" in roles or "USER_MANAGER" in roles:
-                resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+                resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:20]
 
             elif "USER" in roles:
-                resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')[:50]
+                resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(uploader=request.user)).order_by('-date_created')[:20]
 
-            
-
-
-        # if department and date and status:
-        #     q_filters &= Q(create_date_range())
-        # elif department and date:
-        #     q_filters &= Q(create_date_range())
-        # elif status and menu_type:
-        #     q_filters &= Q(patient__menu=menu_type)
-        # elif meal_type and menu_type:
-        #     q_filters &= Q(patient__menu=menu_type)
-        #     q_filters &= Q(meal_type=meal_type)
-        
-
-        resp = models.Quote.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
         resp = serializers.FetchQuoteSerializer(resp, many=True, context={"user_id":request.user.id}).data
         return Response(resp, status=status.HTTP_200_OK)
-        
-        # except (ValidationError, ObjectDoesNotExist):
-        #     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
-        # except Exception as e:
-        #     print(e)
-        #     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+
         
 class MMQSAnalyticsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
