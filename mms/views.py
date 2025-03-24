@@ -336,7 +336,7 @@ class MmsViewSet(viewsets.ViewSet):
                         resp = models.Quote.objects.filter(
                             Q(is_deleted=False)).exclude(Q(status__in=['REJECTED','CLOSED'])).order_by('date_created')
                     else:
-                        if "MMD" in roles or "SUPERUSER":
+                        if "MMD" in roles or "SUPERUSER" in roles:
                             resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')
 
                         elif "HOD" in roles or "SLT" in roles:
