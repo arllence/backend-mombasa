@@ -1127,7 +1127,7 @@ class MHSViewSet(viewsets.ViewSet):
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
                     subject = f"[MHD] New Issue Reported: {uid} ."
-                    message = f"Hello. \nNew Issue: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nMHD-AKHK"
+                    message = f"Hello. \nNew Issue: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nMHD-AKHK\n\n"
 
                     try:
                         if emails:
@@ -1288,7 +1288,7 @@ class MHSViewSet(viewsets.ViewSet):
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
                     subject = f"[MHD] Issue {issueInstance.uid} Closed "
-                    message = f"Hello. \nIssue: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nMHD-AKHK"
+                    message = f"Hello. \nIssue: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nMHD-AKHK\n\n"
 
                     if issueInstance.created_by:
                         emails.append(str(issueInstance.created_by.email))
@@ -1416,6 +1416,7 @@ class MHSViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 assigned_to = payload['assign_to']
+                priority = payload['priority']
                 comment = payload.get('comment') or 'N/A'
 
                 try:
@@ -1423,6 +1424,13 @@ class MHSViewSet(viewsets.ViewSet):
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown issue"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    priority = models.Priority.objects.get(id=priority)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown priority"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
                 assignees = []
                 for assignee in assigned_to:
                     try:
@@ -1452,13 +1460,14 @@ class MHSViewSet(viewsets.ViewSet):
                         models.Assignees.objects.create(**raw)
 
                     issueInstance.status = 'ASSIGNED'
+                    issueInstance.priority = priority
                     issueInstance.save()
 
                     # track status change
                     raw = {
                         "issue": issueInstance,
                         "status": 'ASSIGNED',
-                        "status_for": '/'.join(roles),
+                        "status_for": 'MHD_ADMIN',
                         "action_by": authenticated_user
                     }
 
@@ -1468,7 +1477,7 @@ class MHSViewSet(viewsets.ViewSet):
                     # Notify the assignee
                     emails = [user.email for user in assignees]
                     subject = f"[MHD] Issue {issueInstance.uid}  Assigned To You  "
-                    message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nMHD-AKHK"
+                    message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nMHD-AKHK\n\n"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8009/" + uri

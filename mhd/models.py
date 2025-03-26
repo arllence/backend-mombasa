@@ -95,6 +95,11 @@ class Issue(models.Model):
        related_name="mhs_assigned_to",
        null=True, blank=True
     )
+    priority = models.ForeignKey(
+       Priority, on_delete=models.DO_NOTHING, 
+       related_name="mhs_priority",
+       null=True, blank=True
+    )
     department = models.ForeignKey(
        SRRSDepartment, on_delete=models.DO_NOTHING, 
        related_name="srrs_mhs_department",

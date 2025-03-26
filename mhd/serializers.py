@@ -87,6 +87,7 @@ class FetchIssueSerializer(serializers.ModelSerializer):
     job_type = FetchJobTypeSerializer()
     equipment_type = FetchEquipmentTypeSerializer()
     category = FetchCategorySerializer()
+    priority = FetchPrioritySerializer()
     facility = FetchFacilitySerializer()
     section = FetchSectionSerializer()
     department = FetchSRRSDepartmentSerializer()
@@ -94,6 +95,7 @@ class FetchIssueSerializer(serializers.ModelSerializer):
     is_owner = serializers.SerializerMethodField()
     is_assigned = serializers.SerializerMethodField()
     tat = serializers.SerializerMethodField()
+    assignees = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Issue
@@ -110,6 +112,16 @@ class FetchIssueSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return {} 
+        
+    def get_assignees(self, obj):
+        try:
+            request = models.Assignees.objects.filter(issue=obj)
+            serializer = FetchAssigneesSerializer(request, many=True)
+            return serializer.data
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
         
     def get_is_owner(self, obj):
         try:
@@ -138,8 +150,11 @@ class FetchIssueSerializer(serializers.ModelSerializer):
             assigned = False
 
             try:
-                if str(obj.assigned_to.id) == user_id:
-                    assigned = True
+                assigned = models.Assignees.objects.filter(assignee=user_id,issue=obj).exists()
+                if not assigned:
+                    if obj.assigned_to:
+                        if str(obj.assigned_to.id) == user_id:
+                            assigned = True                       
             except Exception as e:
                 pass
 
@@ -151,15 +166,20 @@ class FetchIssueSerializer(serializers.ModelSerializer):
         
     def get_tat(self, obj):
         try:
-            diff = (obj.date_closed - obj.date_created).days
-            if diff == 0:
-                diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
-                if diff < 1:
-                    diff = str(int((obj.date_closed - obj.date_created).total_seconds() // 60)) + " Minute(s)"
-                else:
-                 diff = str(diff) + " Hour(s)"
-            else:
-                diff = str(diff) + " Day(s)"
+            diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
+            if diff < 1:
+                diff = 1
+            diff = str(diff) + " Hour(s)"
+            
+            # diff = (obj.date_closed - obj.date_created).days
+            # if diff == 0:
+            #     diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
+            #     if diff < 1:
+            #         diff = str(int((obj.date_closed - obj.date_created).total_seconds() // 60)) + " Minute(s)"
+            #     else:
+            #      diff = str(diff) + " Hour(s)"
+            # else:
+            #     diff = str(diff) + " Day(s)"
 
             return diff
         
@@ -203,9 +223,9 @@ class SlimFetchIssueSerializer(serializers.ModelSerializer):
 
 
 class AssignSerializer(serializers.Serializer):
-    request_id = serializers.CharField(max_length=500)
+    request_id = serializers.CharField()
+    priority = serializers.CharField()
     assign_to = serializers.ListField(min_length=1)
-
 
 class FetchAssigneesSerializer(serializers.ModelSerializer):
     assignee = SlimUsersSerializer()
