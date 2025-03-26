@@ -389,9 +389,6 @@ class GenericsViewSet(viewsets.ViewSet):
             url_name="owner-acknowledgement")
     def owner_acknowledgement(self, request):
 
-        authenticated_user = request.user
-        roles = user_util.fetchusergroups(request.user.id) 
-
         if request.method == "POST":
 
             payload = request.data
@@ -417,21 +414,34 @@ class GenericsViewSet(viewsets.ViewSet):
                     issueInstance.is_acknowledged = True
                     issueInstance.save()
 
+                    user = None
+                    if issueInstance.created_by:
+                        user = issueInstance.created_by
+
                     # track status change
                     raw = {
                         "issue": issueInstance,
                         "status": 'ACKNOWLEDGED',
-                        "status_for": '/'.join(roles),
-                        "action_by": authenticated_user
+                        "status_for": 'REQUESTOR',
+                        "action_by": user
                     }
 
                     models.StatusChange.objects.create(**raw)
 
 
                     # Notify Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                    emails = []
+                    assignees = models.Assignees.objects.filter(Q(issue=issueInstance))
+                    for assignee in assignees:
+                        emails.append(assignee.assignee.email)
+                        if assignee.assigned_by:
+                            emails.append(assignee.assigned_by.email)
+                    if issueInstance.assigned_to:
+                        emails.append(issueInstance.assigned_to.email)
+
                     subject = f"[MHD] Issue {issueInstance.uid}  Acknowledged"
-                    message = f"Hello. \nIssue of id: {issueInstance.uid} has been Acknowledged by owner as Completed / Solved\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
+                    message = f"Hello. \nIssue of id: {issueInstance.uid} has been Acknowledged by requestor as Completed / Solved\n on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8009/" + uri
@@ -439,7 +449,6 @@ class GenericsViewSet(viewsets.ViewSet):
 
                     message_template = read_template("general_template.html")
                     message = message_template.substitute(
-                        # NAME=name, 
                         CONTENT=message,
                         LINK=link,
                         PLATFORM=platform
@@ -456,40 +465,6 @@ class GenericsViewSet(viewsets.ViewSet):
                     except Exception as e:
                         logger.error(e)
 
-                    # Notify requestor
-                    if issueInstance.email:
-                        emails = [issueInstance.email]
-                    else:
-                        emails = [issueInstance.created_by.email]
-                    subject = f"[MHD] Issue {issueInstance.uid}  Completed  "
-                    message = f"Hello. \nYour Issue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nClick on the button below to close it.\n"
-
-                    uri = f"requests/view/{str(issueInstance.id)}"
-                    link = "http://172.20.0.42:8009/" + uri
-                    platform = 'Close Issue'
-
-                    message_template = read_template("general_template.html")
-                    message = message_template.substitute(
-                        CONTENT=message,
-                        LINK=link,
-                        PLATFORM=platform
-                    )
-                    
-                    try:
-                        mail = {
-                            "email" : list(set(emails)), 
-                            "subject" : subject,
-                            "message" : message,
-                            "is_html": True
-                        }
-                        Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        logger.error(e)
-
-                user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Issue Request Solved / Completed", 
-                    f"Completeness Executed UID: {str(issueInstance.id)}")
-                
                 return Response('success', status=status.HTTP_200_OK)
             
             else:
