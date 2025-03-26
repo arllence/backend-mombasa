@@ -132,6 +132,27 @@ class Issue(models.Model):
         db_table = u'"{}\".\"issues"'.format(settings.MAINTENANCE_HELPDESK_SYSTEM)
 
 
+class Assignees(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    assignee = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="mhd_assignee"
+    )
+    issue = models.ForeignKey(
+        Issue, on_delete=models.DO_NOTHING,
+        related_name="assignee_issue_instance"
+    )
+   
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.issue.uid)
+
+    class Meta:
+        db_table = u'"{}\".\"assignees"'.format(settings.MAINTENANCE_HELPDESK_SYSTEM)
+
+
 class Note(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     owner = models.ForeignKey(
@@ -188,8 +209,15 @@ class PlatformAdmin(models.Model):
        User, on_delete=models.DO_NOTHING, 
        related_name="mhs_admin_created_by"
     )
+    category = models.ForeignKey(
+       Category, on_delete=models.DO_NOTHING, 
+       related_name="mhs_admin_category",
+       null=True, blank=True
+    )
 
     status = models.CharField(max_length=255, default='ACTIVE')
+    is_hod = models.BooleanField(default=False)
+    is_slt = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 

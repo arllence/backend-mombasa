@@ -191,7 +191,14 @@ class SlimFetchIssueSerializer(serializers.ModelSerializer):
 
 class AssignSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
-    assign_to = serializers.CharField(max_length=500)
+    assign_to = serializers.ListField(min_length=1)
+
+
+class FetchAssigneesSerializer(serializers.ModelSerializer):
+    assignee = SlimUsersSerializer()
+    class Meta:
+        model = models.Assignees
+        fields = '__all__'
 
 class MarkAsCompleteSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
@@ -216,6 +223,9 @@ class FetchNoteSerializer(serializers.ModelSerializer):
 
 class PlatformAdminSerializer(serializers.Serializer):
     admin = serializers.CharField(max_length=500)
+    category = serializers.CharField(max_length=500)
+    is_hod = serializers.CharField(max_length=500)
+    is_slt = serializers.CharField(max_length=500)
 
 class UpdatePlatformAdminSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
@@ -224,6 +234,7 @@ class UpdatePlatformAdminSerializer(serializers.Serializer):
 class FetchPlatformAdminSerializer(serializers.ModelSerializer):
     created_by = SlimUsersSerializer()
     admin = UsersSerializer()
+    category = FetchCategorySerializer()
     class Meta:
         model = models.PlatformAdmin
         fields = '__all__'

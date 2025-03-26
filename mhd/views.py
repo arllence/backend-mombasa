@@ -1322,6 +1322,7 @@ class MHSViewSet(viewsets.ViewSet):
 
             serializer = serializers.AssignSerializer(
                     data=payload, many=False)
+            return
             
             if serializer.is_valid():
                 request_id = payload['request_id']
@@ -1333,12 +1334,14 @@ class MHSViewSet(viewsets.ViewSet):
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown issue"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
-                
-                try:
-                    assigned_to = User.objects.get(id=assigned_to)
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown assignee"}, 
-                                    status=status.HTTP_400_BAD_REQUEST)
+                assignees = []
+                for assignee in assigned_to:
+                    try:
+                        assigned_to = User.objects.get(id=assignee)
+                        assignees.append(assigned_to)
+                    except (ValidationError, ObjectDoesNotExist):
+                        return Response({"details": "Unknown assignee"}, 
+                                        status=status.HTTP_400_BAD_REQUEST)
                 
                 if issueInstance.assigned_to:
                     if issueInstance.assigned_to == assigned_to:
@@ -1612,6 +1615,14 @@ class MHSViewSet(viewsets.ViewSet):
                 data=payload, many=False)
             if serializer.is_valid():
                 admin = payload['admin']
+                category = payload['category']
+                is_hod = True if payload['is_hod'] == 'YES' else False
+                is_slt = True if payload['is_slt'] == 'YES' else False
+
+                try:
+                    category = models.Category.objects.get(id=category)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Category"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     admin = User.objects.get(id=admin)
@@ -1622,14 +1633,18 @@ class MHSViewSet(viewsets.ViewSet):
                     print(e)
                     return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                # assign FMS_ADMIN role
-                assign_role = user_util.award_role('MHD_ADMIN', str(admin.id))
-                if not assign_role:
-                    return Response({"details": "Unable to assign role MHD_ADMIN"}, status=status.HTTP_400_BAD_REQUEST)
-                
+                # assign MHD_ADMIN role
+                if is_slt or is_hod:
+                    assign_role = user_util.award_role('MHD_ADMIN', str(admin.id))
+                    if not assign_role:
+                        return Response({"details": "Unable to assign role MHD_ADMIN"}, status=status.HTTP_400_BAD_REQUEST)
+                    
                 with transaction.atomic():
                     raw = {
                         "admin": admin,
+                        "is_hod": is_hod,
+                        "is_slt": is_slt,
+                        "category": category,
                         "created_by": request.user
                     }
 
@@ -1648,11 +1663,28 @@ class MHSViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 admin = payload['admin']
+                category = payload['category']
+                is_hod = True if payload['is_hod'] == 'YES' else False
+                is_slt = True if payload['is_slt'] == 'YES' else False
 
                 try:
-                    request = models.PlatformAdmin.objects.get(id=request_id)
+                    category = models.Category.objects.get(id=category)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Category"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    requestInstance = models.PlatformAdmin.objects.get(id=request_id)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    admin = User.objects.get(id=admin)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown User"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     logger.error(e)
                     print(e)
@@ -1660,9 +1692,12 @@ class MHSViewSet(viewsets.ViewSet):
 
                 with transaction.atomic():
 
-                    request.admin = admin
-                    request.created_by = request.user
-                    request.save()
+                    requestInstance.admin = admin
+                    requestInstance.is_hod = is_hod
+                    requestInstance.is_slt = is_slt
+                    requestInstance.category = category
+                    requestInstance.created_by = request.user
+                    requestInstance.save()
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -1679,7 +1714,7 @@ class MHSViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
-                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
 
