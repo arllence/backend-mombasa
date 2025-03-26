@@ -1456,6 +1456,7 @@ class MHSViewSet(viewsets.ViewSet):
                         raw = {
                             "issue": issueInstance,
                             "assignee": assignee,
+                            "assigned_by": request.user,
                         }
                         models.Assignees.objects.create(**raw)
 
@@ -1656,8 +1657,13 @@ class MHSViewSet(viewsets.ViewSet):
                     models.Note.objects.create(**raw)
 
                 # Send Note Notifications
-                emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
-                emails.append(issueInstance.assigned_to.email)
+                emails = []
+                assignees = models.Assignees.objects.filter(Q(issue=issueInstance))
+                for assignee in assignees:
+                    emails.append(assignee.email)
+                    emails.append(assignee.assigned_by.email)
+                if issueInstance.assigned_to:
+                    emails.append(issueInstance.assigned_to.email)
                 try:
                     emails.remove(request.user.email)
                 except:
@@ -1671,7 +1677,6 @@ class MHSViewSet(viewsets.ViewSet):
 
                 message_template = read_template("general_template.html")
                 message = message_template.substitute(
-                    # NAME=name, 
                     CONTENT=message,
                     LINK=link,
                     PLATFORM=platform

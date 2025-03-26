@@ -156,6 +156,11 @@ class Assignees(models.Model):
        User, on_delete=models.DO_NOTHING, 
        related_name="mhd_assignee"
     )
+    assigned_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="mhd_assigned_by",
+       null=True, blank=True
+    )
     issue = models.ForeignKey(
         Issue, on_delete=models.DO_NOTHING,
         related_name="assignee_issue_instance"
