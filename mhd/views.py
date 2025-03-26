@@ -1660,8 +1660,9 @@ class MHSViewSet(viewsets.ViewSet):
                 emails = []
                 assignees = models.Assignees.objects.filter(Q(issue=issueInstance))
                 for assignee in assignees:
-                    emails.append(assignee.email)
-                    emails.append(assignee.assigned_by.email)
+                    emails.append(assignee.assignee.email)
+                    if assignee.assigned_by:
+                        emails.append(assignee.assigned_by.email)
                 if issueInstance.assigned_to:
                     emails.append(issueInstance.assigned_to.email)
                 try:
