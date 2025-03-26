@@ -38,6 +38,11 @@ class FetchCategorySerializer(serializers.ModelSerializer):
         model = models.Category
         fields = '__all__'
 
+class FetchPrioritySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Priority
+        fields = '__all__'
+
 class GenericIssueSerializer(serializers.Serializer):
     name = serializers.CharField()
     email = serializers.CharField()
@@ -47,6 +52,14 @@ class GenericIssueSerializer(serializers.Serializer):
     subject = serializers.CharField()
     issue = serializers.CharField(style={'type': 'textarea'})
 
+class PrioritySerializer(serializers.Serializer):
+    name = serializers.CharField()
+    expected_closure = serializers.IntegerField(min_value=1)
+
+class PutPrioritySerializer(serializers.Serializer):
+    request_id = serializers.CharField()
+    name = serializers.CharField()
+    expected_closure = serializers.IntegerField(min_value=1)
 
 class IssueSerializer(serializers.Serializer):
     department = serializers.CharField()

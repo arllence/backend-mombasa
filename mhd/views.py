@@ -940,7 +940,97 @@ class MHSViewSet(viewsets.ViewSet):
             except Exception as e:
                 print(e)
                 return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
+            detail=False,
+            url_path="priorities",
+            url_name="priorities")
+    def Priority(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.PrioritySerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name']
+                expected_closure = payload['expected_closure']
+
+                with transaction.atomic():
+                    raw = {
+                        "name": name,
+                        "expected_closure": expected_closure
+                    }
+                    models.Priority.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.PutPrioritySerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                name = payload['name']
+                expected_closure = payload['expected_closure']
+
+                try:
+                    requestInstance = models.Priority.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown Priority"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    requestInstance.name = name
+                    requestInstance.expected_closure = expected_closure
+                    requestInstance.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.Priority.objects.get(Q(id=request_id))
+                    resp = serializers.FetchPrioritySerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Priority"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    resp = models.Priority.objects.filter(is_deleted=False).order_by('name')
+                    resp = serializers.FetchPrioritySerializer(resp,many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                raw = {"is_deleted":True}
+                models.Priority.objects.filter(id=request_id).update(**raw)
+                return Response('200', status=status.HTTP_200_OK)
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                print(e)
+                return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+                 
 
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
@@ -1386,7 +1476,6 @@ class MHSViewSet(viewsets.ViewSet):
 
                     message_template = read_template("general_template.html")
                     message = message_template.substitute(
-                        # NAME=name, 
                         CONTENT=message,
                         LINK=link,
                         PLATFORM=platform
