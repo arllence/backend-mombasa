@@ -1344,7 +1344,7 @@ class MHSViewSet(viewsets.ViewSet):
                     else:
                         resp = models.Issue.objects.filter(
                                 Q(assigned_to=request.user) |
-                                Q(created_by=request.user) 
+                                Q(created_by=request.user) | Q(assignee_issue_instance__assignee=request.user)
                             ).order_by('-date_created')
 
 
@@ -1949,10 +1949,10 @@ class AnalyticsViewSet(viewsets.ViewSet):
             closed = models.Issue.objects.filter(status="CLOSED", is_deleted=False).count()
             pending = models.Issue.objects.filter(Q(status__in=active_status), is_deleted=False).count()
         else:
-            requests = models.Issue.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user) | Q(assigned_to=request.user), is_deleted=False).count()
-            assigned = models.Issue.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(assigned_to=request.user), status="ASSIGNED", is_deleted=False).count()
-            closed = models.Issue.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(assigned_to=request.user), status="CLOSED", is_deleted=False).count()
-            pending = models.Issue.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(assigned_to=request.user), status__in=active_status, is_deleted=False).count()
+            requests = models.Issue.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user) | Q(assigned_to=request.user) | Q(assignee_issue_instance__assignee=request.user), is_deleted=False).count()
+            assigned = models.Issue.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(assigned_to=request.user) | Q(assignee_issue_instance__assignee=request.user), status="ASSIGNED", is_deleted=False).count()
+            closed = models.Issue.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(assigned_to=request.user) | Q(assignee_issue_instance__assignee=request.user), status="CLOSED", is_deleted=False).count()
+            pending = models.Issue.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(assigned_to=request.user) | Q(assignee_issue_instance__assignee=request.user), status__in=active_status, is_deleted=False).count()
 
         resp = {
             "requests": requests,
