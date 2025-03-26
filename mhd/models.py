@@ -140,6 +140,8 @@ class Issue(models.Model):
     email = models.CharField(max_length=255, null=True, blank=True)
     is_acknowledged = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
+    date_assigned = models.DateTimeField(null=True, blank=True)
+    date_completed = models.DateTimeField(null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_closed = models.DateTimeField(null=True, blank=True)
 

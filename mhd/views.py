@@ -289,15 +289,16 @@ class GenericsViewSet(viewsets.ViewSet):
                         "facility": facility,
                         "category": category,
                         "subject": subject,
+                        "email": email,
+                        "name": name,
                         "uid": uid
                     }
-                    if not user:
-                        raw.update(
-                            {
-                                "email": email,
-                                "name": name
-                            }
-                        )
+                    # if not user:
+                    #     raw.update(
+                    #         {
+                                
+                    #         }
+                    #     )
 
                     issue = models.Issue.objects.create(
                         **raw
@@ -308,13 +309,14 @@ class GenericsViewSet(viewsets.ViewSet):
                         "issue": issue,
                         "status": "SUBMITTED",
                         "status_for": "/".join(roles),
-                        # "action_by": authenticated_user
+                        "action_by": user
                     }
 
                     models.StatusChange.objects.create(**raw)
 
                     # Notify Platform Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                    emails = list(models.PlatformAdmin.objects.filter(Q(category=category)).values_list('admin__email', flat=True))
                     subject = f"[MHD] {subject}"
                     message = f"""
                         <table border="1" class='signature-table'>
@@ -1100,7 +1102,8 @@ class MHSViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                     # Notify Platform Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                    emails = list(models.PlatformAdmin.objects.filter(Q(category=category)).values_list('admin__email', flat=True))
                     subject = f"[MHD] New Issue Reported: {uid} ."
                     message = f"Hello. \nNew Issue: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nMHD-AKHK\n\n"
 
@@ -1436,6 +1439,7 @@ class MHSViewSet(viewsets.ViewSet):
                         models.Assignees.objects.create(**raw)
 
                     issueInstance.status = 'ASSIGNED'
+                    issueInstance.date_assigned = datetime.datetime.now()
                     issueInstance.priority = priority
                     issueInstance.save()
 
@@ -1515,6 +1519,7 @@ class MHSViewSet(viewsets.ViewSet):
                 
                 with transaction.atomic():
                     issueInstance.status = 'COMPLETED'
+                    issueInstance.date_completed = datetime.datetime.now()
                     issueInstance.save()
 
                     # track status change
@@ -1529,7 +1534,16 @@ class MHSViewSet(viewsets.ViewSet):
 
 
                     # Notify Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                    emails = []
+                    assignees = models.Assignees.objects.filter(Q(issue=issueInstance))
+                    for assignee in assignees:
+                        emails.append(assignee.assignee.email)
+                        if assignee.assigned_by:
+                            emails.append(assignee.assigned_by.email)
+                    if issueInstance.assigned_to:
+                        emails.append(issueInstance.assigned_to.email)
+
                     subject = f"[MHD] Issue {issueInstance.uid}  Completed  "
                     message = f"Hello. \nIssue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
 
@@ -1539,7 +1553,6 @@ class MHSViewSet(viewsets.ViewSet):
 
                     message_template = read_template("general_template.html")
                     message = message_template.substitute(
-                        # NAME=name, 
                         CONTENT=message,
                         LINK=link,
                         PLATFORM=platform
