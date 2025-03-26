@@ -1322,8 +1322,7 @@ class MHSViewSet(viewsets.ViewSet):
 
             serializer = serializers.AssignSerializer(
                     data=payload, many=False)
-            return
-            
+
             if serializer.is_valid():
                 request_id = payload['request_id']
                 assigned_to = payload['assign_to']
@@ -1338,19 +1337,30 @@ class MHSViewSet(viewsets.ViewSet):
                 for assignee in assigned_to:
                     try:
                         assigned_to = User.objects.get(id=assignee)
+                        is_existing = models.Assignees.objects.filter(
+                            assignee=assignee, issue=request_id
+                        ).exists()
+                        if is_existing:
+                            return Response({"details": "Already Assigned"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
                         assignees.append(assigned_to)
                     except (ValidationError, ObjectDoesNotExist):
                         return Response({"details": "Unknown assignee"}, 
                                         status=status.HTTP_400_BAD_REQUEST)
                 
-                if issueInstance.assigned_to:
-                    if issueInstance.assigned_to == assigned_to:
-                        return Response({"details": "Already Assigned"}, 
-                                    status=status.HTTP_400_BAD_REQUEST)
+                # if issueInstance.assigned_to:
+                #     if issueInstance.assigned_to == assigned_to:
+                #         return Response({"details": "Already Assigned"}, 
+                #                     status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
-                    issueInstance.assigned_to = assigned_to
-                    # issueInstance.assignee_comment = comment
+                    for assignee in assignees:
+                        raw = {
+                            "issue": issueInstance,
+                            "assignee": assignee,
+                        }
+                        models.Assignees.objects.create(**raw)
+
                     issueInstance.status = 'ASSIGNED'
                     issueInstance.save()
 
@@ -1366,7 +1376,7 @@ class MHSViewSet(viewsets.ViewSet):
 
 
                     # Notify the assignee
-                    emails = [assigned_to.email]
+                    emails = [user.email for user in assignees]
                     subject = f"[MHD] Issue {issueInstance.uid}  Assigned To You  "
                     message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nMHD-AKHK"
 
