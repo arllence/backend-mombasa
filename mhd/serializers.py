@@ -168,8 +168,8 @@ class FetchIssueSerializer(serializers.ModelSerializer):
         try:
             diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
             if diff < 1:
-                diff = 1
-            diff = str(diff) + " Hour(s)"
+                return "1 Hour"
+            return str(diff) + " Hours"
             
             # diff = (obj.date_closed - obj.date_created).days
             # if diff == 0:
@@ -181,7 +181,7 @@ class FetchIssueSerializer(serializers.ModelSerializer):
             # else:
             #     diff = str(diff) + " Day(s)"
 
-            return diff
+            # return diff
         
         except Exception as e:
             print(e)
