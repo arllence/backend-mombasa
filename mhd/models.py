@@ -2,6 +2,7 @@ import uuid
 from acl.models import User, SRRSDepartment, SubDepartment, OHC
 from django.db import models
 from django.conf import settings
+from mms.models import Quote as MMDQuote
 
 class Section(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -200,6 +201,26 @@ class Note(models.Model):
     class Meta:
         db_table = u'"{}\".\"notes"'.format(settings.MAINTENANCE_HELPDESK_SYSTEM)
 
+
+class Quote(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    issue = models.ForeignKey(
+        Issue, on_delete=models.DO_NOTHING,
+        related_name="quote_issue_instance"
+    )
+    quote = models.ForeignKey(
+        MMDQuote, on_delete=models.DO_NOTHING,
+        related_name="mmd_quote_issue_instance"
+    )
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.issue.uid)
+
+    class Meta:
+        db_table = u'"{}\".\"quotes"'.format(settings.MAINTENANCE_HELPDESK_SYSTEM)
 
 class StatusChange(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

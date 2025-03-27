@@ -127,6 +127,13 @@ class FetchQuoteSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return ""
 
+class SlimFetchQuoteSerializer(serializers.ModelSerializer):
+    uploader = UsersSerializer()
+    attachment = FetchDocumentSerializer()
+    class Meta:
+        model = models.Quote
+        fields = '__all__'
+
 class AssignQuoteSerializer(serializers.Serializer):
     quote = serializers.CharField(max_length=500)
     staff = serializers.CharField(max_length=500)

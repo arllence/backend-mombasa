@@ -23,6 +23,7 @@ from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
 from django.db.models import Sum
 from django.core.mail import send_mail
 from django.utils import timezone
+from mms.models import Quote as MMDQuote
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -1733,7 +1734,64 @@ class MHSViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, 
                                 status=status.HTTP_400_BAD_REQUEST) 
+
+    @action(methods=["POST"],
+            detail=False,
+            url_path="create-quote",
+            url_name="create-quote")
+    def quote(self, request):
+
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.QuoteSerializer(
+                    data=payload, many=False)
             
+            if serializer.is_valid():
+                issue_id = payload['issue_id']
+                quote_id = payload['quote_id']
+
+                try:
+                    issueInstance = models.Issue.objects.get(id=issue_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "UnknMMDQuoteown issue"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    quoteInstance = MMDQuote.objects.get(qid=quote_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown MMD Quote"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    models.Quote.objects.create(
+                        issue=issueInstance,
+                        quote=quoteInstance
+                    )
+
+                    # track status change
+                    raw = {
+                        "issue": issueInstance,
+                        "status": 'QUOTE REQUESTED',
+                        "status_for": 'ASSIGNEE',
+                        "action_by": authenticated_user
+                    }
+
+                    models.StatusChange.objects.create(**raw)
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Quote Requested", 
+                    f"Issue Executed UID: {str(issueInstance.id)}")
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)       
 
     @action(methods=["POST","GET"],
             detail=False,

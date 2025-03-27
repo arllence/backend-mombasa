@@ -125,7 +125,7 @@ class MmsViewSet(viewsets.ViewSet):
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Quote created", "Quote Creation Executed")
                 
-                return Response('success', status=status.HTTP_200_OK)
+                return Response({'uid':qid}, status=status.HTTP_200_OK)
             
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -334,7 +334,7 @@ class MmsViewSet(viewsets.ViewSet):
                         if not any(role in ['MMD'] for role in roles):
                             return Response([], status=status.HTTP_200_OK)  
                         resp = models.Quote.objects.filter(
-                            Q(is_deleted=False)).exclude(Q(status__in=['REJECTED','CLOSED'])).order_by('date_created')
+                            Q(is_deleted=False)).exclude(Q(status__in=['REJECTED','CLOSED'])).order_by('-date_created')
                     else:
                         if "MMD" in roles or "SUPERUSER" in roles:
                             resp = models.Quote.objects.filter(Q(is_deleted=False)).order_by('-date_created')

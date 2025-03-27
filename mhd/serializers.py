@@ -2,6 +2,7 @@ from django.db.models import  Q
 from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, SlimFetchSRRSDepartmentSerializer, FetchSubDepartmentSerializer, FetchOHCSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
 from mhd import models
+from mms.serializers import SlimFetchQuoteSerializer as MMDSlimFetchQuoteSerializer
 from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 
@@ -96,6 +97,7 @@ class FetchIssueSerializer(serializers.ModelSerializer):
     is_assigned = serializers.SerializerMethodField()
     tat = serializers.SerializerMethodField()
     assignees = serializers.SerializerMethodField()
+    quotes = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Issue
@@ -122,6 +124,18 @@ class FetchIssueSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return []
+        
+    def get_quotes(self, obj):
+        try:
+            request = models.Quote.objects.filter(issue=obj)
+            serializer = SlimFetchQuoteSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
         
     def get_is_owner(self, obj):
         try:
@@ -235,6 +249,23 @@ class FetchAssigneesSerializer(serializers.ModelSerializer):
 
 class MarkAsCompleteSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
+
+class QuoteSerializer(serializers.Serializer):
+    issue_id = serializers.CharField()
+    quote_id = serializers.CharField()
+
+class FetchQuoteSerializer(serializers.ModelSerializer):
+    issue = SlimFetchIssueSerializer()
+    quote = MMDSlimFetchQuoteSerializer()
+    class Meta:
+        model = models.Quote
+        fields = '__all__'
+
+class SlimFetchQuoteSerializer(serializers.ModelSerializer):
+    quote = MMDSlimFetchQuoteSerializer()
+    class Meta:
+        model = models.Quote
+        fields = '__all__'
 
 class FetchStatusChangeSerializer(serializers.ModelSerializer):
     action_by = SlimUsersSerializer()
