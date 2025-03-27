@@ -1308,6 +1308,7 @@ class MHSViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 except Exception as e:
+                    logger.error(e)
                     print(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
