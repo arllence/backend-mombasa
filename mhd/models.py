@@ -142,6 +142,7 @@ class Issue(models.Model):
     is_deleted = models.BooleanField(default=False)
     date_assigned = models.DateTimeField(null=True, blank=True)
     date_completed = models.DateTimeField(null=True, blank=True)
+    date_reopened = models.DateTimeField(null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     date_closed = models.DateTimeField(null=True, blank=True)
 

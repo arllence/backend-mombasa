@@ -1635,6 +1635,105 @@ class MHSViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, 
                                 status=status.HTTP_400_BAD_REQUEST)    
 
+    @action(methods=["POST"],
+            detail=False,
+            url_path="reopen-issue",
+            url_name="reopen-issue")
+    def reopen(self, request):
+
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.MarkAsCompleteSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+
+                try:
+                    issueInstance = models.Issue.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown issue"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    issueInstance.status = 'REOPENED'
+                    issueInstance.is_acknowledged = False
+                    issueInstance.date_reopened = datetime.datetime.now()
+                    issueInstance.save()
+
+                    # track status change
+                    raw = {
+                        "issue": issueInstance,
+                        "status": 'REOPENED',
+                        "status_for": 'MHD_ADMIN',
+                        "action_by": authenticated_user
+                    }
+
+                    models.StatusChange.objects.create(**raw)
+
+
+                    # Notify Admins
+                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                    emails = []
+                    assignees = models.Assignees.objects.filter(Q(issue=issueInstance))
+                    for assignee in assignees:
+                        emails.append(assignee.assignee.email)
+                        if assignee.assigned_by:
+                            emails.append(assignee.assigned_by.email)
+
+                    if issueInstance.assigned_to:
+                        emails.append(issueInstance.assigned_to.email)
+
+                    if issueInstance.email:
+                        emails.append(issueInstance.email)
+                    else:
+                        emails.append(issueInstance.created_by.email)
+
+                    slt = list(models.PlatformAdmin.objects.filter(Q(is_slt=True)).values_list('admin__email', flat=True))
+
+                    emails += slt
+
+                    subject = f"[MHD] Issue {issueInstance.uid}  Reopened  "
+                    message = f"Hello. \nIssue of id: {issueInstance.uid} has been marked as Reopened\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}."
+
+                    uri = f"requests/view/{str(issueInstance.id)}"
+                    link = "http://172.20.0.42:8009/" + uri
+                    platform = 'View Issue'
+
+                    message_template = read_template("general_template.html")
+                    message = message_template.substitute(
+                        CONTENT=message,
+                        LINK=link,
+                        PLATFORM=platform
+                    )
+                    
+                    try:
+                        mail = {
+                            "email" : list(set(emails)), 
+                            "subject" : subject,
+                            "message" : message,
+                            "is_html": True
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Issue Request reopened", 
+                    f"Reopen Executed UID: {str(issueInstance.id)}")
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST) 
+            
+
     @action(methods=["POST","GET"],
             detail=False,
             url_path="notes",
