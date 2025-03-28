@@ -2075,7 +2075,10 @@ class ReportsViewSet(viewsets.ViewSet):
             q_filters &= create_date_range(date_from,date_to)
             
         if r_status:
-            q_filters &= Q(status=r_status)
+            if r_status == "QUOTE REQUESTED":
+                q_filters &= Q(quote_issue_instance__isnull=False)
+            else:
+                q_filters &= Q(status=r_status)
 
         if job_type:
             q_filters &= Q(job_type=job_type)
