@@ -712,7 +712,7 @@ class FmsViewSet(viewsets.ViewSet):
                     # Notify the assignee
                     emails = [assigned_to.email]
                     subject = f"Incident {incidentInstance.uid}  Assigned To You  [FMS-AKHK]"
-                    message = f"Hello, \nAn incident of id: {incidentInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending your action.\n\nRegards\nFMS-AKHK"
+                    message = f"Hello, \nAn incident of id: {incidentInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending your action.\nLogin: http://172.20.0.42:8006/\n\nRegards\nFMS-AKHK"
                     
                     try:
                         mail = {

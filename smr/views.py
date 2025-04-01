@@ -290,6 +290,15 @@ class SMRViewSet(viewsets.ViewSet):
 
                 uid = shared_fxns.generate_unique_identifier()
 
+                # Get today's date
+                today_date = datetime.date.today()
+
+                # find difference in dates / validate dates
+                hours = shared_fxns.find_date_difference(str(today_date.strftime('%Y-%m-%d')),date_of_event,'hours')
+                if hours < 48:
+                    return Response({"details": "Request to be made at least 48hrs before event date"}, status=status.HTTP_400_BAD_REQUEST)
+
+
                 try:
                     department = SRRSDepartment.objects.get(id=department)
                 except Exception as e:
@@ -458,6 +467,15 @@ class SMRViewSet(viewsets.ViewSet):
                 date_of_event = payload['date_of_event']
                 location_of_function = payload['location_of_function']
                 number_of_participants = payload['number_of_participants']
+
+                # Get today's date
+                today_date = datetime.date.today()
+
+                # find difference in dates / validate dates
+                hours = shared_fxns.find_date_difference(str(today_date.strftime('%Y-%m-%d')),date_of_event,'hours')
+                if hours < 48:
+                    return Response({"details": "Request to be made at least 48hrs before event date"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 
                 try:
