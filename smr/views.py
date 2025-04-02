@@ -277,9 +277,10 @@ class SMRViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 department = payload['department']
-                # slt = payload['slt']
-                # name = payload['name']
-                # email = payload['email']
+                am_tea_required = payload['am_tea_required']
+                pm_tea_required = payload['pm_tea_required']
+                lunch_required = payload['lunch_required']
+                dinner_required = payload['dinner_required']
                 am_tea = payload['am_tea']
                 pm_tea = payload['pm_tea']
                 lunch = payload['lunch']
@@ -289,6 +290,17 @@ class SMRViewSet(viewsets.ViewSet):
                 number_of_participants = payload['number_of_participants']
 
                 uid = shared_fxns.generate_unique_identifier()
+
+                requested = [
+                    am_tea_required, pm_tea_required, lunch_required, dinner_required
+                ]
+                checked = 0
+                for item in requested:
+                    if item:
+                        checked += 1
+
+                if not checked:
+                    return Response({"details": "No meal requested"}, status=status.HTTP_400_BAD_REQUEST)
 
                 # Get today's date
                 today_date = datetime.date.today()
@@ -323,6 +335,9 @@ class SMRViewSet(viewsets.ViewSet):
                 check_items(pm_tea,"PM TEA")
                 check_items(lunch,"LUNCH")
                 check_items(dinner,"DINNER")
+
+                if not meals:
+                    return Response({"details": "Both Description and serving time required for selected meals"}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
                     raw = {
@@ -457,9 +472,10 @@ class SMRViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 department = payload['department']
-                # slt = payload['slt']
-                # name = payload['name']
-                # email = payload['email']
+                am_tea_required = payload['am_tea_required']
+                pm_tea_required = payload['pm_tea_required']
+                lunch_required = payload['lunch_required']
+                dinner_required = payload['dinner_required']
                 am_tea = payload['am_tea']
                 pm_tea = payload['pm_tea']
                 lunch = payload['lunch']
