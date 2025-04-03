@@ -42,6 +42,7 @@ class SlimFetchDocumentSerializer(serializers.ModelSerializer):
 class FetchContractSerializer(serializers.ModelSerializer):
     department = FetchSRRSDepartmentSerializer()
     documents = serializers.SerializerMethodField()
+    previous = serializers.SerializerMethodField()
     created_by = SlimUsersSerializer()
     
     class Meta:
@@ -60,6 +61,34 @@ class FetchContractSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return [] 
         
+    def get_previous(self, obj):
+        try:
+            request = models.Contract.objects.get(id=obj.previous, is_deleted=False)
+            serializer = FetchContractSerializer(request, many=False)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+        
 class UploadFileSerializer(serializers.Serializer):
     contract_id = serializers.CharField()
     file_type = serializers.CharField()
+
+
+
+class PlatformAdminSerializer(serializers.Serializer):
+    admin = serializers.CharField(max_length=500)
+
+class UpdatePlatformAdminSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    admin = serializers.CharField(max_length=500)
+
+class FetchPlatformAdminSerializer(serializers.ModelSerializer):
+    created_by = SlimUsersSerializer()
+    admin = UsersSerializer()
+    class Meta:
+        model = models.PlatformAdmin
+        fields = '__all__'

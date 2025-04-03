@@ -57,3 +57,25 @@ class Document(models.Model):
     class Meta:
         db_table = u'"{}\".\"documents"'.format(settings.CONTRACT_MANAGEMENT_SYSTEM)
 
+
+class PlatformAdmin(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    admin = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="cms_admin"
+    )
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="cms_admin_created_by"
+    )
+
+    status = models.CharField(max_length=255, default='ACTIVE')
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.admin.first_name
+    
+    class Meta:
+        db_table = u'"{}\".\"platform_admins"'.format(settings.CONTRACT_MANAGEMENT_SYSTEM)
