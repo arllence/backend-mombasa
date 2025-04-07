@@ -1963,14 +1963,14 @@ class HelpDeskViewSet(viewsets.ViewSet):
                 data=payload, many=False)
             if serializer.is_valid():
                 admin = payload['admin']
-                category = payload['category']
+                # category = payload['category']
                 is_hod = True if payload['is_hod'] == 'YES' else False
                 is_slt = True if payload['is_slt'] == 'YES' else False
 
-                try:
-                    category = models.Category.objects.get(id=category)
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Category"}, status=status.HTTP_400_BAD_REQUEST)
+                # try:
+                #     category = models.Category.objects.get(id=category)
+                # except (ValidationError, ObjectDoesNotExist):
+                #     return Response({"details": "Unknown Category"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     admin = User.objects.get(id=admin)
@@ -1992,7 +1992,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
                         "admin": admin,
                         "is_hod": is_hod,
                         "is_slt": is_slt,
-                        "category": category,
+                        # "category": category,
                         "created_by": request.user
                     }
 
@@ -2011,14 +2011,14 @@ class HelpDeskViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 admin = payload['admin']
-                category = payload['category']
+                # category = payload['category']
                 is_hod = True if payload['is_hod'] == 'YES' else False
                 is_slt = True if payload['is_slt'] == 'YES' else False
 
-                try:
-                    category = models.Category.objects.get(id=category)
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Category"}, status=status.HTTP_400_BAD_REQUEST)
+                # try:
+                #     category = models.Category.objects.get(id=category)
+                # except (ValidationError, ObjectDoesNotExist):
+                #     return Response({"details": "Unknown Category"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     requestInstance = models.PlatformAdmin.objects.get(id=request_id)
@@ -2043,7 +2043,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     requestInstance.admin = admin
                     requestInstance.is_hod = is_hod
                     requestInstance.is_slt = is_slt
-                    requestInstance.category = category
+                    # requestInstance.category = category
                     requestInstance.created_by = request.user
                     requestInstance.save()
 

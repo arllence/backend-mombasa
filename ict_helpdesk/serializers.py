@@ -275,7 +275,7 @@ class FetchNoteSerializer(serializers.ModelSerializer):
 
 class PlatformAdminSerializer(serializers.Serializer):
     admin = serializers.CharField(max_length=500)
-    category = serializers.CharField(max_length=500)
+    # category = serializers.CharField(max_length=500)
     is_hod = serializers.CharField(max_length=500)
     is_slt = serializers.CharField(max_length=500)
 
