@@ -21,6 +21,7 @@ urlpatterns = [
     path(API_VERSION, include('mhd.urls')),
     path(API_VERSION, include('smr.urls')),
     path(API_VERSION, include('system_directory.urls')),
+    path(API_VERSION, include('ict_helpdesk.urls')),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
 
