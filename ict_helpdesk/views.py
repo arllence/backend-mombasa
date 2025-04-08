@@ -218,13 +218,13 @@ class GenericsViewSet(viewsets.ViewSet):
                     }
 
 
-                    issue = models.Issue.objects.create(
+                    issueInstance = models.Issue.objects.create(
                         **raw
                     )
 
                     # create track status change
                     raw = {
-                        "issue": issue,
+                        "issue": issueInstance,
                         "status": "SUBMITTED",
                         "status_for": "/".join(roles),
                         "action_by": user
