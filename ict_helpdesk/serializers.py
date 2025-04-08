@@ -234,9 +234,11 @@ class FetchAssigneesSerializer(serializers.ModelSerializer):
         model = models.Assignees
         fields = '__all__'
 
-class MarkAsCompleteSerializer(serializers.Serializer):
+class AcknowledgementSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
     action = serializers.CharField(max_length=500)
+class MarkAsCompleteSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
 
 class QuoteSerializer(serializers.Serializer):
     issue_id = serializers.CharField()

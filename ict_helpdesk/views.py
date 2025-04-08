@@ -332,7 +332,7 @@ class GenericsViewSet(viewsets.ViewSet):
             payload = request.data
             roles = user_util.fetchusergroups(request.user.id) 
 
-            serializer = serializers.MarkAsCompleteSerializer(
+            serializer = serializers.AcknowledgementSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
@@ -473,7 +473,7 @@ class GenericsViewSet(viewsets.ViewSet):
                 except:
                     pass
                 subject = f"[ICT HELPDESK] Note Issued for {issueInstance.uid}"
-                message = f"Hello. \nA note has been added for Issue of id: {issueInstance.uid} \nby {user.first_name} {user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nThe Note:\n {comment}.\n"
+                message = f"Hello. <br>A note has been added for Ticket of id: {issueInstance.uid} <br>by {user.first_name} {user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.<br><b>Note:</b><br><i>{comment}.</i>\n"
 
                 uri = f"requests/view/{str(issueInstance.id)}"
                 link = "http://172.20.0.42:8011/" + uri
@@ -1074,15 +1074,12 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
-                job_type = payload['job_type'] or None
-                equipment_type = payload['equipment_type'] or None
-                section = payload['section'] or None
                 department = payload['department']
                 issue = payload['issue']
                 category = payload['category']
                 facility = payload['facility']
                 subject = payload['subject']
-                # issue_type = payload['issue_type']
+                issue_type = payload['issue_type']
 
                 uid = shared_fxns.generate_unique_identifier()
 
@@ -1091,23 +1088,11 @@ class HelpDeskViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                if job_type:
+                if issue_type:
                     try:
-                        job_type = models.JobType.objects.get(id=job_type)
+                        issue_type = models.JobType.objects.get(id=issue_type)
                     except Exception as e:
                         return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
-                    
-                if equipment_type:   
-                    try:
-                        equipment_type = models.EquipmentType.objects.get(id=equipment_type)
-                    except Exception as e:
-                        return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
-                    
-                if section:
-                    try:
-                        section = models.Section.objects.get(id=section)
-                    except Exception as e:
-                        return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     category = models.Category.objects.get(id=category)
@@ -1122,9 +1107,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
                 with transaction.atomic():
                     raw = {
                         "department": department,
-                        "section": section,
-                        "job_type": job_type,
-                        "equipment_type": equipment_type,
+                        "job_type": issue_type,
                         "created_by": authenticated_user,
                         "attachment": attachment,
                         "issue": issue,
@@ -1185,10 +1168,8 @@ class HelpDeskViewSet(viewsets.ViewSet):
             
             if serializer.is_valid():
                 request_id = payload['request_id']
-                job_type = payload['job_type']
-                equipment_type = payload['equipment_type']
+                issue_type = payload['issue_type']
                 department = payload['department']
-                section = payload['section']
                 issue = payload['issue']
                 category = payload['category']
                 facility = payload['facility']
@@ -1205,23 +1186,11 @@ class HelpDeskViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                if job_type:
+                if issue_type:
                     try:
-                        job_type = models.JobType.objects.get(id=job_type)
+                        job_type = models.JobType.objects.get(id=issue_type)
                     except Exception as e:
                         return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                if equipment_type:    
-                    try:
-                        equipment_type = models.EquipmentType.objects.get(id=equipment_type)
-                    except Exception as e:
-                        return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                if section:
-                    try:
-                        section = models.Section.objects.get(id=section)
-                    except Exception as e:
-                        return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     category = models.Category.objects.get(id=category)
@@ -1236,9 +1205,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
                 with transaction.atomic():
                     raw = {
                         "department": department,
-                        "section": section,
                         "job_type": job_type,
-                        "equipment_type": equipment_type,
                         "issue": issue,
                         "facility": facility,
                         "category": category,
@@ -1664,9 +1631,9 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     else:
                         emails = [issueInstance.created_by.email]
                     subject = f"[ICT HELPDESK] Issue {issueInstance.uid}  Completed "
-                    message = f"Hello. \nYour Issue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nClick on the button below to close it.\n"
+                    message = f"Hello. \nYour Issue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nClick below to review it.\n"
 
-                    uri = f"generics/acknowledgement/{str(issueInstance.id)}"
+                    uri = f"generic/acknowledgement/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8011/" + uri
                     platform = 'Verify Issue'
 
@@ -1902,12 +1869,12 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     emails.remove(request.user.email)
                 except:
                     pass
-                subject = f"[ICT HELPDESK] Note Issued for {issueInstance.uid}"
-                message = f"Hello. \nA note has been added for Issue of id: {issueInstance.uid} \nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nThe Note:\n {comment}.\n"
+                subject = f"[ICT HELPDESK] Note Issued for Ticket {issueInstance.uid}"
+                message = f"Hello. <br>A note has been added for Issue of id: {issueInstance.uid}<br>by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.<br><b>Note:</b><br><i>{comment}</i>.\n"
 
                 uri = f"requests/view/{str(issueInstance.id)}"
                 link = "http://172.20.0.42:8011/" + uri
-                platform = 'View Issue'
+                platform = 'View Ticket'
 
                 message_template = read_template("general_template.html")
                 message = message_template.substitute(
