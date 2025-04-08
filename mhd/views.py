@@ -1494,7 +1494,7 @@ class MHSViewSet(viewsets.ViewSet):
                                 status__in=['COMPLETED','CLOSED']
                             ).order_by('-date_created')
 
-
+                    resp = list(set(resp))
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
                     result_page = paginator.paginate_queryset(resp, request)
