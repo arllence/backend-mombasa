@@ -265,7 +265,7 @@ class GenericsViewSet(viewsets.ViewSet):
 
 
                     """
-                    uri = f"requests/view/{str(issue.id)}"
+                    uri = f"requests/view/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8011/" + uri
                     platform = 'View Issue'
 
@@ -291,7 +291,7 @@ class GenericsViewSet(viewsets.ViewSet):
 
                 if user:
                     user_util.log_account_activity(
-                        user, user, "Issue Request created", f"Issue Request Id: {issue.id}")
+                        user, user, "Issue Request created", f"Issue Request Id: {issueInstance.id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             

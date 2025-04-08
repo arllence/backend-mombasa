@@ -301,13 +301,13 @@ class GenericsViewSet(viewsets.ViewSet):
                     #         }
                     #     )
 
-                    issue = models.Issue.objects.create(
+                    issueInstance = models.Issue.objects.create(
                         **raw
                     )
 
                     # create track status change
                     raw = {
-                        "issue": issue,
+                        "issue": issueInstance,
                         "status": "SUBMITTED",
                         "status_for": "/".join(roles),
                         "action_by": user
@@ -352,7 +352,7 @@ class GenericsViewSet(viewsets.ViewSet):
 
 
                     """
-                    uri = f"requests/view/{str(issue.id)}"
+                    uri = f"requests/view/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8009/" + uri
                     platform = 'View Issue'
 
@@ -378,7 +378,7 @@ class GenericsViewSet(viewsets.ViewSet):
 
                 if user:
                     user_util.log_account_activity(
-                        user, user, "Issue Request created", f"Issue Request Id: {issue.id}")
+                        user, user, "Issue Request created", f"Issue Request Id: {issueInstance.id}")
                 
                 return Response('success', status=status.HTTP_200_OK)
             
