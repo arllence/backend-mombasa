@@ -350,9 +350,6 @@ class GenericsViewSet(viewsets.ViewSet):
                                     status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
-                    issueInstance.is_acknowledged = True
-                    issueInstance.save()
-
                     user = None
                     if issueInstance.created_by:
                         user = issueInstance.created_by
@@ -382,6 +379,8 @@ class GenericsViewSet(viewsets.ViewSet):
 
                     subject = f"[ICT HELPDESK] Ticket {issueInstance.uid}  Status"
                     if action == 'DONE':
+                        issueInstance.is_acknowledged = True
+                        issueInstance.save()
                         message = f"Hello. \nTicket of id: {issueInstance.uid} has been Acknowledged by requestor as Completed / Solved\n on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
 
                     if action == 'NOT DONE':
@@ -1669,7 +1668,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
 
                     uri = f"generics/acknowledgement/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8011/" + uri
-                    platform = 'Close Issue'
+                    platform = 'Verify Issue'
 
                     message_template = read_template("general_template.html")
                     message = message_template.substitute(
