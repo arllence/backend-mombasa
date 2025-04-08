@@ -385,6 +385,28 @@ class GenericsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            query = request.query_params.get('q')
+            slim = request.query_params.get('slim')
+
+            if request_id:
+                try:
+                    resp = models.Issue.objects.get(Q(id=request_id))
+                    if slim:
+                        resp = serializers.SlimFetchIssueSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.FetchIssueSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
 
     @action(methods=["POST"],
             detail=False,
@@ -397,11 +419,12 @@ class GenericsViewSet(viewsets.ViewSet):
             payload = request.data
             roles = user_util.fetchusergroups(request.user.id) 
 
-            serializer = serializers.MarkAsCompleteSerializer(
+            serializer = serializers.AcknowledgementSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
                 request_id = payload['request_id']
+                action = payload['action']
 
                 try:
                     issueInstance = models.Issue.objects.get(id=request_id)
@@ -414,26 +437,34 @@ class GenericsViewSet(viewsets.ViewSet):
                                     status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
-                    issueInstance.is_acknowledged = True
-                    issueInstance.save()
-
                     user = None
                     if issueInstance.created_by:
                         user = issueInstance.created_by
 
+                    status_for = 'ACKNOWLEDGED' if action == 'DONE' else 'NOT DONE'
                     # track status change
                     raw = {
                         "issue": issueInstance,
-                        "status": 'ACKNOWLEDGED',
+                        "status": status_for,
                         "status_for": 'REQUESTOR',
                         "action_by": user
                     }
 
                     models.StatusChange.objects.create(**raw)
 
+                    if action == 'NOT DONE':
+                        is_existing = models.StatusChange.objects.filter(
+                            issue=issueInstance, 
+                            status=status_for
+                        ).exists()
+                        if is_existing:
+                            return Response({"details": "Already marked as NOT DONE. Try adding a note instead."}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+
 
                     # Notify Admins
-                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['ICT_ADMIN'])).values_list('email', flat=True))
                     emails = []
                     assignees = models.Assignees.objects.filter(Q(issue=issueInstance))
                     for assignee in assignees:
@@ -443,8 +474,14 @@ class GenericsViewSet(viewsets.ViewSet):
                     if issueInstance.assigned_to:
                         emails.append(issueInstance.assigned_to.email)
 
-                    subject = f"[MHD] Issue {issueInstance.uid}  Acknowledged"
-                    message = f"Hello. \nIssue of id: {issueInstance.uid} has been Acknowledged by requestor as Completed / Solved\n on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
+                    subject = f"[MHD] Issue {issueInstance.uid}  Status"
+                    if action == 'DONE':
+                        issueInstance.is_acknowledged = True
+                        issueInstance.save()
+                        message = f"Hello. <br>Issue of id: {issueInstance.uid} has been Acknowledged by requestor as Completed / Solved <br> on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.<br>Pending closure.\n"
+
+                    if action == 'NOT DONE':
+                        message = f"Hello. <br>Issue of id: {issueInstance.uid} has been marked as NOT DONE by requestor <br> on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.<br>Pending review.\n"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8009/" + uri
@@ -473,6 +510,110 @@ class GenericsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, 
                                 status=status.HTTP_400_BAD_REQUEST)   
+            
+    @action(methods=["POST","GET"],
+            detail=False,
+            url_path="notes",
+            url_name="notes")
+    def notes(self, request):
+
+        if request.method == "POST":
+
+            payload = request.data
+            roles = user_util.fetchusergroups(request.user.id) 
+
+            serializer = serializers.NoteSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                comment = payload.get('comments')
+
+                try:
+                    issueInstance = models.Issue.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown ticket"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                if issueInstance.created_by:
+                     user = issueInstance.created_by
+                else:
+                    if issueInstance.email:
+                        try:
+                            user = get_user_model().objects.get(email=issueInstance.email)
+                        except:
+                            return Response({"details": "Login to add note"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+
+                
+                with transaction.atomic():
+                    raw = {
+                        "owner": user,
+                        "issue": issueInstance,
+                        "note": comment
+                    }
+                    models.Note.objects.create(**raw)
+
+                # Send Note Notifications
+                emails = []
+                assignees = models.Assignees.objects.filter(Q(issue=issueInstance))
+                for assignee in assignees:
+                    emails.append(assignee.assignee.email)
+                    if assignee.assigned_by:
+                        emails.append(assignee.assigned_by.email)
+                if issueInstance.assigned_to:
+                    emails.append(issueInstance.assigned_to.email)
+                try:
+                    emails.remove(request.user.email)
+                except:
+                    pass
+                subject = f"[MHD] Note Issued for {issueInstance.uid}"
+                message = f"Hello. <br>A note has been added for Issue of id: {issueInstance.uid} <br>by {user.first_name} {user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.<br><b>Note:</b><br><i>{comment}.</i>\n"
+
+                uri = f"requests/view/{str(issueInstance.id)}"
+                link = "http://172.20.0.42:8009/" + uri
+                platform = 'View Issue'
+
+                message_template = read_template("general_template.html")
+                message = message_template.substitute(
+                    CONTENT=message,
+                    LINK=link,
+                    PLATFORM=platform
+                )
+                
+                try:
+                    mail = {
+                        "email" : list(set(emails)), 
+                        "subject" : subject,
+                        "message" : message,
+                        "is_html": True
+                    }
+                    Sendmail.objects.create(**mail)
+                except Exception as e:
+                    logger.error(e)
+
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.Note.objects.filter(Q(issue=request_id))
+
+                    resp = serializers.FetchNoteSerializer(
+                        resp, many=True, context={"user_id":request.user.id}).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response([], status=status.HTTP_200_OK)
 
 
 
@@ -1603,11 +1744,11 @@ class MHSViewSet(viewsets.ViewSet):
                     else:
                         emails = [issueInstance.created_by.email]
                     subject = f"[MHD] Issue {issueInstance.uid}  Completed "
-                    message = f"Hello. \nYour Issue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nClick on the button below to close it.\n"
+                    message = f"Hello. <br>Your Issue of id: {issueInstance.uid} has been marked as Complete <br>by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.<br>Click on the button below to review it.\n"
 
-                    uri = f"generics/acknowledgement/{str(issueInstance.id)}"
+                    uri = f"generic/acknowledgement/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8009/" + uri
-                    platform = 'Close Issue'
+                    platform = 'Review Issue'
 
                     message_template = read_template("general_template.html")
                     message = message_template.substitute(

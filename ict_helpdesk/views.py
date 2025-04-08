@@ -365,6 +365,15 @@ class GenericsViewSet(viewsets.ViewSet):
 
                     models.StatusChange.objects.create(**raw)
 
+                    if action == 'NOT DONE':
+                        is_existing = models.StatusChange.objects.filter(
+                            issue=issueInstance, 
+                            status=status_for
+                        ).exists()
+                        if is_existing:
+                            return Response({"details": "Already marked as NOT DONE. Try adding a note instead."},status=status.HTTP_400_BAD_REQUEST)
+
+
 
                     # Notify Admins
                     # emails = list(get_user_model().objects.filter(Q(groups__name__in=['ICT_ADMIN'])).values_list('email', flat=True))
