@@ -1357,21 +1357,21 @@ class HelpDeskViewSet(viewsets.ViewSet):
                             resp = models.Issue.objects.filter(
                                 Q(assigned_to=request.user) |
                                 Q(created_by=request.user) | 
-                                Q(assignee_issue_instance__assignee=request.user),
+                                Q(ict_assignee_issue_instance__assignee=request.user),
                                 status__in=['SUBMITTED','REOPENED']
                             ).order_by('-date_created')
                         elif query == 'assigned':
                             resp = models.Issue.objects.filter(
                                     Q(assigned_to=request.user) |
                                     Q(created_by=request.user) | 
-                                    Q(assignee_issue_instance__assignee=request.user),
+                                    Q(ict_assignee_issue_instance__assignee=request.user),
                                     status__in=['ASSIGNED']
                                 ).order_by('-date_created')
                         else:
                             resp = models.Issue.objects.filter(
                                 Q(assigned_to=request.user) |
                                 Q(created_by=request.user) |
-                                Q(assignee_issue_instance__assignee=request.user),
+                                Q(ict_assignee_issue_instance__assignee=request.user),
                                 status__in=['COMPLETED','CLOSED']
                             ).order_by('-date_created')
 
