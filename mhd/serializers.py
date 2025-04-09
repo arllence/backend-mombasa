@@ -184,19 +184,7 @@ class FetchIssueSerializer(serializers.ModelSerializer):
             if diff < 1:
                 return "1 Hour"
             return str(diff) + " Hours"
-            
-            # diff = (obj.date_closed - obj.date_created).days
-            # if diff == 0:
-            #     diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
-            #     if diff < 1:
-            #         diff = str(int((obj.date_closed - obj.date_created).total_seconds() // 60)) + " Minute(s)"
-            #     else:
-            #      diff = str(diff) + " Hour(s)"
-            # else:
-            #     diff = str(diff) + " Day(s)"
 
-            # return diff
-        
         except Exception as e:
             print(e)
             # logger.error(e)
@@ -211,10 +199,34 @@ class SlimFetchIssueSerializer(serializers.ModelSerializer):
     facility = FetchFacilitySerializer()
     category = FetchCategorySerializer()
     is_owner = serializers.SerializerMethodField()
+    assignees = serializers.SerializerMethodField()
+    tat = serializers.SerializerMethodField()
 
     class Meta:
         model = models.Issue
         fields = '__all__'
+
+    def get_assignees(self, obj):
+        try:
+            request = models.Assignees.objects.filter(issue=obj)
+            serializer = FetchAssigneesSerializer(request, many=True)
+            return serializer.data
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
+        
+    def get_tat(self, obj):
+        try:
+            diff = (obj.date_completed - obj.date_assigned).total_seconds() // 3600
+            if diff < 1:
+                return "1 Hour"
+            return str(diff) + " Hours"
+
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return ""
 
     def get_is_owner(self, obj):
         try:
