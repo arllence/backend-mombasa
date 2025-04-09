@@ -239,7 +239,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     message = f"""
                         <table border="1" class='signature-table'>
                             <tr>
-                                <th colspan='5'>Issue Details</th>
+                                <th colspan='5'>Ticket Details</th>
                             </tr>
                             <tr>
                                 <th>Facility</th>
