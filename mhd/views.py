@@ -922,10 +922,12 @@ class MHSViewSet(viewsets.ViewSet):
                 data=payload, many=False)
             if serializer.is_valid():
                 name = payload['name']
+                category = payload['category'].upper()
 
                 with transaction.atomic():
                     raw = {
-                        "name": name
+                        "name": name,
+                        "category": category,
                     }
                     models.Facility.objects.create(**raw)
 
@@ -942,6 +944,7 @@ class MHSViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 name = payload['name']
+                category = payload['category'].upper()
 
                 try:
                     requestInstance = models.Facility.objects.get(id=request_id)
@@ -951,6 +954,7 @@ class MHSViewSet(viewsets.ViewSet):
 
                 with transaction.atomic():
                     requestInstance.name = name
+                    requestInstance.category = category
                     requestInstance.save()
 
                     return Response("Success", status=status.HTTP_200_OK)

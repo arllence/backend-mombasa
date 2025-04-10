@@ -9,10 +9,12 @@ from django.core.exceptions import ObjectDoesNotExist, ValidationError
 
 class GeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
+    category = serializers.CharField(max_length=255)
 
 class UpdateGeneralNameSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=255)
     name = serializers.CharField(max_length=255)
+    category = serializers.CharField(max_length=255)
 
 class FetchSectionSerializer(serializers.ModelSerializer):
     class Meta:
