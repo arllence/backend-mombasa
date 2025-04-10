@@ -251,6 +251,7 @@ class SlimFetchIssueSerializer(serializers.ModelSerializer):
 class AssignSerializer(serializers.Serializer):
     request_id = serializers.CharField()
     priority = serializers.CharField()
+    job_type = serializers.CharField()
     assign_to = serializers.ListField(min_length=1)
 
 class FetchAssigneesSerializer(serializers.ModelSerializer):

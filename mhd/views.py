@@ -1575,6 +1575,7 @@ class MHSViewSet(viewsets.ViewSet):
                 request_id = payload['request_id']
                 assigned_to = payload['assign_to']
                 priority = payload['priority']
+                job_type = payload['job_type']
                 comment = payload.get('comment') or 'N/A'
 
                 try:
@@ -1587,6 +1588,12 @@ class MHSViewSet(viewsets.ViewSet):
                     priority = models.Priority.objects.get(id=priority)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown priority"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    job_type = models.JobType.objects.get(id=job_type)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown job type"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
                 
                 assignees = []
@@ -1621,6 +1628,7 @@ class MHSViewSet(viewsets.ViewSet):
                     issueInstance.status = 'ASSIGNED'
                     issueInstance.date_assigned = datetime.datetime.now()
                     issueInstance.priority = priority
+                    issueInstance.job_type = job_type
                     issueInstance.save()
 
                     # track status change
