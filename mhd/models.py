@@ -264,6 +264,7 @@ class PlatformAdmin(models.Model):
     )
 
     status = models.CharField(max_length=255, default='ACTIVE')
+    location = models.CharField(max_length=255, null=True, blank=True)
     is_hod = models.BooleanField(default=False)
     is_slt = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)

@@ -238,12 +238,11 @@ class GenericsViewSet(viewsets.ViewSet):
                     return Response({"details": "Name and Email Required"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-                user = None
-                if email:
-                    try:
-                        user = get_user_model().objects.get(email=email)
-                    except:
-                        pass
+                try:
+                    user = get_user_model().objects.get(email=email)
+                except:
+                    user = None
+                    pass
 
                 try:
                     department = SRRSDepartment.objects.get(id=department)
@@ -310,8 +309,8 @@ class GenericsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                     # Notify Platform Admins
-                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
-                    emails = list(models.PlatformAdmin.objects.filter(Q(category=category)).values_list('admin__email', flat=True))
+                    emails = list(models.PlatformAdmin.objects.filter(Q(location=facility.category)).values_list('admin__email', flat=True))
+                    # emails = list(models.PlatformAdmin.objects.filter(Q(category=category)).values_list('admin__email', flat=True))
                     subject = f"[MHD] {subject}"
                     message = f"""
                         <table border="1" class='signature-table'>
@@ -2156,6 +2155,7 @@ class MHSViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 admin = payload['admin']
                 category = payload['category']
+                location = payload.get('location') or None
                 is_hod = True if payload['is_hod'] == 'YES' else False
                 is_slt = True if payload['is_slt'] == 'YES' else False
 
@@ -2185,6 +2185,7 @@ class MHSViewSet(viewsets.ViewSet):
                         "is_hod": is_hod,
                         "is_slt": is_slt,
                         "category": category,
+                        "location": location,
                         "created_by": request.user
                     }
 
@@ -2204,6 +2205,7 @@ class MHSViewSet(viewsets.ViewSet):
                 request_id = payload['request_id']
                 admin = payload['admin']
                 category = payload['category']
+                location = payload.get('location') or None
                 is_hod = True if payload['is_hod'] == 'YES' else False
                 is_slt = True if payload['is_slt'] == 'YES' else False
 
@@ -2236,6 +2238,7 @@ class MHSViewSet(viewsets.ViewSet):
                     requestInstance.is_hod = is_hod
                     requestInstance.is_slt = is_slt
                     requestInstance.category = category
+                    requestInstance.location = location
                     requestInstance.created_by = request.user
                     requestInstance.save()
 
