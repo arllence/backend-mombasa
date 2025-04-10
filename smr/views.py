@@ -1017,10 +1017,10 @@ class AnalyticsViewSet(viewsets.ViewSet):
             rejected = models.Meal.objects.filter(status="REJECTED", is_deleted=False).count()
             pending = models.Meal.objects.filter(Q(status__in=active_status), is_deleted=False).count()
         else:
-            requests = models.Meal.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
-            approved = models.Meal.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(email=request.user.email), status="SLT APPROVED", is_deleted=False).count()
-            rejected = models.Meal.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(email=request.user.email), status="REJECTED", is_deleted=False).count()
-            pending = models.Meal.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(email=request.user.email), status__in=active_status, is_deleted=False).count()
+            requests = models.Meal.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user) | Q(slt=request.user), is_deleted=False).count()
+            approved = models.Meal.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(slt=request.user) | Q(email=request.user.email), status="SLT APPROVED", is_deleted=False).count()
+            rejected = models.Meal.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(slt=request.user) | Q(email=request.user.email), status="REJECTED", is_deleted=False).count()
+            pending = models.Meal.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user) | Q(slt=request.user) | Q(email=request.user.email), status__in=active_status, is_deleted=False).count()
 
         resp = {
             "requests": requests,
