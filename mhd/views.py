@@ -294,12 +294,6 @@ class GenericsViewSet(viewsets.ViewSet):
                         "name": name,
                         "uid": uid
                     }
-                    # if not user:
-                    #     raw.update(
-                    #         {
-                                
-                    #         }
-                    #     )
 
                     issueInstance = models.Issue.objects.create(
                         **raw
@@ -373,6 +367,34 @@ class GenericsViewSet(viewsets.ViewSet):
                             }
                             
                             Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+                    # Notify the requestor
+                    emails = [email]
+
+                    subject = f"[MHD] Your Issue {uid}  Received "
+                    message = f"Hello.<br>Your issue has been submitted successfully.<br>on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.<br>Ticket reference id is: {uid}<br>You will be updated on the progress.<br><br>Regards<br>MHD-AKHK<br>"
+
+                    uri = f"requests/view/{str(issueInstance.id)}"
+                    link = "http://172.20.0.42:8009/" + uri
+                    platform = 'View Ticket'
+
+                    message_template = read_template("general_template.html")
+                    message = message_template.substitute(
+                        CONTENT=message,
+                        LINK=link,
+                        PLATFORM=platform
+                    )
+                    
+                    try:
+                        mail = {
+                            "email" : list(set(emails)), 
+                            "subject" : subject,
+                            "message" : message,
+                            "is_html": True
+                        }
+                        Sendmail.objects.create(**mail)
                     except Exception as e:
                         logger.error(e)
 
@@ -1261,6 +1283,35 @@ class MHSViewSet(viewsets.ViewSet):
                     except Exception as e:
                         logger.error(e)
 
+
+                    # Notify the requestor
+                    emails = [request.user.email]
+
+                    subject = f"[MHD] Your Issue {uid}  Received "
+                    message = f"Hello. <br>Your issue has been submitted successfully.<br>on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}<br>Ticket reference id is: {uid}.<br>You will be updated on progress.<br><br>Regards<br>MHD-AKHK<br>"
+
+                    uri = f"requests/view/{str(issue.id)}"
+                    link = "http://172.20.0.42:8009/" + uri
+                    platform = 'View Ticket'
+
+                    message_template = read_template("general_template.html")
+                    message = message_template.substitute(
+                        CONTENT=message,
+                        LINK=link,
+                        PLATFORM=platform
+                    )
+                    
+                    try:
+                        mail = {
+                            "email" : list(set(emails)), 
+                            "subject" : subject,
+                            "message" : message,
+                            "is_html": True
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Issue Request created", f"Issue Request Id: {issue.id}")
                 
@@ -1597,6 +1648,7 @@ class MHSViewSet(viewsets.ViewSet):
                                     status=status.HTTP_400_BAD_REQUEST)
                 
                 assignees = []
+                assignee_names = []
                 for assignee in assigned_to:
                     try:
                         assigned_to = User.objects.get(id=assignee)
@@ -1607,6 +1659,8 @@ class MHSViewSet(viewsets.ViewSet):
                             return Response({"details": "Already Assigned"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
                         assignees.append(assigned_to)
+                        name = f"{assigned_to.first_name} {assigned_to.last_name}"
+                        assignee_names.append(name)
                     except (ValidationError, ObjectDoesNotExist):
                         return Response({"details": "Unknown assignee"}, 
                                         status=status.HTTP_400_BAD_REQUEST)
@@ -1645,7 +1699,39 @@ class MHSViewSet(viewsets.ViewSet):
                     # Notify the assignee
                     emails = [user.email for user in assignees]
                     subject = f"[MHD] Issue {issueInstance.uid}  Assigned To You  "
-                    message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nMHD-AKHK\n\n"
+                    message = f"Hello.<br>An issue of id: {issueInstance.uid} has been assigned to you<br>by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.<br>Comment: <i>{comment}</i><br>Pending your action.<br><br>Regards<br>MHD-AKHK\n\n"
+
+                    uri = f"requests/view/{str(issueInstance.id)}"
+                    link = "http://172.20.0.42:8009/" + uri
+                    platform = 'View Issue'
+
+                    message_template = read_template("general_template.html")
+                    message = message_template.substitute(
+                        CONTENT=message,
+                        LINK=link,
+                        PLATFORM=platform
+                    )
+                    
+                    try:
+                        mail = {
+                            "email" : list(set(emails)), 
+                            "subject" : subject,
+                            "message" : message,
+                            "is_html": True
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+                    # Notify the requestor
+                    emails = []
+                    if issueInstance.created_by:
+                        emails.append(issueInstance.created_by.email)
+                    if issueInstance.email:
+                        emails.append(issueInstance.email)
+
+                    subject = f"[MHD] Your Issue {issueInstance.uid}  Assigned "
+                    message = f"Hello. <br>Your issue of id: {issueInstance.uid} has been assigned to {' & '.join(assignee_names)}<br>on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.<br>You will be notified when completed.<br><br>Regards<br>MHD-AKHK<br>"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8009/" + uri
