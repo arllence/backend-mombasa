@@ -309,7 +309,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                     # Notify Platform Admins
-                    emails = list(models.PlatformAdmin.objects.filter(Q(location=facility.category)).values_list('admin__email', flat=True))
+                    emails = list(models.PlatformAdmin.objects.filter(Q(category=category) & Q(location=facility.category)).values_list('admin__email', flat=True))
                     # emails = list(models.PlatformAdmin.objects.filter(Q(category=category)).values_list('admin__email', flat=True))
                     subject = f"[MHD] {subject}"
                     message = f"""
