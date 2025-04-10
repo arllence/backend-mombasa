@@ -1735,7 +1735,7 @@ class MHSViewSet(viewsets.ViewSet):
 
                     uri = f"requests/view/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8009/" + uri
-                    platform = 'View Issue'
+                    platform = 'View Ticket'
 
                     message_template = read_template("general_template.html")
                     message = message_template.substitute(
