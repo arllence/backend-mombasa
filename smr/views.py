@@ -765,7 +765,8 @@ class SMRViewSet(viewsets.ViewSet):
                     else:
                         resp = models.Meal.objects.filter(
                                 Q(email=request.user.email) |
-                                Q(created_by=request.user) 
+                                Q(created_by=request.user) |
+                                Q(slt=request.user) 
                             ).order_by('-date_created')
 
 
