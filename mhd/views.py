@@ -1045,6 +1045,7 @@ class MHSViewSet(viewsets.ViewSet):
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
+            q = request.query_params.get('q')
             if request_id:
                 try:
                     resp = models.Category.objects.get(Q(id=request_id))
@@ -1057,7 +1058,10 @@ class MHSViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    resp = models.Category.objects.filter(is_deleted=False).order_by('name')
+                    if q == 'all':
+                        resp = models.Category.objects.all().order_by('name')
+                    else:
+                        resp = models.Category.objects.filter(is_deleted=False).order_by('name')
                     resp = serializers.FetchCategorySerializer(resp,many=True).data
                     return Response(resp, status=status.HTTP_200_OK)
                     
