@@ -1142,7 +1142,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     # emails = list(get_user_model().objects.filter(Q(groups__name__in=['ICT_ADMIN'])).values_list('email', flat=True))
-                    emails = list(models.PlatformAdmin.objects.filter(Q(category=category)).values_list('admin__email', flat=True))
+                    emails = list(models.PlatformAdmin.objects.filter(Q(is_slt=False)).values_list('admin__email', flat=True))
                     subject = f"[ICT HELPDESK] New Ticket Reported: {uid} ."
                     message = f"Hello. \nNew Ticket: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nICT-HELPDESK-AKHK\n\n"
 
