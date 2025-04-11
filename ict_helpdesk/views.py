@@ -233,8 +233,8 @@ class GenericsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                     # Notify Platform Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['ICT_ADMIN'])).values_list('email', flat=True))
-                    # emails = list(models.PlatformAdmin.objects.filter(Q(category=category)).values_list('admin__email', flat=True))
+                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['ICT_ADMIN']), is_slt=False).values_list('email', flat=True))
+                    emails = list(models.PlatformAdmin.objects.filter(Q(is_slt=False)).values_list('admin__email', flat=True))
                     subject = f"[ICT HELPDESK] {subject}"
                     message = f"""
                         <table border="1" class='signature-table'>
