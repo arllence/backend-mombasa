@@ -1143,8 +1143,8 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     # Notify Platform Admins
                     # emails = list(get_user_model().objects.filter(Q(groups__name__in=['ICT_ADMIN'])).values_list('email', flat=True))
                     emails = list(models.PlatformAdmin.objects.filter(Q(category=category)).values_list('admin__email', flat=True))
-                    subject = f"[ICT HELPDESK] New Issue Reported: {uid} ."
-                    message = f"Hello. \nNew Issue: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nMHD-AKHK\n\n"
+                    subject = f"[ICT HELPDESK] New Ticket Reported: {uid} ."
+                    message = f"Hello. \nNew Ticket: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nICT-HELPDESK-AKHK\n\n"
 
                     try:
                         if emails:
@@ -1288,8 +1288,8 @@ class HelpDeskViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['ICT_ADMIN'])).values_list('email', flat=True))
-                    subject = f"[ICT HELPDESK] Issue {issueInstance.uid} Closed "
-                    message = f"Hello. \nIssue: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nMHD-AKHK\n\n"
+                    subject = f"[ICT HELPDESK] Ticket {issueInstance.uid} Closed "
+                    message = f"Hello. \nTicket: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nICT-HELPDESK-AKHK\n\n"
 
                     if issueInstance.created_by:
                         emails.append(str(issueInstance.created_by.email))
@@ -1521,8 +1521,8 @@ class HelpDeskViewSet(viewsets.ViewSet):
 
                     # Notify the assignee
                     emails = [user.email for user in assignees]
-                    subject = f"[ICT HELPDESK] Issue {issueInstance.uid}  Assigned To You  "
-                    message = f"Hello, \nAn issue of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nMHD-AKHK\n\n"
+                    subject = f"[ICT HELPDESK] Issue {issueInstance.uid}  Assigned To You"
+                    message = f"Hello, \nA ticket of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nICT-HELPDESK-AKHK\n\n"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8011/" + uri
