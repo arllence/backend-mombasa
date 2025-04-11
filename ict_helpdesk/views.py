@@ -1346,9 +1346,19 @@ class HelpDeskViewSet(viewsets.ViewSet):
                             resp = models.Issue.objects.filter(
                                 Q(status__in=['ASSIGNED']), is_deleted=False
                             ).order_by('-date_created')
+                        elif query == 'closed':
+                            resp = models.Issue.objects.filter(
+                                Q(status__in=['CLOSED']), is_deleted=False
+                            ).order_by('-date_created')
+                        elif query == 'my-tickets':
+                            resp = models.Issue.objects.filter(
+                                Q(assigned_to=request.user) |
+                                Q(ict_assignee_issue_instance__assignee=request.user),
+                                status__in=['ASSIGNED'], is_deleted=False
+                            ).order_by('-date_created')
                         else:
                             resp = models.Issue.objects.filter(
-                                    Q(status__in=['COMPLETED','CLOSED']),
+                                    Q(status__in=['COMPLETED']),
                                     is_deleted=False
                                 ).order_by('-date_created')
 
@@ -1367,12 +1377,25 @@ class HelpDeskViewSet(viewsets.ViewSet):
                                     Q(ict_assignee_issue_instance__assignee=request.user),
                                     status__in=['ASSIGNED']
                                 ).order_by('-date_created')
+                        elif query == 'my-tickets':
+                            resp = models.Issue.objects.filter(
+                                    Q(assigned_to=request.user) |
+                                    Q(ict_assignee_issue_instance__assignee=request.user),
+                                    status__in=['ASSIGNED']
+                                ).order_by('-date_created')
+                        elif query == 'closed':
+                            resp = models.Issue.objects.filter(
+                                    Q(assigned_to=request.user) |
+                                    Q(created_by=request.user) | 
+                                    Q(ict_assignee_issue_instance__assignee=request.user),
+                                    status__in=['CLOSED']
+                                ).order_by('-date_created')
                         else:
                             resp = models.Issue.objects.filter(
                                 Q(assigned_to=request.user) |
                                 Q(created_by=request.user) |
                                 Q(ict_assignee_issue_instance__assignee=request.user),
-                                status__in=['COMPLETED','CLOSED']
+                                status__in=['COMPLETED']
                             ).order_by('-date_created')
 
                     resp = list(set(resp))
