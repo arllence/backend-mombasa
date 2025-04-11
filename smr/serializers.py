@@ -27,6 +27,7 @@ class MealSerializer(serializers.Serializer):
     department = serializers.CharField()
     date_of_event = serializers.DateField()
     number_of_participants = serializers.CharField()
+    reason = serializers.CharField()
 
 class PutMealSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
@@ -34,6 +35,7 @@ class PutMealSerializer(serializers.Serializer):
     department = serializers.CharField()
     date_of_event = serializers.DateField()
     number_of_participants = serializers.CharField()
+    reason = serializers.CharField()
 
 class PatchMealSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)

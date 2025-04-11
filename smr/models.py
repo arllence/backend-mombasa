@@ -21,6 +21,7 @@ class Meal(models.Model):
    
     uid = models.CharField(max_length=50, unique=True)
     status = models.CharField(max_length=255, default='REQUESTED')
+    reason = models.TextField(null=True, blank=True)
     location_of_function = models.CharField(max_length=500)
     date_of_event = models.DateField()
     number_of_participants = models.IntegerField()

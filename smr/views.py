@@ -288,6 +288,7 @@ class SMRViewSet(viewsets.ViewSet):
                 date_of_event = payload['date_of_event']
                 location_of_function = payload['location_of_function']
                 number_of_participants = payload['number_of_participants']
+                reason = payload['reason']
 
                 uid = shared_fxns.generate_unique_identifier()
 
@@ -350,6 +351,7 @@ class SMRViewSet(viewsets.ViewSet):
                         "meals": meals,
                         "created_by": request.user,
                         "date_of_event": date_of_event,
+                        "reason": reason,
                         "location_of_function": location_of_function,
                         "number_of_participants": number_of_participants,
                         "uid": uid
@@ -369,7 +371,7 @@ class SMRViewSet(viewsets.ViewSet):
 
                     models.StatusChange.objects.create(**raw)
 
-                    # Notify Platform Admins
+                    # Notify SLT for approval
                     emails = [slt.email]
                     subject = f"[SMR] New Meal Request: {uid}"
                     message = f"""
@@ -384,6 +386,10 @@ class SMRViewSet(viewsets.ViewSet):
                             <tr>
                                 <th>Date of Event</th>
                                 <td>{date_of_event}</td>
+                            </tr>
+                            <tr>
+                                <th>Event Justification</th>
+                                <td>{reason}</td>
                             </tr>
                             <tr>
                                 <th>Number of Participants</th>
@@ -481,6 +487,7 @@ class SMRViewSet(viewsets.ViewSet):
                 lunch = payload['lunch']
                 dinner = payload['dinner']
                 date_of_event = payload['date_of_event']
+                reason = payload['reason']
                 location_of_function = payload['location_of_function']
                 number_of_participants = payload['number_of_participants']
 
@@ -540,6 +547,7 @@ class SMRViewSet(viewsets.ViewSet):
                         "meals": meals,
                         "created_by": request.user,
                         "date_of_event": date_of_event,
+                        "reason": reason,
                         "location_of_function": location_of_function,
                         "number_of_participants": number_of_participants,
                     }  
@@ -610,6 +618,10 @@ class SMRViewSet(viewsets.ViewSet):
                             <tr>
                                 <th>Date of Event</th>
                                 <td>{mealInstance.date_of_event}</td>
+                            </tr>
+                             <tr>
+                                <th>Event Justification</th>
+                                <td>{mealInstance.reason}</td>
                             </tr>
                             <tr>
                                 <th>Number of Participants</th>
