@@ -1274,7 +1274,8 @@ class MHSViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     # emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
-                    emails = list(models.PlatformAdmin.objects.filter(Q(category=category)).values_list('admin__email', flat=True))
+                    # emails = list(models.PlatformAdmin.objects.filter(Q(category=category)).values_list('admin__email', flat=True))
+                    emails = list(models.PlatformAdmin.objects.filter(Q(category=category) & Q(location=facility.category)).values_list('admin__email', flat=True))
                     subject = f"[MHD] New Issue Reported: {uid} ."
                     message = f"Hello. \nNew Issue: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nMHD-AKHK\n\n"
 
@@ -1493,6 +1494,7 @@ class MHSViewSet(viewsets.ViewSet):
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             query = request.query_params.get('q')
+            location = request.query_params.get('location')
             slim = request.query_params.get('slim')
 
             if request_id:
@@ -1516,22 +1518,43 @@ class MHSViewSet(viewsets.ViewSet):
 
                     if "MHD_ADMIN" in roles or "SUPERUSER" in roles:
                         if query == 'unassigned':
-                            resp = models.Issue.objects.filter(
-                                Q(status__in=['SUBMITTED','REOPENED']), is_deleted=False
-                            ).order_by('-date_created')
-                        elif query == 'assigned':
-                            resp = models.Issue.objects.filter(
-                                Q(status__in=['ASSIGNED']), is_deleted=False
-                            ).order_by('-date_created')
-                        elif query == 'closed':
-                            resp = models.Issue.objects.filter(
-                                Q(status__in=['CLOSED']), is_deleted=False
-                            ).order_by('-date_created')
-                        else:
-                            resp = models.Issue.objects.filter(
-                                    Q(status__in=['COMPLETED']),
-                                    is_deleted=False
+                            if location:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['SUBMITTED','REOPENED']) & Q(facility__category=location), is_deleted=False
                                 ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['SUBMITTED','REOPENED']), is_deleted=False
+                                ).order_by('-date_created')
+                        elif query == 'assigned':
+                            if location:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['ASSIGNED'])  & Q(facility__category=location), is_deleted=False
+                                ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['ASSIGNED']), is_deleted=False
+                                ).order_by('-date_created')
+                        elif query == 'closed':
+                            if location:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['CLOSED']) & Q(facility__category=location), is_deleted=False
+                                ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['CLOSED']), is_deleted=False
+                                ).order_by('-date_created')
+                        else:
+                            if location:
+                                resp = models.Issue.objects.filter(
+                                        Q(status__in=['COMPLETED']) & Q(facility__category=location),
+                                        is_deleted=False
+                                    ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.filter(
+                                        Q(status__in=['COMPLETED']),
+                                        is_deleted=False
+                                    ).order_by('-date_created')
 
                     else:
                         if query == 'unassigned':
