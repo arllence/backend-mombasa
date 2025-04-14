@@ -1350,17 +1350,17 @@ class HelpDeskViewSet(viewsets.ViewSet):
                         elif query == 'assigned':
                             resp = models.Issue.objects.filter(
                                 Q(status__in=['ASSIGNED']), is_deleted=False
-                            ).order_by('-date_created')
+                            ).order_by('-date_assigned')
                         elif query == 'closed':
                             resp = models.Issue.objects.filter(
                                 Q(status__in=['CLOSED']), is_deleted=False
-                            ).order_by('-date_created')
+                            ).order_by('-date_closed')
                         elif query == 'my-tickets':
                             resp = models.Issue.objects.filter(
                                 Q(assigned_to=request.user) |
                                 Q(ict_assignee_issue_instance__assignee=request.user),
                                 status__in=['ASSIGNED'], is_deleted=False
-                            ).order_by('-date_created')
+                            ).order_by('-date_assigned')
                         elif query == 'overdue':
                             from django.utils import timezone
                             now = timezone.now()
@@ -1379,12 +1379,12 @@ class HelpDeskViewSet(viewsets.ViewSet):
                                 date_assigned__isnull=False,
                                 date_closed__isnull=True,
                                 date_completed__isnull=True
-                            ).order_by('-date_created')
+                            ).order_by('-date_assigned')
                         else:
                             resp = models.Issue.objects.filter(
                                     Q(status__in=['COMPLETED']),
                                     is_deleted=False
-                                ).order_by('-date_created')
+                                ).order_by('-date_completed')
 
                     else:
                         if query == 'unassigned':
@@ -1400,20 +1400,20 @@ class HelpDeskViewSet(viewsets.ViewSet):
                                     Q(created_by=request.user) | 
                                     Q(ict_assignee_issue_instance__assignee=request.user),
                                     status__in=['ASSIGNED']
-                                ).order_by('-date_created')
+                                ).order_by('-date_assigned')
                         elif query == 'my-tickets':
                             resp = models.Issue.objects.filter(
                                     Q(assigned_to=request.user) |
                                     Q(ict_assignee_issue_instance__assignee=request.user),
                                     status__in=['ASSIGNED']
-                                ).order_by('-date_created')
+                                ).order_by('-date_assigned')
                         elif query == 'closed':
                             resp = models.Issue.objects.filter(
                                     Q(assigned_to=request.user) |
                                     Q(created_by=request.user) | 
                                     Q(ict_assignee_issue_instance__assignee=request.user),
                                     status__in=['CLOSED']
-                                ).order_by('-date_created')
+                                ).order_by('-date_closed')
                         elif query == 'overdue':
                             from django.utils import timezone
                             now = timezone.now()
@@ -1435,14 +1435,14 @@ class HelpDeskViewSet(viewsets.ViewSet):
                                 date_assigned__isnull=False,
                                 date_closed__isnull=True,
                                 date_completed__isnull=True
-                            ).order_by('-date_created')
+                            ).order_by('-date_assigned')
                         else:
                             resp = models.Issue.objects.filter(
                                 Q(assigned_to=request.user) |
                                 Q(created_by=request.user) |
                                 Q(ict_assignee_issue_instance__assignee=request.user),
                                 status__in=['COMPLETED']
-                            ).order_by('-date_created')
+                            ).order_by('-date_completed')
 
                     resp = list(set(resp))
                     paginator = PageNumberPagination()
