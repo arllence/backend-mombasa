@@ -1668,40 +1668,39 @@ class HelpDeskViewSet(viewsets.ViewSet):
 
 
                     # Notify Admins
-                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['ICT_ADMIN'])).values_list('email', flat=True))
-                    emails = []
-                    assignees = models.Assignees.objects.filter(Q(issue=issueInstance))
-                    for assignee in assignees:
-                        emails.append(assignee.assignee.email)
-                        if assignee.assigned_by:
-                            emails.append(assignee.assigned_by.email)
-                    if issueInstance.assigned_to:
-                        emails.append(issueInstance.assigned_to.email)
+                    # emails = []
+                    # assignees = models.Assignees.objects.filter(Q(issue=issueInstance))
+                    # for assignee in assignees:
+                    #     emails.append(assignee.assignee.email)
+                    #     if assignee.assigned_by:
+                    #         emails.append(assignee.assigned_by.email)
+                    # if issueInstance.assigned_to:
+                    #     emails.append(issueInstance.assigned_to.email)
 
-                    subject = f"[ICT HELPDESK] Issue {issueInstance.uid}  Completed  "
-                    message = f"Hello. \nIssue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
+                    # subject = f"[ICT HELPDESK] Issue {issueInstance.uid}  Completed  "
+                    # message = f"Hello. \nIssue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending closure.\n"
 
-                    uri = f"requests/view/{str(issueInstance.id)}"
-                    link = "http://172.20.0.42:8011/" + uri
-                    platform = 'View Issue'
+                    # uri = f"requests/view/{str(issueInstance.id)}"
+                    # link = "http://172.20.0.42:8011/" + uri
+                    # platform = 'View Issue'
 
-                    message_template = read_template("general_template.html")
-                    message = message_template.substitute(
-                        CONTENT=message,
-                        LINK=link,
-                        PLATFORM=platform
-                    )
+                    # message_template = read_template("general_template.html")
+                    # message = message_template.substitute(
+                    #     CONTENT=message,
+                    #     LINK=link,
+                    #     PLATFORM=platform
+                    # )
                     
-                    try:
-                        mail = {
-                            "email" : list(set(emails)), 
-                            "subject" : subject,
-                            "message" : message,
-                            "is_html": True
-                        }
-                        Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        logger.error(e)
+                    # try:
+                    #     mail = {
+                    #         "email" : list(set(emails)), 
+                    #         "subject" : subject,
+                    #         "message" : message,
+                    #         "is_html": True
+                    #     }
+                    #     Sendmail.objects.create(**mail)
+                    # except Exception as e:
+                    #     logger.error(e)
 
                     # Notify requestor
                     if issueInstance.email:
