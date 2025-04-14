@@ -1582,7 +1582,8 @@ class MHSViewSet(viewsets.ViewSet):
                                     expected_closure_datetime__lt=now,
                                     is_deleted=False,
                                     date_assigned__isnull=False,
-                                    date_closed__isnull=True
+                                    date_closed__isnull=True,
+                                    date_completed__isnull=True
                                 ).order_by('-date_created')
                         else:
                             if location:
@@ -1639,7 +1640,8 @@ class MHSViewSet(viewsets.ViewSet):
                                     expected_closure_datetime__lt=now,
                                     is_deleted=False,
                                     date_assigned__isnull=False,  # avoid unassigned
-                                    date_closed__isnull=True      # only still-open issues
+                                    date_closed__isnull=True,      # only still-open issues
+                                    date_completed__isnull=True
                                 ).order_by('-date_created')
                             else:
                                 resp = models.Issue.objects.annotate(
@@ -1658,7 +1660,8 @@ class MHSViewSet(viewsets.ViewSet):
                                     expected_closure_datetime__lt=now,
                                     is_deleted=False,
                                     date_assigned__isnull=False,
-                                    date_closed__isnull=True
+                                    date_closed__isnull=True,
+                                    date_completed__isnull=True
                                 ).order_by('-date_created')
                         else:
                             resp = models.Issue.objects.filter(
