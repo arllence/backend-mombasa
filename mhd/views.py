@@ -1467,7 +1467,8 @@ class MHSViewSet(viewsets.ViewSet):
 
 
                     # Notify Platform Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['MHD_ADMIN'])).values_list('email', flat=True))
+                    emails = list(models.PlatformAdmin.objects.filter(Q(category=issueInstance.category) & Q(location=issueInstance.facility.category)).values_list('admin__email', flat=True))
                     subject = f"[MHD] Issue {issueInstance.uid} Closed "
                     message = f"Hello. \nIssue: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nMHD-AKHK\n\n"
 

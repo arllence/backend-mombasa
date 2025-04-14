@@ -1291,7 +1291,8 @@ class HelpDeskViewSet(viewsets.ViewSet):
 
 
                     # Notify Platform Admins
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['ICT_ADMIN'])).values_list('email', flat=True))
+                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['ICT_ADMIN']) & Q(is_slt=False)).values_list('email', flat=True))
+                    emails = []
                     subject = f"[ICT HELPDESK] Ticket {issueInstance.uid} Closed "
                     message = f"Hello. \nTicket: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nICT-HELPDESK-AKHK\n\n"
 
