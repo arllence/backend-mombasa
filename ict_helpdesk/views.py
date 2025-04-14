@@ -23,7 +23,9 @@ from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
 from django.db.models import Sum
 from django.core.mail import send_mail
 from django.utils import timezone
+from datetime import timedelta
 from mms.models import Quote as MMDQuote
+from django.db.models import F, ExpressionWrapper, DateTimeField, DurationField
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -1265,6 +1267,8 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     issueInstance.status = 'CLOSED'
                     issueInstance.closed_by = request.user
                     issueInstance.date_closed = datetime.datetime.now()
+                    if not issueInstance.date_completed:
+                        issueInstance.date_completed = datetime.datetime.now()
                     issueInstance.save()
 
                     # track status change
@@ -1356,6 +1360,25 @@ class HelpDeskViewSet(viewsets.ViewSet):
                                 Q(ict_assignee_issue_instance__assignee=request.user),
                                 status__in=['ASSIGNED'], is_deleted=False
                             ).order_by('-date_created')
+                        elif query == 'overdue':
+                            from django.utils import timezone
+                            now = timezone.now()
+                            resp = models.Issue.objects.annotate(
+                                expected_closure_datetime=ExpressionWrapper(
+                                    F('date_assigned') + 
+                                    ExpressionWrapper(
+                                        F('priority__expected_closure') * timedelta(hours=1),
+                                        output_field=DurationField()
+                                    ),
+                                    output_field=DateTimeField()
+                                )
+                            ).filter(
+                                expected_closure_datetime__lt=now,
+                                is_deleted=False,
+                                date_assigned__isnull=False,
+                                date_closed__isnull=True,
+                                date_completed__isnull=True
+                            ).order_by('-date_created')
                         else:
                             resp = models.Issue.objects.filter(
                                     Q(status__in=['COMPLETED']),
@@ -1390,6 +1413,28 @@ class HelpDeskViewSet(viewsets.ViewSet):
                                     Q(ict_assignee_issue_instance__assignee=request.user),
                                     status__in=['CLOSED']
                                 ).order_by('-date_created')
+                        elif query == 'overdue':
+                            from django.utils import timezone
+                            now = timezone.now()
+                            resp = models.Issue.objects.annotate(
+                                expected_closure_datetime=ExpressionWrapper(
+                                    F('date_assigned') + 
+                                    ExpressionWrapper(
+                                        F('priority__expected_closure') * timedelta(hours=1),
+                                        output_field=DurationField()
+                                    ),
+                                    output_field=DateTimeField()
+                                )
+                            ).filter(
+                                Q(assigned_to=request.user) |
+                                Q(created_by=request.user) | 
+                                Q(ict_assignee_issue_instance__assignee=request.user),
+                                expected_closure_datetime__lt=now,
+                                is_deleted=False,
+                                date_assigned__isnull=False,
+                                date_closed__isnull=True,
+                                date_completed__isnull=True
+                            ).order_by('-date_created')
                         else:
                             resp = models.Issue.objects.filter(
                                 Q(assigned_to=request.user) |
