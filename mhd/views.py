@@ -22,8 +22,10 @@ from acl.utils import user_util
 from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
 from django.db.models import Sum
 from django.core.mail import send_mail
-from django.utils import timezone
+# from django.utils import timezone
 from mms.models import Quote as MMDQuote
+from django.db.models import F, ExpressionWrapper, DateTimeField, DurationField
+from datetime import timedelta
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -1544,6 +1546,44 @@ class MHSViewSet(viewsets.ViewSet):
                                 resp = models.Issue.objects.filter(
                                     Q(status__in=['CLOSED']), is_deleted=False
                                 ).order_by('-date_created')
+                        elif query == 'overdue':
+                            # Current time
+                            from django.utils import timezone
+                            now = timezone.now()
+                            if location:
+                                resp = models.Issue.objects.annotate(
+                                    expected_closure_datetime=ExpressionWrapper(
+                                        F('date_assigned') + 
+                                        ExpressionWrapper(
+                                            F('priority__expected_closure') * timedelta(hours=1),
+                                            output_field=DurationField()
+                                        ),
+                                        output_field=DateTimeField()
+                                    )
+                                ).filter(
+                                    facility__category=location,
+                                    expected_closure_datetime__lt=now,
+                                    is_deleted=False,
+                                    date_assigned__isnull=False,  # avoid unassigned
+                                    date_closed__isnull=True      # only still-open issues
+                                ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.annotate(
+                                    expected_closure_datetime=ExpressionWrapper(
+                                        F('date_assigned') + 
+                                        ExpressionWrapper(
+                                            F('priority__expected_closure') * timedelta(hours=1),
+                                            output_field=DurationField()
+                                        ),
+                                        output_field=DateTimeField()
+                                    )
+                                ).filter(
+                                    facility__category=location,
+                                    expected_closure_datetime__lt=now,
+                                    is_deleted=False,
+                                    date_assigned__isnull=False,
+                                    date_closed__isnull=True
+                                ).order_by('-date_created')
                         else:
                             if location:
                                 resp = models.Issue.objects.filter(
@@ -1577,6 +1617,48 @@ class MHSViewSet(viewsets.ViewSet):
                                     Q(created_by=request.user) | 
                                     Q(assignee_issue_instance__assignee=request.user),
                                     status__in=['CLOSED']
+                                ).order_by('-date_created')
+                        elif query == 'overdue':
+                            from django.utils import timezone
+                            now = timezone.now()
+                            if location:
+                                resp = models.Issue.objects.annotate(
+                                    expected_closure_datetime=ExpressionWrapper(
+                                        F('date_assigned') + 
+                                        ExpressionWrapper(
+                                            F('priority__expected_closure') * timedelta(hours=1),
+                                            output_field=DurationField()
+                                        ),
+                                        output_field=DateTimeField()
+                                    )
+                                ).filter(
+                                    Q(assigned_to=request.user) |
+                                    Q(created_by=request.user) |
+                                    Q(assignee_issue_instance__assignee=request.user),
+                                    facility__category=location,
+                                    expected_closure_datetime__lt=now,
+                                    is_deleted=False,
+                                    date_assigned__isnull=False,  # avoid unassigned
+                                    date_closed__isnull=True      # only still-open issues
+                                ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.annotate(
+                                    expected_closure_datetime=ExpressionWrapper(
+                                        F('date_assigned') + 
+                                        ExpressionWrapper(
+                                            F('priority__expected_closure') * timedelta(hours=1),
+                                            output_field=DurationField()
+                                        ),
+                                        output_field=DateTimeField()
+                                    )
+                                ).filter(
+                                    Q(assigned_to=request.user) |
+                                    Q(created_by=request.user) |
+                                    Q(assignee_issue_instance__assignee=request.user),
+                                    expected_closure_datetime__lt=now,
+                                    is_deleted=False,
+                                    date_assigned__isnull=False,
+                                    date_closed__isnull=True
                                 ).order_by('-date_created')
                         else:
                             resp = models.Issue.objects.filter(
