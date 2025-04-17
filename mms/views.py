@@ -331,7 +331,7 @@ class MmsViewSet(viewsets.ViewSet):
                         resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(id__in=quote_ids)).order_by('-date_created')
 
                     elif query == 'pending':
-                        if not any(role in ['MMD'] for role in roles):
+                        if not any(role in ['MMD',"SUPERUSER"] for role in roles):
                             return Response([], status=status.HTTP_200_OK)  
                         resp = models.Quote.objects.filter(
                             Q(is_deleted=False)).exclude(Q(status__in=['REJECTED','CLOSED'])).order_by('-date_created')
