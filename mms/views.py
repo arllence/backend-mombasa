@@ -330,6 +330,12 @@ class MmsViewSet(viewsets.ViewSet):
                         quote_ids = models.QuoteAssignee.objects.filter(Q(assigned=request.user) & Q(is_deleted=False)).values_list('quote__id', flat=True)
                         resp = models.Quote.objects.filter(Q(is_deleted=False) & Q(id__in=quote_ids)).order_by('-date_created')
 
+                    elif query == 'unassigned':
+                        if not any(role in ['MMD',"SUPERUSER"] for role in roles):
+                            return Response([], status=status.HTTP_200_OK)  
+                        resp = models.Quote.objects.filter(
+                            Q(is_deleted=False)).exclude(Q(status__in=['REQUESTED','RESUBMITTED'])).order_by('-date_created')
+
                     elif query == 'pending':
                         if not any(role in ['MMD',"SUPERUSER"] for role in roles):
                             return Response([], status=status.HTTP_200_OK)  
