@@ -1801,9 +1801,9 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     else:
                         emails.append(issueInstance.created_by.email)
 
-                    slt = list(models.PlatformAdmin.objects.filter(Q(is_slt=True)).values_list('admin__email', flat=True))
+                    # slt = list(models.PlatformAdmin.objects.filter(Q(is_slt=True)).values_list('admin__email', flat=True))
 
-                    emails += slt
+                    # emails += slt
 
                     subject = f"[ICT HELPDESK] Issue {issueInstance.uid}  Reopened  "
                     message = f"Hello. \nIssue of id: {issueInstance.uid} has been marked as Reopened\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}."
