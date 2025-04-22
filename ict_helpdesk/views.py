@@ -1518,6 +1518,9 @@ class HelpDeskViewSet(viewsets.ViewSet):
                 issue_type = payload['issue_type']
                 comment = payload.get('comment') or 'N/A'
 
+                # is_reassign = False
+                action = 'ASSIGNED'
+
                 try:
                     issueInstance = models.Issue.objects.get(id=request_id)
                 except (ValidationError, ObjectDoesNotExist):
@@ -1541,25 +1544,34 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown issue type"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
                 
+                is_already_assigned = models.Assignees.objects.filter(
+                            issue=request_id
+                        )
+                if is_already_assigned:
+                    # is_reassign = True
+                    action = 'REASSIGNED'
+                    is_already_assigned.delete()
+
+                
                 assignees = []
                 for assignee in assigned_to:
                     try:
                         assigned_to = User.objects.get(id=assignee)
+
                         is_existing = models.Assignees.objects.filter(
                             assignee=assignee, issue=request_id
                         ).exists()
+
                         if is_existing:
                             return Response({"details": "Already Assigned"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
+                        
                         assignees.append(assigned_to)
+
                     except (ValidationError, ObjectDoesNotExist):
                         return Response({"details": "Unknown assignee"}, 
                                         status=status.HTTP_400_BAD_REQUEST)
                 
-                # if issueInstance.assigned_to:
-                #     if issueInstance.assigned_to == assigned_to:
-                #         return Response({"details": "Already Assigned"}, 
-                #                     status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
                     for assignee in assignees:
@@ -1580,7 +1592,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     # track status change
                     raw = {
                         "issue": issueInstance,
-                        "status": 'ASSIGNED',
+                        "status": action,
                         "status_for": 'ICT_ADMIN',
                         "action_by": authenticated_user
                     }
