@@ -13,7 +13,7 @@ def mark_past_events():
     today = timezone.now().date()
     
     # Find events that already passed and are not yet marked
-    past_events = Meal.objects.filter(date_of_event__lt=today).exclude(Q(status__in=['CEO APPROVED']))
+    past_events = Meal.objects.filter(date_of_event__lt=today).exclude(Q(status__in=['CEO APPROVED','REJECTED']))
     for event in past_events:
         print(event.status, str(event.date_of_event))
 
