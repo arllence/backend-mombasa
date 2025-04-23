@@ -789,7 +789,7 @@ class SMRViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-
+                    today = timezone.now().date()
                     if "SMR_ADMIN" in roles or "SUPERUSER" in roles:
                         if query == 'pending':
                             resp = models.Meal.objects.filter(
@@ -801,7 +801,7 @@ class SMRViewSet(viewsets.ViewSet):
                                 ).order_by('-date_created')
                     elif "CEO" in roles:
                         resp = models.Meal.objects.filter(
-                                    Q(status='SLT APPROVED'), is_deleted=False
+                                    Q(status='SLT APPROVED') & Q(date_of_event__gte=today), is_deleted=False
                                 ).order_by('-date_created')
                     else:
                         resp = models.Meal.objects.filter(
