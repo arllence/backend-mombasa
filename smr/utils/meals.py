@@ -2,6 +2,7 @@ import datetime
 import time
 from django.db.models import Q
 from smr.models import Meal
+from django.contrib.auth import get_user_model
 from django.core.mail import send_mail, EmailMessage, BadHeaderError
 # exec(open('smr/utils/meals.py').read())
 
@@ -9,7 +10,8 @@ from django.core.mail import send_mail, EmailMessage, BadHeaderError
 from django.utils import timezone
 from datetime import timedelta
 
-def mark_past_events():
+def mark_expired_requests():
+    print('--------------Start Expired Requests Fn----------------------')
     today = timezone.now().date()
     
     # Find events that already passed and are not yet marked
@@ -19,58 +21,79 @@ def mark_past_events():
     past_events.update(status='EXPIRED')
     
 
-    print(f"{past_events.count()} events marked as Expired.")
+    print(f"{past_events.count()} meals marked as Expired.")
+    timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
+    print(f">>> Marked at : {timestamp}")
+    print('--------------End Expired Requests Fn----------------------')
 
 
-def mark_upcoming_events():
+def mark_approaching_expiry():
 
-    start_date = timezone.now().date() + timedelta(days=1)
-    end_date = start_date + timedelta(days=2)
-
-
-    # Filter events happening tomorrow
-    upcoming_events = Meal.objects.filter(date_of_event__range=(start_date, end_date))
-
-    for event in upcoming_events:
-        print(event.status, str(event.date_of_event))
-
-
-    print(f"{upcoming_events.count()} events marked as Upcoming.")
-
-
-
-
-def main(emails):
+    print('--------------Start Approaching Expiry Requests Fn----------------------')
     timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
     print(f"[{timestamp}] Main Fn Starting...")
-    count = 0
-      
-    for target in emails:
-		
-        count += 1
-        is_html = target.is_html
-        subject = target.subject
-        message = target.message
-        email = target.email
-        timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
+
+    start_date = timezone.now().date() + timedelta(days=1)
+    end_date = start_date + timedelta(days=3)
+
+
+    # Filter pending approvals
+    slt = Meal.objects.filter(Q(date_of_event__range=(start_date, end_date)) & Q(status__in=['REQUESTED']))
+    ceo = Meal.objects.filter(Q(date_of_event__range=(start_date, end_date)) & Q(status__in=['SLT APPROVED']))
+
+    main(slt,'SLT')
+    main(ceo,'CEO')
+
+
+    print(f"{slt.count()} meals pending slt approval.")
+    print(f"{ceo.count()} meals pending ceo approval.")
+    print('--------------End Approaching Expiry Requests Fn----------------------')
 
 
 
-        try:
-            send_mail(subject, message, 'notification@akhskenya.org', email, fail_silently=False)
-            target.status = "SENT"
-            target.save()
-            print(f'(PLAIN)-<200>-{timestamp}-{str(email)}')
-        except BadHeaderError:
-            print(f'(PLAIN)-<400>-{timestamp}-{str(email)}: Invalid header found.')
-        except Exception as e:
-            print(f'(PLAIN)-<500>-{timestamp}-An error occurred: {str(e)}')
+
+def main(meals,target):
+    timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
+    print(f"[{timestamp}] Main Fn Starting...")
+
+
+    pending_count = len(meals)
+
+    if target == 'SLT':
+        emails = []
+        for meal in meals:
+            emails.append(meal.department.slt.email)
+
         
-			
-        time.sleep(1)
+        emails = list(set(emails))
+
+    if target == 'CEO':
+        emails = list(get_user_model().objects.filter(Q(groups__name__in=['CEO'])).values_list('email', flat=True))
+
+    subject = "[REMINDER] Pending Meal Requests"
+    message = f"""
+        Hello. \n\nYou have {pending_count} meal requests pending approval. \n
+        Log in to Meal Request System to approve.\n
+        Visit: http://172.20.0.42:8010/requests/list
+
+        \n\n
+        Regards.
+        SMR
+    """
+
+    try:
+        send_mail(subject, message, 'notification@akhskenya.org', emails, fail_silently=False)
+        send_mail(subject, message, 'notification@akhskenya.org', ['bobkings.otieno@akhskenya.org'], fail_silently=False)
+        print(f'(PLAIN)-<200>-{timestamp}-{str(emails)}')
+    except BadHeaderError:
+        print(f'(PLAIN)-<400>-{timestamp}-{str(emails)}: Invalid header found.')
+    except Exception as e:
+        print(f'(PLAIN)-<500>-{timestamp}-An error occurred: {str(e)}')
+    
+        
+    time.sleep(1)
 
     timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
-    print(f">>> Sent {count} Emails | {timestamp}")
+    print(f">>> Sent at : {timestamp}")
 
 
-# get_emails()
