@@ -41,8 +41,10 @@ def mark_approaching_expiry():
     slt = Meal.objects.filter(Q(date_of_event__range=(start_date, end_date)) & Q(status__in=['REQUESTED']))
     ceo = Meal.objects.filter(Q(date_of_event__range=(start_date, end_date)) & Q(status__in=['SLT APPROVED']))
 
-    main(slt,'SLT')
-    main(ceo,'CEO')
+    if slt:
+        main(slt,'SLT')
+    if ceo:
+        main(ceo,'CEO')
 
 
     print(f"{slt.count()} meals pending slt approval.")
