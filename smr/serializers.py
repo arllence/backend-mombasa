@@ -47,6 +47,7 @@ class FetchMealSerializer(serializers.ModelSerializer):
     department = FetchSRRSDepartmentSerializer()
     approvals = serializers.SerializerMethodField()
     is_owner = serializers.SerializerMethodField()
+    can_approve = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Meal
@@ -78,6 +79,36 @@ class FetchMealSerializer(serializers.ModelSerializer):
                 pass
 
             return edit
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False
+        
+    def get_can_approve(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            roles = get_user_roles(user_id)
+
+            approve = False
+
+            if "SLT" in  roles:
+                try:
+                    if str(obj.department.slt.id) == user_id:
+                        if obj.status == 'REQUESTED':
+                            approve = True
+                        else: 
+                            approve = False
+                except Exception as e:
+                    pass
+
+            
+            if "CEO" in  roles:
+                if obj.status == 'SLT APPROVED':
+                    approve = True
+                else: 
+                    approve = False
+
+            return approve
         except Exception as e:
             print(e)
             # logger.error(e)

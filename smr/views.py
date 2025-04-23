@@ -575,6 +575,9 @@ class SMRViewSet(viewsets.ViewSet):
   
         elif request.method == "PATCH":
             # Request approvals
+            if not any(role in ['SLT','CEO'] for role in roles):
+                return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
+            
             payload = request.data
             serializer = serializers.PatchMealSerializer(
                     data=payload, many=False)
@@ -582,6 +585,22 @@ class SMRViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 action = payload['action'].upper()
+
+                is_ceo = False
+                is_slt = False
+
+                if "CEO" in roles:
+                    is_ceo = True
+                    status_for = 'CEO'
+                    if action == 'APPROVED':
+                        action = 'CEO APPROVED'
+
+                if "SLT" in roles:
+                    is_slt = True
+                    status_for = 'SLT'
+                    if action == 'APPROVED':
+                        action = 'SLT APPROVED'
+
 
                 try:
                     mealInstance = models.Meal.objects.get(id=request_id)
@@ -596,126 +615,132 @@ class SMRViewSet(viewsets.ViewSet):
                     raw = {
                         "meal": mealInstance,
                         "status": action,
-                        "status_for": "SLT",
+                        "status_for": status_for,
                         "action_by": authenticated_user
                     }
 
                     models.StatusChange.objects.create(**raw)
 
 
-                if action == 'SLT APPROVED':
+                if is_ceo:
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['SMR_ADMIN'])).values_list('email', flat=True))
-                    subject = f"[SMR] New Meal Request: {mealInstance.uid}"
-                    message = f"""
-                        <table border="1" class='signature-table'>
+                if is_slt:
+                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['CEO'])).values_list('email', flat=True))
+                subject = f"[SMR] New Meal Request: {mealInstance.uid}"
+                message = f"""
+                    <table border="1" class='signature-table'>
+                        <tr>
+                            <th colspan='5'>Meal Details</th>
+                        </tr>
+                        <tr>
+                            <th>Location</th>
+                            <td>{mealInstance.location_of_function}</td>
+                        </tr>
+                        <tr>
+                            <th>Date of Event</th>
+                            <td>{mealInstance.date_of_event}</td>
+                        </tr>
                             <tr>
-                                <th colspan='5'>Meal Details</th>
-                            </tr>
-                            <tr>
-                                <th>Location</th>
-                                <td>{mealInstance.location_of_function}</td>
-                            </tr>
-                            <tr>
-                                <th>Date of Event</th>
-                                <td>{mealInstance.date_of_event}</td>
-                            </tr>
-                             <tr>
-                                <th>Event Justification</th>
-                                <td>{mealInstance.reason}</td>
-                            </tr>
-                            <tr>
-                                <th>Number of Participants</th>
-                                <td>{mealInstance.number_of_participants}</td>
-                            </tr>
-                            <tr>
-                                <th>AM Tea</th>
-                                <td>
-                                    <strong>Time: </strong>
-                                    {mealInstance.am_tea.get('time') or 'N/A'} <br>
-                                    <strong>Description:</strong><br>
-                                    {mealInstance.am_tea.get('description') or 'N/A'}
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Lunch</th>
-                                <td>
-                                    <strong>Time: </strong>
-                                    {mealInstance.lunch.get('time') or 'N/A'} <br>
-                                    <strong>Description:</strong><br>
-                                    {mealInstance.lunch.get('description') or 'N/A'}
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>PM Tea</th>
-                                <td>
-                                    <strong>Time: </strong>
-                                    {mealInstance.pm_tea.get('time') or 'N/A'} <br>
-                                    <strong>Description:</strong><br>
-                                    {mealInstance.pm_tea.get('description') or 'N/A'}
-                                </td>
-                            </tr>
-                            <tr>
-                                <th>Dinner</th>
-                                <td>
-                                    <strong>Time: </strong>
-                                    {mealInstance.dinner.get('time') or 'N/A'} <br>
-                                    <strong>Description:</strong><br>
-                                    {mealInstance.dinner.get('description') or 'N/A'} 
-                                </td>
-                            </tr>
-                        </table>
+                            <th>Event Justification</th>
+                            <td>{mealInstance.reason}</td>
+                        </tr>
+                        <tr>
+                            <th>Number of Participants</th>
+                            <td>{mealInstance.number_of_participants}</td>
+                        </tr>
+                        <tr>
+                            <th>AM Tea</th>
+                            <td>
+                                <strong>Time: </strong>
+                                {mealInstance.am_tea.get('time') or 'N/A'} <br>
+                                <strong>Description:</strong><br>
+                                {mealInstance.am_tea.get('description') or 'N/A'}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Lunch</th>
+                            <td>
+                                <strong>Time: </strong>
+                                {mealInstance.lunch.get('time') or 'N/A'} <br>
+                                <strong>Description:</strong><br>
+                                {mealInstance.lunch.get('description') or 'N/A'}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>PM Tea</th>
+                            <td>
+                                <strong>Time: </strong>
+                                {mealInstance.pm_tea.get('time') or 'N/A'} <br>
+                                <strong>Description:</strong><br>
+                                {mealInstance.pm_tea.get('description') or 'N/A'}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Dinner</th>
+                            <td>
+                                <strong>Time: </strong>
+                                {mealInstance.dinner.get('time') or 'N/A'} <br>
+                                <strong>Description:</strong><br>
+                                {mealInstance.dinner.get('description') or 'N/A'} 
+                            </td>
+                        </tr>
+                    </table>
 
 
-                    """
-                    uri = f"requests/view/{str(mealInstance.id)}"
-                    link = "http://172.20.0.42:8010/" + uri
-                    platform = 'View Meal'
+                """
+                uri = f"requests/view/{str(mealInstance.id)}"
+                link = "http://172.20.0.42:8010/" + uri
+                platform = 'View Meal'
 
-                    message_template = read_template("general_template.html")
-                    message = message_template.substitute(
-                        CONTENT=message,
-                        LINK=link,
-                        PLATFORM=platform
-                    )
+                message_template = read_template("general_template.html")
+                message = message_template.substitute(
+                    CONTENT=message,
+                    LINK=link,
+                    PLATFORM=platform
+                )
 
-                    try:
-                        if emails:
-                            mail = {
-                                "email" : list(set(emails)), 
-                                "subject" : subject,
-                                "message" : message,
-                                "is_html": True
-                            }
-                            
-                            Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        logger.error(e)
+                try:
+                    if emails:
+                        mail = {
+                            "email" : list(set(emails)), 
+                            "subject" : subject,
+                            "message" : message,
+                            "is_html": True
+                        }
+                        
+                        Sendmail.objects.create(**mail)
+                except Exception as e:
+                    logger.error(e)
 
-                    
+                
+                # Notify Requestor
+                emails = []
+                if mealInstance.email:
+                    emails.append(mealInstance.email)
+                if mealInstance.created_by:
+                    emails.append(mealInstance.created_by.email)
+                subject = f"[SMR] Meal Request Approved: {mealInstance.uid} ."
+                message = f"Hello. \nYour meal request: {mealInstance.uid}, \nhas been Approved by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSMR-AKHK"
+
+                try:
+                    if emails:
+                        mail = {
+                            "email" : list(set(emails)), 
+                            "subject" : subject,
+                            "message" : message,
+                        }
+                        
+                        Sendmail.objects.create(**mail)
+                except Exception as e:
+                    logger.error(e)
+
+                if action == 'REJECTED':
                     # Notify Requestor
                     emails = []
                     if mealInstance.email:
                         emails.append(mealInstance.email)
                     if mealInstance.created_by:
                         emails.append(mealInstance.created_by.email)
-                    subject = f"[SMR] Meal Request Approved: {mealInstance.uid} ."
-                    message = f"Hello. \nYour meal request: {mealInstance.uid}, \nhas been Approved by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSMR-AKHK"
-
-                    try:
-                        if emails:
-                            mail = {
-                                "email" : list(set(emails)), 
-                                "subject" : subject,
-                                "message" : message,
-                            }
-                            
-                            Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        logger.error(e)
-
-                if action == 'REJECTED':
-                    # Notify Requestor
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['SMR_ADMIN'])).values_list('email', flat=True))
                     subject = f"[SMR] Meal Request Rejected: {mealInstance.uid} ."
                     message = f"Hello. \nYour meal request: {mealInstance.uid}, \nhas been Rejected by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSMR-AKHK"
 
@@ -773,6 +798,10 @@ class SMRViewSet(viewsets.ViewSet):
                         else:
                             resp = models.Meal.objects.filter(
                                     is_deleted=False
+                                ).order_by('-date_created')
+                    elif "CEO" in roles:
+                        resp = models.Meal.objects.filter(
+                                    Q(status='SLT APPROVED'), is_deleted=False
                                 ).order_by('-date_created')
                     else:
                         resp = models.Meal.objects.filter(
