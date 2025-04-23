@@ -14,6 +14,8 @@ def mark_past_events():
     
     # Find events that already passed and are not yet marked
     past_events = Meal.objects.filter(date_of_event__lt=today).exclude(Q(status__in=['CEO APPROVED']))
+    for event in past_events:
+        print(event.status, str(event.date_of_event))
 
     # Update their status
     # past_events.update(status='Passed')
@@ -30,6 +32,9 @@ def mark_upcoming_events():
 
     # Filter events happening tomorrow
     upcoming_events = Meal.objects.filter(event_date__range=(start_date, end_date))
+
+    for event in upcoming_events:
+        print(event.status, str(event.date_of_event))
 
 
     print(f"{upcoming_events.count()} events marked as Upcoming.")
