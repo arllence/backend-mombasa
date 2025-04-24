@@ -1210,6 +1210,7 @@ class MHSViewSet(viewsets.ViewSet):
                 facility = payload['facility']
                 subject = payload['subject']
                 request_type = payload.get('request_type') or "ISSUE"
+                maintenance_type = payload.get('maintenance_type')  
 
                 uid = shared_fxns.generate_unique_identifier()
 
@@ -1259,6 +1260,7 @@ class MHSViewSet(viewsets.ViewSet):
                         "facility": facility,
                         "subject": subject,
                         "request_type": request_type,
+                        "maintenance_type": maintenance_type,
                         "uid": uid
                     }
 
@@ -1525,29 +1527,38 @@ class MHSViewSet(viewsets.ViewSet):
                         if query == 'unassigned':
                             if location:
                                 resp = models.Issue.objects.filter(
-                                    Q(status__in=['SUBMITTED','REOPENED']) & Q(facility__category=location), is_deleted=False
+                                    Q(status__in=['SUBMITTED','REOPENED']) & 
+                                    Q(facility__category=location) & 
+                                    Q(request_type='ISSUE'), is_deleted=False
                                 ).order_by('-date_created')
                             else:
                                 resp = models.Issue.objects.filter(
-                                    Q(status__in=['SUBMITTED','REOPENED']), is_deleted=False
+                                    Q(status__in=['SUBMITTED','REOPENED']) & 
+                                    Q(request_type='ISSUE'), is_deleted=False
                                 ).order_by('-date_created')
                         elif query == 'assigned':
                             if location:
                                 resp = models.Issue.objects.filter(
-                                    Q(status__in=['ASSIGNED'])  & Q(facility__category=location), is_deleted=False
+                                    Q(status__in=['ASSIGNED'])  & 
+                                    Q(facility__category=location) & 
+                                    Q(request_type='ISSUE'), is_deleted=False
                                 ).order_by('-date_created')
                             else:
                                 resp = models.Issue.objects.filter(
-                                    Q(status__in=['ASSIGNED']), is_deleted=False
+                                    Q(status__in=['ASSIGNED']) & 
+                                    Q(request_type='ISSUE'), is_deleted=False
                                 ).order_by('-date_created')
                         elif query == 'closed':
                             if location:
                                 resp = models.Issue.objects.filter(
-                                    Q(status__in=['CLOSED']) & Q(facility__category=location), is_deleted=False
+                                    Q(status__in=['CLOSED']) & 
+                                    Q(facility__category=location) & 
+                                    Q(request_type='ISSUE'), is_deleted=False
                                 ).order_by('-date_created')
                             else:
                                 resp = models.Issue.objects.filter(
-                                    Q(status__in=['CLOSED']), is_deleted=False
+                                    Q(status__in=['CLOSED']) & 
+                                    Q(request_type='ISSUE'), is_deleted=False
                                 ).order_by('-date_created')
                         elif query == 'overdue':
                             # Current time
@@ -1566,6 +1577,7 @@ class MHSViewSet(viewsets.ViewSet):
                                 ).filter(
                                     facility__category=location,
                                     expected_closure_datetime__lt=now,
+                                    request_type='ISSUE',
                                     is_deleted=False,
                                     date_assigned__isnull=False,  # avoid unassigned
                                     date_closed__isnull=True,      # only still-open issues
@@ -1583,6 +1595,7 @@ class MHSViewSet(viewsets.ViewSet):
                                     )
                                 ).filter(
                                     expected_closure_datetime__lt=now,
+                                    request_type='ISSUE',
                                     is_deleted=False,
                                     date_assigned__isnull=False,
                                     date_closed__isnull=True,
@@ -1591,14 +1604,17 @@ class MHSViewSet(viewsets.ViewSet):
                         else:
                             if location:
                                 resp = models.Issue.objects.filter(
-                                        Q(status__in=['COMPLETED']) & Q(facility__category=location),
-                                        is_deleted=False
-                                    ).order_by('-date_created')
+                                    Q(status__in=['COMPLETED']) & 
+                                    Q(facility__category=location) & 
+                                    Q(request_type='ISSUE'),
+                                    is_deleted=False
+                                ).order_by('-date_created')
                             else:
                                 resp = models.Issue.objects.filter(
-                                        Q(status__in=['COMPLETED']),
-                                        is_deleted=False
-                                    ).order_by('-date_created')
+                                    Q(status__in=['COMPLETED']) & 
+                                    Q(request_type='ISSUE'),
+                                    is_deleted=False
+                                ).order_by('-date_created')
 
                     else:
                         if query == 'unassigned':
@@ -1606,6 +1622,7 @@ class MHSViewSet(viewsets.ViewSet):
                                 Q(assigned_to=request.user) |
                                 Q(created_by=request.user) | 
                                 Q(assignee_issue_instance__assignee=request.user),
+                                request_type='ISSUE',
                                 status__in=['SUBMITTED','REOPENED']
                             ).order_by('-date_created')
                         elif query == 'assigned':
@@ -1613,6 +1630,7 @@ class MHSViewSet(viewsets.ViewSet):
                                     Q(assigned_to=request.user) |
                                     Q(created_by=request.user) | 
                                     Q(assignee_issue_instance__assignee=request.user),
+                                    request_type='ISSUE',
                                     status__in=['ASSIGNED']
                                 ).order_by('-date_created')
                         elif query == 'closed':
@@ -1620,6 +1638,7 @@ class MHSViewSet(viewsets.ViewSet):
                                     Q(assigned_to=request.user) |
                                     Q(created_by=request.user) | 
                                     Q(assignee_issue_instance__assignee=request.user),
+                                    request_type='ISSUE',
                                     status__in=['CLOSED']
                                 ).order_by('-date_created')
                         elif query == 'overdue':
@@ -1639,6 +1658,7 @@ class MHSViewSet(viewsets.ViewSet):
                                     Q(assigned_to=request.user) |
                                     Q(created_by=request.user) |
                                     Q(assignee_issue_instance__assignee=request.user),
+                                    request_type='ISSUE',
                                     facility__category=location,
                                     expected_closure_datetime__lt=now,
                                     is_deleted=False,
@@ -1661,6 +1681,7 @@ class MHSViewSet(viewsets.ViewSet):
                                     Q(created_by=request.user) |
                                     Q(assignee_issue_instance__assignee=request.user),
                                     expected_closure_datetime__lt=now,
+                                    request_type='ISSUE',
                                     is_deleted=False,
                                     date_assigned__isnull=False,
                                     date_closed__isnull=True,
@@ -1671,6 +1692,7 @@ class MHSViewSet(viewsets.ViewSet):
                                 Q(assigned_to=request.user) |
                                 Q(created_by=request.user) |
                                 Q(assignee_issue_instance__assignee=request.user),
+                                request_type='ISSUE',
                                 status__in=['COMPLETED']
                             ).order_by('-date_created')
 
@@ -1717,6 +1739,481 @@ class MHSViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)    
 
+    @action(methods=["POST", "PUT", "GET"],
+            detail=False,
+            url_path="maintenance",
+            url_name="maintenance")
+    def maintenance(self, request):
+
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            # payload = request.data
+
+            payload = json.loads(request.data['payload'])
+            attachment = request.FILES.get('attachments', None)
+
+            serializer = serializers.IssueSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                job_type = payload['job_type'] or None
+                equipment_type = payload['equipment_type'] or None
+                section = payload['section'] or None
+                department = payload['department']
+                issue = payload['issue']
+                category = payload['category']
+                facility = payload['facility']
+                subject = payload['subject']
+                request_type = payload.get('request_type') or "ISSUE"
+                maintenance_type = payload.get('maintenance_type')  
+                maintenance_duration = payload.get('maintenance_duration')  
+
+                uid = shared_fxns.generate_unique_identifier()
+
+                if not maintenance_type:
+                    return Response({"details": "Maintenance Type Required"}, status=status.HTTP_400_BAD_REQUEST)
+
+                if not maintenance_duration:
+                    return Response({"details": "Maintenance Duration Required"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    department = SRRSDepartment.objects.get(id=department)
+                except Exception as e:
+                    return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if job_type:
+                    try:
+                        job_type = models.JobType.objects.get(id=job_type)
+                    except Exception as e:
+                        return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if equipment_type:   
+                    try:
+                        equipment_type = models.EquipmentType.objects.get(id=equipment_type)
+                    except Exception as e:
+                        return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if section:
+                    try:
+                        section = models.Section.objects.get(id=section)
+                    except Exception as e:
+                        return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    category = models.Category.objects.get(id=category)
+                except Exception as e:
+                    return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    facility = models.Facility.objects.get(id=facility)
+                except Exception as e:
+                    return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "department": department,
+                        "section": section,
+                        "job_type": job_type,
+                        "equipment_type": equipment_type,
+                        "created_by": authenticated_user,
+                        "attachment": attachment,
+                        "issue": issue,
+                        "category": category,
+                        "facility": facility,
+                        "subject": subject,
+                        "request_type": request_type,
+                        "maintenance_type": maintenance_type,
+                        "maintenance_duration": maintenance_duration,
+                        "uid": uid
+                    }
+
+                    issue = models.Issue.objects.create(
+                        **raw
+                    )
+
+                    # create track status change
+                    raw = {
+                        "issue": issue,
+                        "status": "SUBMITTED",
+                        "status_for": "/".join(roles),
+                        "action_by": authenticated_user
+                    }
+                    models.StatusChange.objects.create(**raw)
+
+                    # auto assign to requestor
+                    raw = {
+                        "issue": issue,
+                        "assignee": request.user,
+                        "assigned_by": request.user,
+                    }
+                    models.Assignees.objects.create(**raw)
+
+                    issue.status = 'ASSIGNED'
+                    issue.date_assigned = datetime.datetime.now()
+                    issue.save()
+
+                    # create track status change
+                    raw = {
+                        "issue": issue,
+                        "status": "ASSIGNED",
+                        "status_for": "Auto Assigned",
+                        "action_by": authenticated_user
+                    }
+                    models.StatusChange.objects.create(**raw)
+
+                    emails = list(models.PlatformAdmin.objects.filter(
+                        Q(category=category) & 
+                        Q(location=facility.category)).values_list('admin__email', flat=True))
+                    subject = f"[MHD] New Maintenance Created: {uid} ."
+                    message = f"Hello. \nNew {maintenance_type} Maintenance request of id: {uid} from department: {department.name}, \nhas been raised and auto assigned to: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nMHD-AKHK\n\n"
+
+                    try:
+                        if emails:
+                            mail = {
+                                "email" : list(set(emails)), 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            
+                            Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Maintenance Request created", f"Maintenance Request Id: {issue.id}")
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        if request.method == "PUT":
+
+            payload = json.loads(request.data['payload'])
+            attachment = request.FILES.get('attachment', None)
+
+            
+            serializer = serializers.PutIssueSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                job_type = payload['job_type']
+                equipment_type = payload['equipment_type']
+                department = payload['department']
+                section = payload['section']
+                issue = payload['issue']
+                category = payload['category']
+                facility = payload['facility']
+                subject = payload['subject']
+                request_type = payload.get('request_type') or "ISSUE"
+                maintenance_type = payload.get('maintenance_type')  
+                maintenance_duration = payload.get('maintenance_duration')  
+
+                if not maintenance_type:
+                    return Response({"details": "Maintenance Type Required"}, status=status.HTTP_400_BAD_REQUEST)
+
+                if not maintenance_duration:
+                    return Response({"details": "Maintenance Duration Required"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                try:
+                    issueInstance = models.Issue.objects.get(id=request_id)
+                except Exception as e:
+                    return Response({"details": "Unknown Issue"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    department = SRRSDepartment.objects.get(id=department)
+                except Exception as e:
+                    return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if job_type:
+                    try:
+                        job_type = models.JobType.objects.get(id=job_type)
+                    except Exception as e:
+                        return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if equipment_type:    
+                    try:
+                        equipment_type = models.EquipmentType.objects.get(id=equipment_type)
+                    except Exception as e:
+                        return Response({"details": "Unknown equipment type"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if section:
+                    try:
+                        section = models.Section.objects.get(id=section)
+                    except Exception as e:
+                        return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    category = models.Category.objects.get(id=category)
+                except Exception as e:
+                    return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    facility = models.Facility.objects.get(id=facility)
+                except Exception as e:
+                    return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "department": department,
+                        "section": section,
+                        "job_type": job_type,
+                        "equipment_type": equipment_type,
+                        "issue": issue,
+                        "facility": facility,
+                        "category": category,
+                        "subject": subject,
+                        "request_type": request_type,
+                        "maintenance_type": maintenance_type,
+                        "maintenance_duration": maintenance_duration,
+                    }  
+
+                    models.Issue.objects.filter(Q(id=request_id)).update(**raw)
+
+                    if attachment:
+                        issueInstance.attachment = attachment
+                        issueInstance.save()
+
+                    # create track status change
+                    raw = {
+                        "issue": issueInstance,
+                        "status": "EDITED",
+                        "status_for": "/".join(roles),
+                        "action_by": authenticated_user
+                    }
+
+                    models.StatusChange.objects.create(**raw)
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Maintenance Request updated", f"Maintenance Id: {issueInstance.id}")
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+
+        if request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            query = request.query_params.get('q')
+            location = request.query_params.get('location')
+            slim = request.query_params.get('slim')
+
+            if request_id:
+                try:
+                    resp = models.Issue.objects.get(Q(id=request_id))
+                    if slim:
+                        resp = serializers.SlimFetchIssueSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.FetchIssueSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+
+                    if "MHD_ADMIN" in roles or "SUPERUSER" in roles:
+                        if query == 'unassigned':
+                            if location:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['SUBMITTED','REOPENED']) & 
+                                    Q(facility__category=location) & 
+                                    Q(request_type='MAINTENANCE'), is_deleted=False
+                                ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['SUBMITTED','REOPENED']) & 
+                                    Q(request_type='MAINTENANCE'), is_deleted=False
+                                ).order_by('-date_created')
+                        elif query == 'assigned':
+                            if location:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['ASSIGNED'])  & 
+                                    Q(facility__category=location) & 
+                                    Q(request_type='MAINTENANCE'), is_deleted=False
+                                ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['ASSIGNED']) & 
+                                    Q(request_type='MAINTENANCE'), is_deleted=False
+                                ).order_by('-date_created')
+                        elif query == 'closed':
+                            if location:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['CLOSED']) & 
+                                    Q(facility__category=location) & 
+                                    Q(request_type='MAINTENANCE'), is_deleted=False
+                                ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['CLOSED']) & 
+                                    Q(request_type='MAINTENANCE'), is_deleted=False
+                                ).order_by('-date_created')
+                        elif query == 'overdue':
+                            # Current time
+                            from django.utils import timezone
+                            now = timezone.now()
+                            if location:
+                                resp = models.Issue.objects.annotate(
+                                    expected_closure_datetime=ExpressionWrapper(
+                                        F('date_assigned') + 
+                                        ExpressionWrapper(
+                                            F('priority__expected_closure') * timedelta(hours=1),
+                                            output_field=DurationField()
+                                        ),
+                                        output_field=DateTimeField()
+                                    )
+                                ).filter(
+                                    facility__category=location,
+                                    expected_closure_datetime__lt=now,
+                                    is_deleted=False,
+                                    date_assigned__isnull=False,  # avoid unassigned
+                                    date_closed__isnull=True,      # only still-open issues
+                                    date_completed__isnull=True
+                                ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.annotate(
+                                    expected_closure_datetime=ExpressionWrapper(
+                                        F('date_assigned') + 
+                                        ExpressionWrapper(
+                                            F('priority__expected_closure') * timedelta(hours=1),
+                                            output_field=DurationField()
+                                        ),
+                                        output_field=DateTimeField()
+                                    )
+                                ).filter(
+                                    expected_closure_datetime__lt=now,
+                                    request_type='MAINTENANCE',
+                                    is_deleted=False,
+                                    date_assigned__isnull=False,
+                                    date_closed__isnull=True,
+                                    date_completed__isnull=True
+                                ).order_by('-date_created')
+                        else:
+                            if location:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['COMPLETED']) & 
+                                    Q(facility__category=location) & 
+                                    Q(request_type='MAINTENANCE'),
+                                    is_deleted=False
+                                ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['COMPLETED']) & 
+                                    Q(request_type='MAINTENANCE'),
+                                    is_deleted=False
+                                ).order_by('-date_created')
+
+                    else:
+                        if query == 'unassigned':
+                            resp = models.Issue.objects.filter(
+                                Q(assigned_to=request.user) |
+                                Q(created_by=request.user) | 
+                                Q(assignee_issue_instance__assignee=request.user),
+                                request_type='MAINTENANCE',
+                                status__in=['SUBMITTED','REOPENED']
+                            ).order_by('-date_created')
+                        elif query == 'assigned':
+                            resp = models.Issue.objects.filter(
+                                    Q(assigned_to=request.user) |
+                                    Q(created_by=request.user) | 
+                                    Q(assignee_issue_instance__assignee=request.user),
+                                    request_type='MAINTENANCE',
+                                    status__in=['ASSIGNED']
+                                ).order_by('-date_created')
+                        elif query == 'closed':
+                            resp = models.Issue.objects.filter(
+                                    Q(assigned_to=request.user) |
+                                    Q(created_by=request.user) | 
+                                    Q(assignee_issue_instance__assignee=request.user),
+                                    request_type='MAINTENANCE',
+                                    status__in=['CLOSED']
+                                ).order_by('-date_created')
+                        elif query == 'overdue':
+                            from django.utils import timezone
+                            now = timezone.now()
+                            if location:
+                                resp = models.Issue.objects.annotate(
+                                    expected_closure_datetime=ExpressionWrapper(
+                                        F('date_assigned') + 
+                                        ExpressionWrapper(
+                                            F('priority__expected_closure') * timedelta(hours=1),
+                                            output_field=DurationField()
+                                        ),
+                                        output_field=DateTimeField()
+                                    )
+                                ).filter(
+                                    Q(assigned_to=request.user) |
+                                    Q(created_by=request.user) |
+                                    Q(assignee_issue_instance__assignee=request.user),
+                                    facility__category=location,
+                                    expected_closure_datetime__lt=now,
+                                    request_type='MAINTENANCE',
+                                    is_deleted=False,
+                                    date_assigned__isnull=False,  # avoid unassigned
+                                    date_closed__isnull=True,      # only still-open issues
+                                    date_completed__isnull=True
+                                ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.annotate(
+                                    expected_closure_datetime=ExpressionWrapper(
+                                        F('date_assigned') + 
+                                        ExpressionWrapper(
+                                            F('priority__expected_closure') * timedelta(hours=1),
+                                            output_field=DurationField()
+                                        ),
+                                        output_field=DateTimeField()
+                                    )
+                                ).filter(
+                                    Q(assigned_to=request.user) |
+                                    Q(created_by=request.user) |
+                                    Q(assignee_issue_instance__assignee=request.user),
+                                    expected_closure_datetime__lt=now,
+                                    request_type='MAINTENANCE',
+                                    is_deleted=False,
+                                    date_assigned__isnull=False,
+                                    date_closed__isnull=True,
+                                    date_completed__isnull=True
+                                ).order_by('-date_created')
+                        else:
+                            resp = models.Issue.objects.filter(
+                                Q(assigned_to=request.user) |
+                                Q(created_by=request.user) |
+                                Q(assignee_issue_instance__assignee=request.user),
+                                request_type='MAINTENANCE',
+                                status__in=['COMPLETED']
+                            ).order_by('-date_created')
+
+                    resp = list(set(resp))
+                    paginator = PageNumberPagination()
+                    paginator.page_size = 50
+                    result_page = paginator.paginate_queryset(resp, request)
+                    serializer = serializers.SlimFetchIssueSerializer(
+                        result_page, many=True, context={"user_id":request.user.id})
+                    return paginator.get_paginated_response(serializer.data)
+                
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+        
     
     @action(methods=["POST"],
             detail=False,

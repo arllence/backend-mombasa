@@ -137,6 +137,7 @@ class Issue(models.Model):
     status = models.CharField(max_length=255, default='SUBMITTED')
     request_type = models.CharField(max_length=255, default='ISSUE')
     maintenance_type = models.CharField(max_length=255, null=True, blank=True)
+    maintenance_duration = models.IntegerField(default=0)
     attachment = models.FileField(upload_to='documents/mhd/attachments/', null=True, blank=True)
     issue = models.TextField()
     subject = models.CharField(max_length=255, null=True, blank=True)
