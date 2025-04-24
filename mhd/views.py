@@ -1209,6 +1209,7 @@ class MHSViewSet(viewsets.ViewSet):
                 category = payload['category']
                 facility = payload['facility']
                 subject = payload['subject']
+                request_type = payload.get('request_type') or "ISSUE"
 
                 uid = shared_fxns.generate_unique_identifier()
 
@@ -1257,6 +1258,7 @@ class MHSViewSet(viewsets.ViewSet):
                         "category": category,
                         "facility": facility,
                         "subject": subject,
+                        "request_type": request_type,
                         "uid": uid
                     }
 
