@@ -12,14 +12,14 @@ from datetime import timedelta
 
 def test_cron():
     timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
-    print(f">>> Tested at : [timestamp]")
+    print(f">>> Tested at : [{timestamp}]")
 
 def mark_expired_requests():
     print('--------------Start Expired Requests Fn----------------------')
     today = timezone.now().date()
     
     # Find events that already passed and are not yet marked
-    past_events = Meal.objects.filter(date_of_event__lt=today).exclude(Q(status__in=['CEO APPROVED','REJECTED']))
+    past_events = Meal.objects.filter(date_of_event__lt=today).exclude(Q(status__in=['CEO APPROVED','REJECTED','EXPIRED']))
 
     # Update their status
     past_events.update(status='EXPIRED')
