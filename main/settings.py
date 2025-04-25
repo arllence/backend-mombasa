@@ -271,8 +271,8 @@ CRONJOBS = [
     # ('*/10 * * * *', 'communication.utils.azure_sdk_v2.get_emails', '>> /opt/logs/azure_sdk_v2_cron.log'),
     # ('0 * * * *', 'communication.utils.mailgun_sdk.get_emails', '>> /opt/logs/mailgun_sdk_cron.log'),
     ('*/1 * * * *', 'acl.utils.cron_mailer.get_emails', '>> /opt/logs/cron_mailer.log'),
-    ('0 8 * * *', 'smr/utils/meals.mark_expired_requests', '>> /opt/logs/cron_meals.log'),
-    ('0 8 * * *', 'smr/utils/meals.mark_approaching_expiry', '>> /opt/logs/cron_meals.log'),
+    # ('0 8 * * *', 'smr/utils/meals.mark_expired_requests', '>> /opt/logs/cron_meals.log'),
+    # ('0 8 * * *', 'smr/utils/meals.mark_approaching_expiry', '>> /opt/logs/cron_meals.log'),
     ('*/1 * * * *', 'smr/utils/meals.test_cron', '>> /opt/logs/cron_meals.log'),
 ]
 
