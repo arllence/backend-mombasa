@@ -1628,7 +1628,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
                         logger.error(e)
 
                 user_util.log_account_activity(
-                    authenticated_user, authenticated_user, "Issue Request Assigned", 
+                    authenticated_user, authenticated_user, "Ticket Request Assigned", 
                     f"Assigning Executed UID: {str(issueInstance.id)}")
                 
                 return Response('success', status=status.HTTP_200_OK)
