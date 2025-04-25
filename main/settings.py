@@ -273,7 +273,7 @@ CRONJOBS = [
     ('*/1 * * * *', 'acl.utils.cron_mailer.get_emails', '>> /opt/logs/cron_mailer.log'),
     # ('0 8 * * *', 'smr/utils/meals.mark_expired_requests', '>> /opt/logs/cron_meals.log'),
     # ('0 8 * * *', 'smr/utils/meals.mark_approaching_expiry', '>> /opt/logs/cron_meals.log'),
-    ('*/1 * * * *', 'smr/utils/meals.test_cron', '>> /opt/logs/test_cron.log'),
+    ('*/1 * * * *', 'smr.utils.meals.test_cron', '>> /opt/logs/test_cron.log'),
 ]
 
 PLATFORM_LINK = 'http://172.20.0.42:8002/'
