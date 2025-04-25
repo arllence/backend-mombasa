@@ -2078,6 +2078,7 @@ class MHSViewSet(viewsets.ViewSet):
                                     )
                                 ).filter(
                                     facility__category=location,
+                                    request_type='MAINTENANCE',
                                     expected_closure_datetime__lt=now,
                                     is_deleted=False,
                                     date_assigned__isnull=False,  # avoid unassigned
