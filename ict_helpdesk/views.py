@@ -1603,11 +1603,11 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     # Notify the assignee
                     emails = [user.email for user in assignees]
                     subject = f"[ICT HELPDESK] Issue {issueInstance.uid}  Assigned To You"
-                    message = f"Hello, \nA ticket of id: {issueInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nComment: {comment}\nPending your action.\n\nRegards\nICT-HELPDESK-AKHK\n\n"
+                    message = f"Hello, <br>A ticket of id: {issueInstance.uid} has been assigned to you<br>by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.<br>Comment: {comment}<br>Pending your action.<br><br>Regards\nICT-HELPDESK-AKHK\n\n"
 
                     uri = f"requests/view/{str(issueInstance.id)}"
                     link = "http://172.20.0.42:8011/" + uri
-                    platform = 'View Issue'
+                    platform = 'View Ticket'
 
                     message_template = read_template("general_template.html")
                     message = message_template.substitute(
