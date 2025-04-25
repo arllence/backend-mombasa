@@ -10,6 +10,10 @@ from django.core.mail import send_mail, EmailMessage, BadHeaderError
 from django.utils import timezone
 from datetime import timedelta
 
+def test_cron():
+    timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
+    print(f">>> Tested at : [timestamp]")
+
 def mark_expired_requests():
     print('--------------Start Expired Requests Fn----------------------')
     today = timezone.now().date()
