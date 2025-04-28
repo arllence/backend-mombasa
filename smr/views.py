@@ -586,14 +586,13 @@ class SMRViewSet(viewsets.ViewSet):
                 request_id = payload['request_id']
                 action = payload['action'].upper()
 
+                try:
+                    mealInstance = models.Meal.objects.get(id=request_id)
+                except Exception as e:
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+
                 is_ceo = False
                 is_slt = False
-
-                if "CEO" in roles:
-                    is_ceo = True
-                    status_for = 'CEO'
-                    if action == 'APPROVED':
-                        action = 'CEO APPROVED'
 
                 if "SLT" in roles:
                     is_slt = True
@@ -601,11 +600,12 @@ class SMRViewSet(viewsets.ViewSet):
                     if action == 'APPROVED':
                         action = 'SLT APPROVED'
 
+                if "CEO" in roles:
+                    is_ceo = True
+                    status_for = 'CEO'
+                    if action == 'APPROVED':
+                        action = 'CEO APPROVED'
 
-                try:
-                    mealInstance = models.Meal.objects.get(id=request_id)
-                except Exception as e:
-                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
               
                 with transaction.atomic():
                     mealInstance.status = action
@@ -621,11 +621,14 @@ class SMRViewSet(viewsets.ViewSet):
 
                     models.StatusChange.objects.create(**raw)
 
-
-                if is_ceo:
+                if is_ceo and is_slt:
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['SMR_ADMIN'])).values_list('email', flat=True))
-                if is_slt:
-                    emails = list(get_user_model().objects.filter(Q(groups__name__in=['CEO'])).values_list('email', flat=True))
+                else:
+                    if is_ceo:
+                        emails = list(get_user_model().objects.filter(Q(groups__name__in=['SMR_ADMIN'])).values_list('email', flat=True))
+                    if is_slt:
+                        emails = list(get_user_model().objects.filter(Q(groups__name__in=['CEO'])).values_list('email', flat=True))
+
                 subject = f"[SMR] New Meal Request: {mealInstance.uid}"
                 message = f"""
                     <table border="1" class='signature-table'>
