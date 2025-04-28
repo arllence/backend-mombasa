@@ -267,7 +267,7 @@ class CoreViewSet(viewsets.ViewSet):
             else:
                 try:
 
-                    if any(role in ['SUPERUSER'] for role in roles):
+                    if any(role in ['SUPERUSER','CMS_ADMIN'] for role in roles):
 
                         resp = models.Contract.objects.filter(is_deleted=False).order_by('-date_created')
 
