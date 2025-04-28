@@ -271,6 +271,12 @@ class CoreViewSet(viewsets.ViewSet):
 
                         resp = models.Contract.objects.filter(is_deleted=False).order_by('-date_created')
 
+                    elif any(role in ['HOD'] for role in roles):
+
+                        resp = models.Contract.objects.filter(
+                            Q(department=request.user) | Q(created_by=request.user),
+                            is_deleted=False).order_by('-date_created')
+
                     else:
                         resp = models.Contract.objects.filter(Q(is_deleted=False) & (Q(created_by=request.user)) ).order_by('-date_created')
 
