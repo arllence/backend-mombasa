@@ -91,22 +91,27 @@ class FetchMealSerializer(serializers.ModelSerializer):
 
             approve = False
 
-            if "SLT" in  roles:
-                try:
-                    if str(obj.department.slt.id) == user_id:
-                        if obj.status == 'REQUESTED':
-                            approve = True
-                        else: 
-                            approve = False
-                except Exception as e:
-                    pass
-
-            
-            if "CEO" in  roles:
-                if obj.status == 'SLT APPROVED':
+            if "SLT" in  roles and "CEO" in  roles:
+                if obj.status != 'CEO APPROVED':
                     approve = True
-                else: 
-                    approve = False
+            else:
+
+                if "SLT" in  roles:
+                    try:
+                        if str(obj.department.slt.id) == user_id:
+                            if obj.status == 'REQUESTED':
+                                approve = True
+                            else: 
+                                approve = False
+                    except Exception as e:
+                        pass
+
+                
+                if "CEO" in  roles:
+                    if obj.status == 'SLT APPROVED':
+                        approve = True
+                    else: 
+                        approve = False
 
             return approve
         except Exception as e:
