@@ -2778,6 +2778,10 @@ class MHSViewSet(viewsets.ViewSet):
                         emails.append(assignee.assigned_by.email)
                 if issueInstance.assigned_to:
                     emails.append(issueInstance.assigned_to.email)
+                if issueInstance.created_by:
+                    emails.append(issueInstance.created_by.email)
+                else:
+                    emails.append(issueInstance.email)
                 try:
                     emails.remove(request.user.email)
                 except:
