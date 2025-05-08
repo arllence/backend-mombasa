@@ -1391,6 +1391,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
                             resp = models.Issue.objects.filter(
                                 Q(assigned_to=request.user) |
                                 Q(created_by=request.user) | 
+                                Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
                                 Q(ict_assignee_issue_instance__assignee=request.user),
                                 status__in=['SUBMITTED','REOPENED']
                             ).order_by('-date_created')
@@ -1398,12 +1399,14 @@ class HelpDeskViewSet(viewsets.ViewSet):
                             resp = models.Issue.objects.filter(
                                     Q(assigned_to=request.user) |
                                     Q(created_by=request.user) | 
+                                    Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
                                     Q(ict_assignee_issue_instance__assignee=request.user),
                                     status__in=['ASSIGNED']
                                 ).order_by('-date_assigned')
                         elif query == 'my-tickets':
                             resp = models.Issue.objects.filter(
                                     Q(assigned_to=request.user) |
+                                    Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
                                     Q(ict_assignee_issue_instance__assignee=request.user),
                                     status__in=['ASSIGNED']
                                 ).order_by('-date_assigned')
@@ -1411,6 +1414,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
                             resp = models.Issue.objects.filter(
                                     Q(assigned_to=request.user) |
                                     Q(created_by=request.user) | 
+                                    Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
                                     Q(ict_assignee_issue_instance__assignee=request.user),
                                     status__in=['CLOSED']
                                 ).order_by('-date_closed')
@@ -1429,6 +1433,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
                             ).filter(
                                 Q(assigned_to=request.user) |
                                 Q(created_by=request.user) | 
+                                Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
                                 Q(ict_assignee_issue_instance__assignee=request.user),
                                 expected_closure_datetime__lt=now,
                                 is_deleted=False,
@@ -1440,6 +1445,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
                             resp = models.Issue.objects.filter(
                                 Q(assigned_to=request.user) |
                                 Q(created_by=request.user) |
+                                Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
                                 Q(ict_assignee_issue_instance__assignee=request.user),
                                 status__in=['COMPLETED']
                             ).order_by('-date_completed')
