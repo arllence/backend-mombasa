@@ -1621,6 +1621,7 @@ class MHSViewSet(viewsets.ViewSet):
                             resp = models.Issue.objects.filter(
                                 Q(assigned_to=request.user) |
                                 Q(created_by=request.user) | 
+                                Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
                                 Q(assignee_issue_instance__assignee=request.user),
                                 request_type='ISSUE',
                                 status__in=['SUBMITTED','REOPENED']
@@ -1629,6 +1630,7 @@ class MHSViewSet(viewsets.ViewSet):
                             resp = models.Issue.objects.filter(
                                     Q(assigned_to=request.user) |
                                     Q(created_by=request.user) | 
+                                    Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
                                     Q(assignee_issue_instance__assignee=request.user),
                                     request_type='ISSUE',
                                     status__in=['ASSIGNED']
@@ -1637,6 +1639,7 @@ class MHSViewSet(viewsets.ViewSet):
                             resp = models.Issue.objects.filter(
                                     Q(assigned_to=request.user) |
                                     Q(created_by=request.user) | 
+                                    Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
                                     Q(assignee_issue_instance__assignee=request.user),
                                     request_type='ISSUE',
                                     status__in=['CLOSED']
@@ -1657,6 +1660,7 @@ class MHSViewSet(viewsets.ViewSet):
                                 ).filter(
                                     Q(assigned_to=request.user) |
                                     Q(created_by=request.user) |
+                                    Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
                                     Q(assignee_issue_instance__assignee=request.user),
                                     request_type='ISSUE',
                                     facility__category=location,
@@ -1679,6 +1683,7 @@ class MHSViewSet(viewsets.ViewSet):
                                 ).filter(
                                     Q(assigned_to=request.user) |
                                     Q(created_by=request.user) |
+                                    Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
                                     Q(assignee_issue_instance__assignee=request.user),
                                     expected_closure_datetime__lt=now,
                                     request_type='ISSUE',
@@ -1691,6 +1696,7 @@ class MHSViewSet(viewsets.ViewSet):
                             resp = models.Issue.objects.filter(
                                 Q(assigned_to=request.user) |
                                 Q(created_by=request.user) |
+                                Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
                                 Q(assignee_issue_instance__assignee=request.user),
                                 request_type='ISSUE',
                                 status__in=['COMPLETED']
