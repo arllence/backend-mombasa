@@ -2929,6 +2929,13 @@ class MHSViewSet(viewsets.ViewSet):
                     logger.error(e)
                     print(e)
                     return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                # assign MHD_ADMIN role
+                if is_slt or is_hod:
+                    assign_role = user_util.award_role('MHD_ADMIN', str(admin.id))
+                    if not assign_role:
+                        return Response({"details": "Unable to assign role MHD_ADMIN"}, status=status.HTTP_400_BAD_REQUEST)
+                    
 
                 with transaction.atomic():
 
