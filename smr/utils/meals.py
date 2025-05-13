@@ -204,7 +204,7 @@ def html_main(meals,target):
                 subject,
                 msg,
                 'notification@akhskenya.org',
-                [email, 'bobkings.otieno@akhskenya.org']
+                [email]
             )
             email_to_send.content_subtype = 'html'  # Set the content type to HTML
             try:
