@@ -1,7 +1,7 @@
 import datetime
 import json
 import logging
-import uuid
+from string import Template
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.response import Response
@@ -27,6 +27,11 @@ from rest_framework.pagination import PageNumberPagination
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
+
+def read_template(filename):
+    with open("acl/emails/" + filename, 'r', encoding='utf8') as template_file:
+        template_file_content = template_file.read()
+        return Template(template_file_content)
 
 class TrsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
@@ -66,12 +71,15 @@ class TrsViewSet(viewsets.ViewSet):
                 visa_required_date = payload.get('visa_required_date')
                 accommodation = bool(payload.get('accommodation'))
                 salary_advance_required = bool(payload.get('salary_advance_required'))
-                salary_amount_required = payload.get('salary_amount_required')
+                salary_amount_required = payload.get('salary_amount_required') or 0
                 requesting_for = payload.get('requesting_for')
                 travel_cost = payload.get('travel_cost')
                 travel_cost_items = payload.get('travel_cost_items')
                 send_to = payload.get('send_to', None)
                 tid = shared_fxns.generate_unique_identifier()
+
+                if salary_advance_required and not salary_amount_required:
+                    return Response({"details": "Enter Travel Advance Amount"}, status=status.HTTP_400_BAD_REQUEST)
 
                 # Get today's date
                 today_date = datetime.date.today()
@@ -214,7 +222,7 @@ class TrsViewSet(viewsets.ViewSet):
                     if visa_required_date:
                         trip_raw.update({"visa_required_date": visa_required_date})
 
-                    models.Trip.objects.create(
+                    tripInstance = models.Trip.objects.create(
                         **trip_raw
                     )
 
@@ -278,17 +286,78 @@ class TrsViewSet(viewsets.ViewSet):
 
                     # Notify selected send to
                     subject = f"Travel Request {tid} Received [TRF-AKHK]"
-                    message = f"Hello, \nA new travel request: {tid} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
-                    # emails = list(get_user_model().objects.filter(Q(groups__name='TRANSPORT')).values_list('email', flat=True))
+                    # message = f"Hello, \nA new travel request: {tid} has been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
+
+
+                    message = f"""
+                        <table class="main" width="100%">
+                            <tr>
+                                <th style="text-align: left; padding: 6px 0" colspan="5">TRAVEL DETAILS</th>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Request From</th>
+                                <td style="text-align: left; padding: 5px 0">{tripInstance.traveler.created_by.first_name} {tripInstance.traveler.created_by.last_name}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Department</th>
+                                <td style="text-align: left; padding: 5px 0">{tripInstance.traveler.department.name}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Travel Route</th>
+                                <td style="text-align: left; padding: 5px 0">{tripInstance.route}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Travel Justification</th>
+                                <td style="text-align: left; padding: 5px 0"> {tripInstance.traveler.description} </td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Departure Date</th>
+                                <td style="text-align: left; padding: 5px 0"> {str(tripInstance.departure_date)} </td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Return Date</th>
+                                <td style="text-align: left; padding: 5px 0"> {str(tripInstance.return_date)} </td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Mode of Transport</th>
+                                <td style="text-align: left; padding: 5px 0">{tripInstance.traveler.mode_of_transport}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Number of Travelers</th>
+                                <td style="text-align: left; padding: 5px 0">{str(no_of_travelers)}</td>
+                            </tr>
+                        </table>
+                    """
+                    # uri = f"requests/view/{str(tripInstance.traveler.id)}"
+                    
 
                     try:
-                        mail = {
-                            "email" : list(set(managers_emails)), 
-                            "subject" : subject,
-                            "message" : message,
-                        }
+                        # message_template = read_template("custom_template.html")
+                        call_to_action = 'View Request'
+                        platform = 'Travel Request System'
+                        emails = list(set(managers_emails))
+                        for email in emails:
+                            message_template = read_template("custom_template.html")
+                            uri = f"authentication/auto/{email}/{str(tripInstance.traveler.id)}"
+                            link = "http://172.20.0.42:8000/" + uri
+                            approve = link + '/approve'
+                            reject = link + '/reject'
 
-                        Sendmail.objects.create(**mail)
+                            msg = message_template.substitute(
+                                CONTENT=message,
+                                LINK=link,
+                                PLATFORM=platform,
+                                APPROVE=approve,
+                                REJECT=reject
+                            )
+                            mail = {
+                                "email" : [email], 
+                                "subject" : subject,
+                                "message" : msg,
+                                "is_html": True
+                            }
+
+                            Sendmail.objects.create(**mail)
 
                     except Exception as e:
                         logger.error(e)
@@ -302,7 +371,7 @@ class TrsViewSet(viewsets.ViewSet):
                         mail = {
                             "email" : list(set(emails)), 
                             "subject" : subject,
-                            "message" : message,
+                            "message" : message
                         }
 
                         Sendmail.objects.create(**mail)
@@ -310,22 +379,6 @@ class TrsViewSet(viewsets.ViewSet):
                     except Exception as e:
                         logger.error(e)
 
-                    # Notify the hof
-                    # if salary_advance_required:
-                    #     emails = list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
-
-                    #     subject = f"Travel Advance Request {tid} Received [TRF-AKHK]"
-                    #     message = f"Hello, \nSalary Travel Advance request has been submitted for a new travel request: {tid} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
-
-                    #     try:
-                    #         mail = {
-                    #             "email" : list(set(emails)), 
-                    #             "subject" : subject,
-                    #             "message" : message,
-                    #         }
-                    #         Sendmail.objects.create(**mail)
-                    #     except Exception as e:
-                    #         logger.error(e)
 
    
                 user_util.log_account_activity(
@@ -1081,21 +1134,96 @@ class TrsViewSet(viewsets.ViewSet):
                         except Exception as e:
                             logger.error(e)
 
-                    # Notify TRANSPORT
+                    # Notify CEO
                     if is_hod:
                         emails = list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
                         subject = f"Travel Request: {traveler.tid} Pending Your Action.  [TRF-AKHK]"
-                        message = f"Hello. \nTravel Request: {traveler.tid} has been approved by HOD,\n currently pending your action\n\nRegards\nTRS-AKHK"
+                        # message = f"Hello. \nTravel Request: {traveler.tid} has been approved by HOD,\n currently pending your action\n\nRegards\nTRS-AKHK"
+                        no_of_travelers = 1
+                        if traveler.requesting_for == 'OTHERS':
+                            no_of_travelers = len(traveler.employees)
 
-                        try:
+                        # try:
+                        #     mail = {
+                        #         "email" : list(set(emails)), 
+                        #         "subject" : subject,
+                        #         "message" : message,
+                        #     }
+                        #     Sendmail.objects.create(**mail)
+                        # except Exception as e:
+                        #     logger.error(e)
+
+                        message = f"""
+                        <table class="main" width="100%">
+                            <tr>
+                                <th style="text-align: left; padding: 6px 0" colspan="5">TRAVEL DETAILS</th>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Request From</th>
+                                <td style="text-align: left; padding: 5px 0">{traveler.created_by.first_name} {traveler.created_by.last_name}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Department</th>
+                                <td style="text-align: left; padding: 5px 0">{traveler.department.name}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Travel Route</th>
+                                <td style="text-align: left; padding: 5px 0">{traveler.trip.route}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Travel Justification</th>
+                                <td style="text-align: left; padding: 5px 0"> {traveler.trip.traveler.description} </td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Departure Date</th>
+                                <td style="text-align: left; padding: 5px 0"> {str(traveler.trip.departure_date)} </td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Return Date</th>
+                                <td style="text-align: left; padding: 5px 0"> {str(traveler.trip.return_date)} </td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Mode of Transport</th>
+                                <td style="text-align: left; padding: 5px 0">{traveler.trip.traveler.mode_of_transport}</td>
+                            </tr>
+                            <tr>
+                                <th style="text-align: left; padding: 5px 0">Number of Travelers</th>
+                                <td style="text-align: left; padding: 5px 0">{str(no_of_travelers)}</td>
+                            </tr>
+                        </table>
+                    """                    
+
+                    try:
+                        call_to_action = 'View Request'
+                        platform = 'Travel Request System'
+                        emails = list(set(emails))
+                        for email in emails:
+                            message_template = read_template("custom_template.html")
+                            uri = f"authentication/auto/{email}/{str(traveler.id)}"
+                            link = "http://172.20.0.42:8000/" + uri
+                            approve = link + '/approve'
+                            reject = link + '/reject'
+
+                            msg = message_template.substitute(
+                                CONTENT=message,
+                                LINK=link,
+                                PLATFORM=platform,
+                                APPROVE=approve,
+                                REJECT=reject
+                            )
                             mail = {
-                                "email" : list(set(emails)), 
+                                "email" : [email], 
                                 "subject" : subject,
-                                "message" : message,
+                                "message" : msg,
+                                "is_html": True
                             }
+
                             Sendmail.objects.create(**mail)
-                        except Exception as e:
-                            logger.error(e)
+
+                    except Exception as e:
+                        logger.error(e)
+
+                        
 
                     # Notify transport department
                     if is_ceo:

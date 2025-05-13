@@ -108,7 +108,67 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                 return Response(response_info, status=status.HTTP_200_OK)
         else:
             return Response({"details": "Invalid Email / Password"}, status=status.HTTP_400_BAD_REQUEST)
-        
+    
+    @action(methods=["POST"], detail=False, url_path="auto-login", url_name="auto-login")
+    def auto_login_user(self, request):
+        """
+        Authenticates user. Provides access token. Takes username and password
+        """
+        payload = request.data
+        email = request.data.get('user_id')
+
+        if email is None:
+            return Response({"details": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # fake
+        try:
+            is_authenticated = get_user_model().objects.get(email=email)
+        except:
+            return Response({"details": "Invalid Credentials"}, status=status.HTTP_400_BAD_REQUEST)
+            
+
+        if is_authenticated: 
+
+            is_suspended = is_authenticated.is_suspended
+            if is_suspended is True or is_suspended is None:
+                return Response({"details": "Your Account Has Been Suspended,Liase with your supervisor"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+
+                try:
+                    department_name = is_authenticated.department.name
+                    department_id = is_authenticated.department.id
+                except:
+                    department_name = ''
+                    department_id = ''
+
+                try:
+                    srrs_department_name = is_authenticated.srrs_department.name
+                    srrs_department_id = is_authenticated.srrs_department.id
+                except:
+                    srrs_department_name = ''
+                    srrs_department_id = ''
+
+                payload = {
+                    'id': str(is_authenticated.id),
+                    'email': is_authenticated.email,
+                    'first_name': is_authenticated.first_name,
+                    'staff': is_authenticated.is_staff,
+                    'department_name': department_name,
+                    'department_id': str(department_id),
+                    'srrs_department_name': srrs_department_name,
+                    'srrs_department_id': str(srrs_department_id),
+                    'password_change_status': is_authenticated.is_defaultpassword,
+                    'exp': datetime.utcnow() + timedelta(seconds=settings.TOKEN_EXPIRY),
+                    'iat': datetime.utcnow()
+                }
+                token = jwt.encode(payload, settings.TOKEN_SECRET_CODE, algorithm="HS256")
+                response_info = {
+                    "token": token,
+                }
+
+                return Response(response_info, status=status.HTTP_200_OK)
+        else:
+            return Response({"details": "Invalid Email / Password"}, status=status.HTTP_400_BAD_REQUEST)
         
     @action(methods=["POST"], detail=False, url_path="create-account", url_name="create-account")
     def create_account(self, request):

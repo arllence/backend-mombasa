@@ -9,6 +9,13 @@ from django.core.mail import send_mail, EmailMessage, BadHeaderError
 
 from django.utils import timezone
 from datetime import timedelta
+from string import Template
+
+
+def read_template(filename):
+    with open("acl/emails/" + filename, 'r', encoding='utf8') as template_file:
+        template_file_content = template_file.read()
+        return Template(template_file_content)
 
 def test_cron():
     timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
@@ -46,9 +53,9 @@ def mark_approaching_expiry():
     ceo = Meal.objects.filter(Q(date_of_event__range=(start_date, end_date)) & Q(status__in=['SLT APPROVED']))
 
     if slt:
-        main(slt,'SLT')
+        html_main(slt,'SLT')
     if ceo:
-        main(ceo,'CEO')
+        html_main(ceo,'CEO')
 
 
     print(f"{slt.count()} meals pending slt approval.")
@@ -95,3 +102,127 @@ def main(meals,target):
     print(f">>> Sent at : {timestamp}")
 
 
+def html_main(meals,target):
+    timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
+    print(f"[{timestamp}] Main Fn Starting...")
+
+    subject = "[REMINDER] Meal Request Pending Approval"
+    message_template = read_template("meals_template.html")
+
+    for meal in meals:
+        if target == 'SLT':
+            email = meal.department.slt.email
+        if target == 'CEO':
+            email = list(get_user_model().objects.filter(Q(groups__name__in=['CEO'])).values_list('email', flat=True))[0]
+
+        message = f"""
+                    <table class="main" width="100%">
+                        <tr>
+                            <th style="text-align: left; padding: 6px 0" colspan="5">MEALS DETAILS</th>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; padding: 5px 0">Request From</th>
+                            <td style="text-align: left; padding: 5px 0">{meal.created_by.first_name} {meal.created_by.last_name}</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; padding: 5px 0">Requesting Department</th>
+                            <td style="text-align: left; padding: 5px 0">{meal.department.name}</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; padding: 5px 0">Location</th>
+                            <td style="text-align: left; padding: 5px 0">{meal.location_of_function}</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; padding: 5px 0">Date of Event</th>
+                            <td style="text-align: left; padding: 5px 0">{meal.date_of_event}</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; padding: 5px 0">Event Justification</th>
+                            <td style="text-align: left; padding: 5px 0">{meal.reason}</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; padding: 5px 0">Number of Participants</th>
+                            <td style="text-align: left; padding: 5px 0">{meal.number_of_participants}</td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; padding: 5px 0">AM Tea</th>
+                            <td style="text-align: left; padding: 5px 0">
+                                <strong>Time: </strong>
+                                {meal.am_tea.get('time') or 'N/A'} <br>
+                                <strong>Description:</strong><br>
+                                {meal.am_tea.get('description') or 'N/A'}                                    
+                            </td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; padding: 5px 0">Lunch</th>
+                            <td style="text-align: left; padding: 5px 0">
+                                <strong>Time: </strong>
+                                {meal.lunch.get('time') or 'N/A'} <br>
+                                <strong>Description:</strong><br>
+                                {meal.lunch.get('description') or 'N/A'}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; padding: 5px 0">PM Tea</th>
+                            <td style="text-align: left; padding: 5px 0">
+                                <strong>Time: </strong>
+                                {meal.pm_tea.get('time') or 'N/A'} <br>
+                                <strong>Description:</strong><br>
+                                {meal.pm_tea.get('description') or 'N/A'}
+                                
+                            </td>
+                        </tr>
+                        <tr>
+                            <th style="text-align: left; padding: 5px 0">Dinner</th>
+                            <td style="text-align: left; padding: 5px 0">
+                                <strong>Time: </strong>
+                                {meal.dinner.get('time') or 'N/A'} <br>
+                                <strong>Description:</strong><br>
+                                {meal.dinner.get('description') or 'N/A'}
+                            </td>
+                        </tr>
+                    </table>
+                """
+                # uri = f"requests/view/{str(tripInstance.traveler.id)}"
+        try:
+            
+            platform = 'Staff Meal Request'
+            uri = f"authentication/auto/{email}/{str(meal.id)}"
+            link = "http://172.20.0.42:8010/" + uri
+            approve = link + '/approved'
+            reject = link + '/rejected'
+            print(approve)
+            print(reject)
+
+            msg = message_template.substitute(
+                CONTENT=message,
+                LINK=link,
+                PLATFORM=platform,
+                APPROVE=approve,
+                REJECT=reject
+            )
+            print(msg)
+            email_to_send = EmailMessage(
+                subject,
+                msg,
+                'notification@akhskenya.org',
+                email
+            )
+            email_to_send.content_subtype = 'html'  # Set the content type to HTML
+            try:
+                email_to_send.send(fail_silently=False)
+                target.status = "SENT"
+                target.save()
+                print(f'(HTML)-<200>-{timestamp}-{str(email)}')
+            except Exception as e:
+                print(f'(HTML)-<500>-{timestamp}-An error occurred: {str(e)}')
+
+        except Exception as e:
+            print(f'(PLAIN)-<500>-{timestamp}-An error occurred: {str(e)}')
+
+    
+        
+        time.sleep(1)
+
+    timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
+    print(f">>> Sent at : {timestamp}")
