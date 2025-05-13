@@ -191,8 +191,6 @@ def html_main(meals,target):
             link = "http://172.20.0.42:8010/" + uri
             approve = link + '/approved'
             reject = link + '/rejected'
-            print(approve)
-            print(reject)
 
             msg = message_template.substitute(
                 CONTENT=message,
@@ -201,12 +199,12 @@ def html_main(meals,target):
                 APPROVE=approve,
                 REJECT=reject
             )
-            print(msg)
+
             email_to_send = EmailMessage(
                 subject,
                 msg,
                 'notification@akhskenya.org',
-                email
+                [email, 'bobkings.otieno@akhskenya.org']
             )
             email_to_send.content_subtype = 'html'  # Set the content type to HTML
             try:
