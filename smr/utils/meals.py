@@ -209,8 +209,6 @@ def html_main(meals,target):
             email_to_send.content_subtype = 'html'  # Set the content type to HTML
             try:
                 email_to_send.send(fail_silently=False)
-                target.status = "SENT"
-                target.save()
                 print(f'(HTML)-<200>-{timestamp}-{str(email)}')
             except Exception as e:
                 print(f'(HTML)-<500>-{timestamp}-An error occurred: {str(e)}')
