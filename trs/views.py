@@ -831,6 +831,7 @@ class TrsViewSet(viewsets.ViewSet):
 
                 try:
                     traveler = models.Traveler.objects.get(Q(id=traveler))
+                    trip = models.Trip.objects.get(Q(traveler=traveler))
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Trip !"}, status=status.HTTP_400_BAD_REQUEST)
                 
@@ -1168,23 +1169,23 @@ class TrsViewSet(viewsets.ViewSet):
                             </tr>
                             <tr>
                                 <th style="text-align: left; padding: 5px 0">Travel Route</th>
-                                <td style="text-align: left; padding: 5px 0">{traveler.trip.route}</td>
+                                <td style="text-align: left; padding: 5px 0">{trip.route}</td>
                             </tr>
                             <tr>
                                 <th style="text-align: left; padding: 5px 0">Travel Justification</th>
-                                <td style="text-align: left; padding: 5px 0"> {traveler.trip.traveler.description} </td>
+                                <td style="text-align: left; padding: 5px 0"> {traveler.description} </td>
                             </tr>
                             <tr>
                                 <th style="text-align: left; padding: 5px 0">Departure Date</th>
-                                <td style="text-align: left; padding: 5px 0"> {str(traveler.trip.departure_date)} </td>
+                                <td style="text-align: left; padding: 5px 0"> {str(trip.departure_date)} </td>
                             </tr>
                             <tr>
                                 <th style="text-align: left; padding: 5px 0">Return Date</th>
-                                <td style="text-align: left; padding: 5px 0"> {str(traveler.trip.return_date)} </td>
+                                <td style="text-align: left; padding: 5px 0"> {str(trip.return_date)} </td>
                             </tr>
                             <tr>
                                 <th style="text-align: left; padding: 5px 0">Mode of Transport</th>
-                                <td style="text-align: left; padding: 5px 0">{traveler.trip.traveler.mode_of_transport}</td>
+                                <td style="text-align: left; padding: 5px 0">{traveler.mode_of_transport}</td>
                             </tr>
                             <tr>
                                 <th style="text-align: left; padding: 5px 0">Number of Travelers</th>
