@@ -59,7 +59,7 @@ INSTALLED_APPS = [
     'dbmanager',
     'fms',
     'cms',
-    'mhd', 'system_directory', 'smr', 'ict_helpdesk'
+    'mhd', 'system_directory', 'smr', 'ict_helpdesk','ipass'
 ]
 
 MIDDLEWARE = [
@@ -133,6 +133,7 @@ MAINTENANCE_HELPDESK_SYSTEM = 'mhd'
 SYSTEM_DIRECTORY = 'system_directory'
 STAFF_MEAL_REQUEST = 'smr'
 ICT_HELPDESK = 'ict_helpdesk'
+IPASS = 'ipass'
 
 
 
