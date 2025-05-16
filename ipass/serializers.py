@@ -27,6 +27,7 @@ class FetchPatientSerializer(serializers.ModelSerializer):
     approvals = serializers.SerializerMethodField()
     is_creator = serializers.SerializerMethodField()
     is_assigned = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Patient
@@ -48,6 +49,17 @@ class FetchPatientSerializer(serializers.ModelSerializer):
         try:
             user_id = str(self.context["user_id"])
             if str(obj.handover_by.id) == user_id:
+                return True
+            return False
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False
+        
+    def get_can_edit(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            if str(obj.handover_by.id) == user_id and obj.status == 'PENDING':
                 return True
             return False
         except Exception as e:
