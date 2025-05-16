@@ -165,7 +165,64 @@ class IpassViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == "PUT":
-            pass
+            payload = request.data
+
+            serializer = serializers.UpdatePatientSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                admission_no = payload['admission_no']
+                illness_severity = payload['illness_severity']
+                patient_summary = payload['patient_summary']
+                action_list = payload['action_list']
+                situation_awareness = payload['situation_awareness']
+                synthesis_by_receiver = payload.get('synthesis_by_receiver')
+                acknowledgement = payload.get('acknowledgement')
+                bio = payload['bio']
+                handover_to = payload['handover_to']
+
+                try:
+                    handoverInstance = models.Patient.objects.get(id=request_id)
+                except Exception as e:
+                    return Response({"details": "Unknown Handover"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    handover_to = get_user_model().objects.get(id=handover_to)
+                except Exception as e:
+                    return Response({"details": "Unknown Doctor"}, status=status.HTTP_400_BAD_REQUEST)
+
+                
+                with transaction.atomic():
+                    raw = {
+                        "handover_to": handover_to,
+                        "admission_no": admission_no,
+                        "illness_severity": illness_severity,
+                        "patient_summary": patient_summary,
+                        "action_list": action_list,
+                        "situation_awareness": situation_awareness,
+                        "synthesis_by_receiver": synthesis_by_receiver,
+                        "acknowledgement": acknowledgement
+                    } 
+
+                    models.Patient.objects.filter(Q(id=request_id)).update(
+                        **raw
+                    )
+
+                    # track status change
+                    raw = {
+                        "patient": handoverInstance,
+                        "status": "EDITED",
+                        "action_by": authenticated_user
+                    }
+
+                    models.StatusChange.objects.create(**raw)
+
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
         elif request.method == "PATCH":
             # Accepting handover
             payload = request.data

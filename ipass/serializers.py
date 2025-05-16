@@ -12,6 +12,10 @@ class GeneralNameSerializer(serializers.Serializer):
 class CreatePatientSerializer(serializers.Serializer):
     admission_no = serializers.CharField()
 
+class UpdatePatientSerializer(serializers.Serializer):
+    request_id = serializers.CharField()
+    admission_no = serializers.CharField()
+
 class SlimFetchPatientSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Patient

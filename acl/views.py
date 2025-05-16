@@ -177,7 +177,7 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
         serializer = serializers.CreateUserSerializer(data=payload, many=False)
         if serializer.is_valid():
             with transaction.atomic():
-                email = payload['email']
+                email = payload['email'].lower()
                 first_name = payload['first_name']
                 last_name = payload['last_name']
                 password = payload['password']
