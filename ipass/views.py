@@ -236,7 +236,6 @@ class IpassViewSet(viewsets.ViewSet):
             del payload['request_id']
             del payload['synthesis_by_receiver']
 
-            print(payload)
 
             try:
                 handoverInstance = models.Patient.objects.get(id=request_id)
@@ -249,6 +248,16 @@ class IpassViewSet(viewsets.ViewSet):
                 handoverInstance.handover_acceptance_date = datetime.datetime.now()
                 handoverInstance.status = 'ACCEPTED'
                 handoverInstance.save()
+
+                # track status change
+                raw = {
+                    "patient": handoverInstance,
+                    "status": "ACCEPTED",
+                    "action_by": authenticated_user
+                }
+
+                models.StatusChange.objects.create(**raw)
+                
                 return Response('200', status=status.HTTP_200_OK)  
 
 
