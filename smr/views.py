@@ -603,7 +603,7 @@ class SMRViewSet(viewsets.ViewSet):
                 if "CEO" in roles:
                     is_ceo = True
                     status_for = 'CEO'
-                    if action == 'APPROVED':
+                    if action == 'APPROVED' or action == 'SLT APPROVED':
                         action = 'CEO APPROVED'
 
               
