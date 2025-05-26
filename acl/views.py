@@ -766,9 +766,9 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
 
                 users = [
                     models.User(
-                        first_name=set_name(row[0])[0].strip(), 
-                        last_name=set_name(row[0])[1].strip(), 
-                        email=row[1].strip(), 
+                        first_name=set_name(row[0])[0].strip().capitalize(), 
+                        last_name=set_name(row[0])[1].strip().capitalize(), 
+                        email=row[1].strip().lower(), 
                         srrs_department=set_department(row[2].strip()),
                         is_active=True,
                         is_superuser=False,
@@ -782,14 +782,14 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 newInstances = models.User.objects.bulk_create(users)
 
                 try:
-                    group_details = Group.objects.get(name="VT")
+                    group_details = Group.objects.get(name="IPASS")
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Role does not exist'}, 
                                     status=status.HTTP_400_BAD_REQUEST) 
                 
-                subject = "Platform Access Details"
+                subject = "IPASS Platform Access Details"
                 def set_message(instance):
-                    message = f"Dear {instance.first_name}, \n\nYour email is: {instance.email}\nYour password is: welcome@123\nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nPSMDQS-AKHK"
+                    message = f"Dear {instance.first_name}, \n\nYour email is: {instance.email}\nYour password is: welcome@123\nPlatform Link: http://172.20.0.42:8012/ \nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nIPASS-AKHK"
                     return message
                 # send_mail(subject, message, 'notification@akhskenya.org', [email])
 
