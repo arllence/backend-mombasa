@@ -25,6 +25,7 @@ class Meal(models.Model):
     location_of_function = models.CharField(max_length=500)
     date_of_event = models.DateField()
     number_of_participants = models.IntegerField()
+    total_cost = models.IntegerField(default=0, null=True, blank=True)
     am_tea = models.JSONField(null=True, blank=True)
     pm_tea = models.JSONField(null=True, blank=True)
     lunch = models.JSONField(null=True, blank=True)
