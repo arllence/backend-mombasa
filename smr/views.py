@@ -295,8 +295,7 @@ class SMRViewSet(viewsets.ViewSet):
                 requested = [
                     am_tea_required, pm_tea_required, lunch_required, dinner_required
                 ]
-                print(requested)
-                print(pm_tea)
+
                 checked = 0
                 for item in requested:
                     if item:
