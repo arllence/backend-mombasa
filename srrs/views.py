@@ -1956,6 +1956,7 @@ class SRRSReportsViewSet(viewsets.ViewSet):
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
         r_status = request.query_params.get('status')
+        ohc = request.query_params.get('ohc')
         date = False
 
         if date_to and date_from:
@@ -1983,6 +1984,9 @@ class SRRSReportsViewSet(viewsets.ViewSet):
             
         if r_status:
             q_filters &= Q(status=r_status)
+
+        if ohc:
+            q_filters &= Q(ohc=ohc)
 
         if position_type:
             q_filters &= Q(position_type=position_type)
