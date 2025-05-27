@@ -455,7 +455,7 @@ class SMRViewSet(viewsets.ViewSet):
                                 <th>Total Meal Cost</th>
                                 <td>
                                     <strong>KES </strong>
-                                    {total_meals_cost:,.2f or 'N/A'}
+                                    {total_meals_cost:,.2f}
                                 </td>
                             </tr>
                         </table>
