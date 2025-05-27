@@ -156,8 +156,17 @@ class GenericsViewSet(viewsets.ViewSet):
         roles = user_util.fetchusergroups(request.user.id) 
 
         if request.method == "POST":
-            payload = json.loads(request.data['payload'])
+            
             attachment = request.FILES.get('attachments', None)
+            forwarded = request.query_params.get('forwarded', None)
+
+            if forwarded:
+                payload = request.data
+            else:
+                payload = json.loads(request.data['payload'])
+
+
+            print("forwarded: ",forwarded)
 
             serializer = serializers.GenericIssueSerializer(
                     data=payload, many=False)
@@ -168,10 +177,10 @@ class GenericsViewSet(viewsets.ViewSet):
                 issue = payload['issue']
                 name = payload['name']
                 email = payload['email']
-                category = payload['category']
+                category = payload.get('category')
                 facility = payload['facility']
                 subject = payload['subject']
-                issue_type = payload['issue_type']
+                # issue_type = payload['issue_type']
 
                 uid = shared_fxns.generate_unique_identifier()
 
@@ -189,11 +198,11 @@ class GenericsViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                if issue_type:
-                    try:
-                        job_type = models.JobType.objects.get(id=issue_type)
-                    except Exception as e:
-                        return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
+                # if issue_type:
+                #     try:
+                #         job_type = models.JobType.objects.get(id=issue_type)
+                #     except Exception as e:
+                #         return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
                     
                 if category:
                     try:
@@ -202,9 +211,13 @@ class GenericsViewSet(viewsets.ViewSet):
                         return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
                     
                 try:
-                    facility = models.Facility.objects.get(id=facility)
+                    if not forwarded:
+                        facility = models.Facility.objects.get(id=facility)
+                    else:
+                        facility = models.Facility.objects.filter(name__icontains=facility).first()
                 except Exception as e:
-                    return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
+                    facility = None
+                    # return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
                     raw = {
@@ -245,7 +258,7 @@ class GenericsViewSet(viewsets.ViewSet):
                             </tr>
                             <tr>
                                 <th>Facility</th>
-                                <td>{facility.name}</td>
+                                <td>{facility.name if facility else 'N/A'}</td>
                             </tr>
                             <tr>
                                 <th>Department</th>
@@ -1469,13 +1482,17 @@ class HelpDeskViewSet(viewsets.ViewSet):
         
         elif request.method == "DELETE":
             request_id = request.query_params.get('request_id')
+            forwarded = request.query_params.get('forwarded')
             if not request_id:
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
         
             
             with transaction.atomic():
                 try:
-                    recordInstance = models.Issue.objects.get(id=request_id,created_by=request.user)
+                    if forwarded:
+                        recordInstance = models.Issue.objects.get(id=request_id)
+                    else:
+                        recordInstance = models.Issue.objects.get(id=request_id,created_by=request.user)
                     recordInstance.is_deleted = True
                     recordInstance.status = "DELETED"
                     recordInstance.save()

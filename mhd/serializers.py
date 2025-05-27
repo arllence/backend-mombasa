@@ -51,7 +51,7 @@ class GenericIssueSerializer(serializers.Serializer):
     email = serializers.CharField()
     department = serializers.CharField()
     facility = serializers.CharField()
-    category = serializers.CharField()
+    # category = serializers.CharField()
     subject = serializers.CharField()
     issue = serializers.CharField(style={'type': 'textarea'})
 

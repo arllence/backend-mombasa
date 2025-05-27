@@ -216,21 +216,27 @@ class GenericsViewSet(viewsets.ViewSet):
         roles = user_util.fetchusergroups(request.user.id) 
 
         if request.method == "POST":
-            payload = json.loads(request.data['payload'])
+
             attachment = request.FILES.get('attachments', None)
+            forwarded = request.query_params.get('forwarded', None)
+
+            if forwarded:
+                payload = request.data
+            else:
+                payload = json.loads(request.data['payload'])
 
             serializer = serializers.GenericIssueSerializer(
                     data=payload, many=False)
             
             if serializer.is_valid():
-                job_type = payload['job_type'] or None
-                equipment_type = payload['equipment_type'] or None
-                section = payload['section'] or None
+                job_type = payload.get('job_type') or None
+                equipment_type = payload.get('equipment_type') or None
+                section = payload.get('section') or None
                 department = payload['department']
                 issue = payload['issue']
                 name = payload['name']
                 email = payload['email']
-                category = payload['category']
+                category = payload.get('category')
                 facility = payload['facility']
                 subject = payload['subject']
 
@@ -268,16 +274,20 @@ class GenericsViewSet(viewsets.ViewSet):
                         section = models.Section.objects.get(id=section)
                     except Exception as e:
                         return Response({"details": "Unknown section"}, status=status.HTTP_400_BAD_REQUEST)
-
-                try:
-                    category = models.Category.objects.get(id=category)
-                except Exception as e:
-                    return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if category:
+                    try:
+                        category = models.Category.objects.get(id=category)
+                    except Exception as e:
+                        return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    facility = models.Facility.objects.get(id=facility)
+                    if not forwarded:
+                        facility = models.Facility.objects.get(id=facility)
+                    else:
+                        facility = models.Facility.objects.filter(name__icontains=facility).first()
                 except Exception as e:
-                    return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
+                    facility = None
 
                 with transaction.atomic():
                     raw = {
@@ -311,8 +321,11 @@ class GenericsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                     # Notify Platform Admins
-                    emails = list(models.PlatformAdmin.objects.filter(Q(category=category) & Q(location=facility.category)).values_list('admin__email', flat=True))
-                    # emails = list(models.PlatformAdmin.objects.filter(Q(category=category)).values_list('admin__email', flat=True))
+                    if not forwarded:
+                        emails = list(models.PlatformAdmin.objects.filter(Q(category=category) & Q(location=facility.category)).values_list('admin__email', flat=True))
+                    else:
+                        emails = list(models.PlatformAdmin.objects.filter(Q(is_hod=True)).values_list('admin__email', flat=True))
+
                     subject = f"[MHD] {subject}"
                     message = f"""
                         <table border="1" class='signature-table'>
@@ -321,11 +334,11 @@ class GenericsViewSet(viewsets.ViewSet):
                             </tr>
                             <tr>
                                 <th>Facility</th>
-                                <td>{facility.name}</td>
+                                <td>{facility.name if facility else 'N/A'}</td>
                             </tr>
                             <tr>
                                 <th>Category</th>
-                                <td>{category.name}</td>
+                                <td>{category.name if category else 'N/A'}</td>
                             </tr>
                             <tr>
                                 <th>Department</th>
@@ -1721,13 +1734,17 @@ class MHSViewSet(viewsets.ViewSet):
         
         elif request.method == "DELETE":
             request_id = request.query_params.get('request_id')
+            forwarded = request.query_params.get('forwarded')
             if not request_id:
                 return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
         
             
             with transaction.atomic():
                 try:
-                    recordInstance = models.Issue.objects.get(id=request_id,created_by=request.user)
+                    if forwarded:
+                        recordInstance = models.Issue.objects.get(id=request_id)
+                    else:
+                        recordInstance = models.Issue.objects.get(id=request_id,created_by=request.user)
                     recordInstance.is_deleted = True
                     recordInstance.status = "DELETED"
                     recordInstance.save()
