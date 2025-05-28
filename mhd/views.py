@@ -1573,6 +1573,18 @@ class MHSViewSet(viewsets.ViewSet):
                                     Q(status__in=['CLOSED']) & 
                                     Q(request_type='ISSUE'), is_deleted=False
                                 ).order_by('-date_created')
+                        elif query == 'reopened':
+                            if location:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['REOPENED']) & 
+                                    Q(facility__category=location) & 
+                                    Q(request_type='ISSUE'), is_deleted=False
+                                ).order_by('-date_created')
+                            else:
+                                resp = models.Issue.objects.filter(
+                                    Q(status__in=['REOPENED']) & 
+                                    Q(request_type='ISSUE'), is_deleted=False
+                                ).order_by('-date_created')
                         elif query == 'overdue':
                             # Current time
                             from django.utils import timezone
@@ -1656,6 +1668,15 @@ class MHSViewSet(viewsets.ViewSet):
                                     Q(assignee_issue_instance__assignee=request.user),
                                     request_type='ISSUE',
                                     status__in=['CLOSED']
+                                ).order_by('-date_created')
+                        elif query == 'reopened':
+                            resp = models.Issue.objects.filter(
+                                    Q(assigned_to=request.user) |
+                                    Q(created_by=request.user) | 
+                                    Q(department__in=SRRSDepartment.objects.filter(hod_department__hod=request.user)) |
+                                    Q(assignee_issue_instance__assignee=request.user),
+                                    request_type='ISSUE',
+                                    status__in=['REOPENED']
                                 ).order_by('-date_created')
                         elif query == 'overdue':
                             from django.utils import timezone
@@ -3056,6 +3077,8 @@ class ReportsViewSet(viewsets.ViewSet):
         if r_status:
             if r_status == "QUOTE REQUESTED":
                 q_filters &= Q(quote_issue_instance__isnull=False)
+            elif r_status == "NOT DONE":
+                q_filters &= (Q(status_change_issue_instance__status="NOT DONE") & ~Q(status__in=['REOPENED','CLOSED']))
             else:
                 q_filters &= Q(status=r_status)
 
@@ -3081,6 +3104,8 @@ class ReportsViewSet(viewsets.ViewSet):
             
         else:
             resp = models.Issue.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+
+        resp = list(set(resp))
 
         resp = serializers.FetchIssueSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
