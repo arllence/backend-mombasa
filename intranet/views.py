@@ -71,7 +71,7 @@ class GenericsViewSet(viewsets.ViewSet):
         query = request.query_params.get('q')
         if department_id:
             if query:
-                models.Document.objects.filter(
+                documents = models.Document.objects.filter(
                     Q(department=department_id) | 
                     Q(sub_department=department_id) | 
                     Q(category=department_id),
