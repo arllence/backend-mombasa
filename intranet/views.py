@@ -68,11 +68,23 @@ class GenericsViewSet(viewsets.ViewSet):
     @action(methods=["GET"], detail=False, url_path="files",url_name="files")
     def files(self, request):
         department_id = request.query_params.get('department_id')
+        query = request.query_params.get('q')
         if department_id:
-            documents = list(models.Document.objects.filter(
-                Q(department=department_id) | 
-                Q(sub_department=department_id) | 
-                Q(category=department_id), is_deleted=False).order_by('original_file_name'))
+            if query:
+                models.Document.objects.filter(
+                    Q(department=department_id) | 
+                    Q(sub_department=department_id) | 
+                    Q(category=department_id),
+                    Q(original_file_name__icontains=query) | 
+                    Q(title__icontains=query),
+                    is_deleted=False
+                ).order_by('original_file_name')
+            else:
+                documents = list(models.Document.objects.filter(
+                    Q(department=department_id) | 
+                    Q(sub_department=department_id) | 
+                    Q(category=department_id), is_deleted=False).order_by('original_file_name'))
+                
             try:
                 documents.sort(key=lambda x: int(x.original_file_name.split('.')[0]))
             except:
