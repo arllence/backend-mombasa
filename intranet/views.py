@@ -94,7 +94,10 @@ class GenericsViewSet(viewsets.ViewSet):
         
 
         paginator = PageNumberPagination()
-        paginator.page_size = 50
+        if query:
+            paginator.page_size = len(documents) or 1
+        else:
+            paginator.page_size = 50
         result_page = paginator.paginate_queryset(documents, request)
         serializer = serializers.SlimFetchDocumentSerializer(
             result_page, many=True)
@@ -105,11 +108,24 @@ class GenericsViewSet(viewsets.ViewSet):
     @action(methods=["GET"], detail=False, url_path="qips-files",url_name="qips-files")
     def qips_files(self, request):
         request_id = request.query_params.get('request_id')
+        query = request.query_params.get('q')
+
         if request_id:
-            documents = list(models.QipsDocument.objects.filter(
-                Q(topic=request_id) | 
-                Q(sub_topic=request_id) | 
-                Q(category=request_id) ,is_deleted=False).order_by('file_name'))
+            if query:
+                documents = list(models.QipsDocument.objects.filter(
+                    Q(topic=request_id) | 
+                    Q(sub_topic=request_id) | 
+                    Q(category=request_id),
+                    Q(file_name__icontains=query),
+                    is_deleted=False).order_by('file_name'))
+                
+            else:
+                documents = list(models.QipsDocument.objects.filter(
+                    Q(topic=request_id) | 
+                    Q(sub_topic=request_id) | 
+                    Q(category=request_id),
+                    is_deleted=False).order_by('file_name'))
+                
             try:
                 documents.sort(key=lambda x: int(x.file_name.split('.')[0]))
             except:
@@ -119,7 +135,10 @@ class GenericsViewSet(viewsets.ViewSet):
         
 
         paginator = PageNumberPagination()
-        paginator.page_size = 50
+        if query:
+            paginator.page_size = len(documents) or 1
+        else:
+            paginator.page_size = 50
         result_page = paginator.paginate_queryset(documents, request)
         serializer = serializers.SlimFetchQipsDocumentSerializer(
             result_page, many=True)
