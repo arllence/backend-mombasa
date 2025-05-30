@@ -31,7 +31,6 @@ logger = logging.getLogger(__name__)
 
 class MmsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
-    # pagination_class = CustomPagination
     search_fields = ['id', ]
     
 
