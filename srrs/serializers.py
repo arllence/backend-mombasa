@@ -77,8 +77,11 @@ class FetchRecruitSerializer(serializers.ModelSerializer):
             approve = False
 
             if "SLT" in  roles:
+                preferred_slt = obj.preferred_slt or ''
+                if preferred_slt:
+                    preferred_slt = str(obj.preferred_slt.id)
                 try:
-                    if str(obj.department.slt.id) == user_id:
+                    if str(obj.department.slt.id) == user_id or preferred_slt == user_id:
                         if obj.is_slt_approved:
                             approve = False
                         else: 

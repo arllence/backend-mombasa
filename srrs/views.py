@@ -272,11 +272,10 @@ class SrrsViewSet(viewsets.ViewSet):
                 temporary_task_assignment_to = payload['temporary_task_assignment_to']
                 ohc = payload.get('ohc') or None
                 hr_partner = payload.get('hr_partner') or None
+                preferred_slt = payload.get('preferred_slt') or None
                 replacement = payload.get('replacement_details')
 
                 default_status = "EDITED"
-
-
 
                 # Check temporary hire period
                 if position_type == 'Temporary':
@@ -330,6 +329,12 @@ class SrrsViewSet(viewsets.ViewSet):
                         hr_partner = get_user_model().objects.get(id=hr_partner)
                     except Exception as e:
                         return Response({"details": "Unknown HR partner "}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                if preferred_slt:
+                    try:
+                        preferred_slt = get_user_model().objects.get(id=preferred_slt)
+                    except Exception as e:
+                        return Response({"details": "Unknown preferred slt "}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 if not qualifications:
@@ -369,6 +374,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         "period_to": period_to,
                         "ohc": ohc,
                         "hr_partner": hr_partner,
+                        "preferred_slt": preferred_slt,
                         "filling_date": filling_date,
                         "temporary_task_assignment_to": temporary_task_assignment_to,
                     }  
@@ -456,9 +462,13 @@ class SrrsViewSet(viewsets.ViewSet):
                             subject = f"Recruitment Request {recruit.uid} Resubmitted [SRRS-AKHK]"
                             message = f"Hello, \n\nA recruit request of id: {recruit.uid}, from department: {department.name}, for position: {recruit.position_title}\nhas been resubmitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nSRRS-AKHK"
 
+                            emails = [department.slt.email]
+                            if preferred_slt:
+                                emails.append(preferred_slt.email)
+
                             try:
                                 mail = {
-                                    "email" : [department.slt.email], 
+                                    "email" : emails, 
                                     "subject" : subject,
                                     "message" : message,
                                 }
@@ -669,17 +679,12 @@ class SrrsViewSet(viewsets.ViewSet):
                         final_resp += list(resp)
 
                     if "SLT" in roles:
-                        # resp = []
-                        # if "HOF" in roles:
+                        # resp = models.Recruit.objects.filter(
+                        #     Q(is_deleted=False) & Q(department__slt=authenticated_user) & Q(is_slt_approved=False)).order_by('-date_created')
 
-                        #     if query == 'pending':
-                        #         resp = models.Recruit.objects.filter((Q(department__slt=authenticated_user) & Q(is_slt_approved=False)) |(Q(is_hof_approved=False) & Q(is_hhr_approved=True)), is_deleted=False).order_by('-date_created')
-
-                        #     else:
-                        #         resp = models.Recruit.objects.filter((Q(department__slt=authenticated_user) & Q(is_slt_approved=False)) |(Q(is_hof_approved=False) & Q(is_hhr_approved=True)), is_deleted=False).order_by('-date_created')
-
-                        # else:
-                        resp = models.Recruit.objects.filter(Q(is_deleted=False) & Q(department__slt=authenticated_user) & Q(is_slt_approved=False)).order_by('-date_created')
+                        resp = models.Recruit.objects.filter(
+                            Q(department__slt=authenticated_user) | 
+                            Q(preferred_slt=authenticated_user), is_slt_approved=False, is_deleted=False).order_by('-date_created')
 
                         final_resp += list(resp)
 
@@ -842,9 +847,10 @@ class SrrsViewSet(viewsets.ViewSet):
                     forward_to_emails = []
                     previous_office_emails = []
                     notify_hhr = False
+                    touched = False
 
                     if 'SLT' in roles:
-                        if recruit.department.slt == authenticated_user and not recruit.is_slt_approved:
+                        if (recruit.department.slt == authenticated_user or recruit.preferred_slt == authenticated_user) and not recruit.is_slt_approved:
                             recruit.is_slt_approved = True
                             new_status = "SLT APPROVED"
                             forward_to = ["HHR"]
@@ -858,14 +864,17 @@ class SrrsViewSet(viewsets.ViewSet):
                                 recruit.slt_comments = comments
 
                             notify_hhr = True
+                            touched = True
 
-                    if 'HHR' in roles or 'HR' in roles:
+                    if ('HHR' in roles or 'HR' in roles) and not touched:
                         if recruit.is_slt_approved:
                             recruit.is_hhr_approved = True
                             new_status = "HR APPROVED"
                             forward_to = ["HOF","FINANCE"]
                             previous_office = []
                             previous_office_emails = [recruit.department.slt.email]
+                            if recruit.preferred_slt:
+                                previous_office_emails.append(recruit.preferred_slt.email)
 
                             if comments:
                                 recruit.hhr_comments = comments
@@ -876,8 +885,10 @@ class SrrsViewSet(viewsets.ViewSet):
                                     status=status.HTTP_400_BAD_REQUEST)
                                 
                                 recruit.replacement_details = replacement
+                            
+                            touched = True
 
-                    if 'HOF' in roles:
+                    if 'HOF' in roles and not touched:
                         if recruit.is_hhr_approved:
                             recruit.is_hof_approved = True
                             new_status = "FINANCE APPROVED"
@@ -914,13 +925,15 @@ class SrrsViewSet(viewsets.ViewSet):
                                     if recruit.hr_partner:
                                         previous_office_emails.append(recruit.hr_partner.email)
 
+                                touched = True
+
                             except Exception as e:
                                 logger.error(e)
 
                             if comments:
                                 recruit.hof_comments = comments
 
-                    if 'CEO' in roles:
+                    if 'CEO' in roles and not touched:
                         if recruit.is_hof_approved:
                             recruit.is_ceo_approved = True
                             new_status = "CEO APPROVED"
@@ -931,6 +944,8 @@ class SrrsViewSet(viewsets.ViewSet):
                                         previous_office_emails.append(recruit.hr_partner.email)
                             if comments:
                                 recruit.ceo_comments = comments
+
+                            touched = True
 
                     
                     recruit.status = new_status
