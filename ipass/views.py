@@ -61,12 +61,15 @@ class IpassViewSet(viewsets.ViewSet):
                 illness_severity = payload['illness_severity']
                 patient_summary = payload['patient_summary']
                 action_list = payload['action_list']
-                situation_awareness = payload['situation_awareness']
+                attestation = payload['attestation']
                 synthesis_by_receiver = payload.get('synthesis_by_receiver')
                 acknowledgement = payload.get('acknowledgement')
                 bio = payload['bio']
                 handover_to = payload['handover_to']
                 uid = shared_fxns.generate_unique_identifier()
+
+                if not attestation:
+                    return Response({"details": "Attestation required"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     handover_to = get_user_model().objects.get(id=handover_to)
@@ -83,7 +86,7 @@ class IpassViewSet(viewsets.ViewSet):
                         "illness_severity": illness_severity,
                         "patient_summary": patient_summary,
                         "action_list": action_list,
-                        "situation_awareness": situation_awareness,
+                        "attestation": attestation,
                         "synthesis_by_receiver": synthesis_by_receiver,
                         "acknowledgement": acknowledgement,
                         "bio": bio
@@ -176,11 +179,14 @@ class IpassViewSet(viewsets.ViewSet):
                 illness_severity = payload['illness_severity']
                 patient_summary = payload['patient_summary']
                 action_list = payload['action_list']
-                situation_awareness = payload['situation_awareness']
+                attestation = payload['attestation']
                 synthesis_by_receiver = payload.get('synthesis_by_receiver')
                 acknowledgement = payload.get('acknowledgement')
                 bio = payload['bio']
                 handover_to = payload['handover_to']
+
+                if not attestation:
+                    return Response({"details": "Attestation required"}, status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     handoverInstance = models.Patient.objects.get(id=request_id)
@@ -200,7 +206,7 @@ class IpassViewSet(viewsets.ViewSet):
                         "illness_severity": illness_severity,
                         "patient_summary": patient_summary,
                         "action_list": action_list,
-                        "situation_awareness": situation_awareness,
+                        "attestation": attestation,
                         "synthesis_by_receiver": synthesis_by_receiver,
                         "acknowledgement": acknowledgement
                     } 

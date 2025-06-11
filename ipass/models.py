@@ -10,9 +10,9 @@ class Patient(models.Model):
     admission_no = models.CharField(max_length=255)
     status = models.CharField(max_length=255, default='PENDING')
     illness_severity = models.CharField(max_length=255)
-    patient_summary = models.JSONField()
-    action_list = models.JSONField()
-    situation_awareness = models.JSONField()
+    patient_summary = models.TextField(null=True, blank=True)
+    action_list = models.TextField(null=True, blank=True)
+    # situation_awareness = models.JSONField()
     synthesis_by_receiver = models.TextField(null=True, blank=True)
     acknowledgement = models.JSONField(null=True, blank=True)
     bio = models.JSONField()
@@ -25,6 +25,7 @@ class Patient(models.Model):
        related_name="handover_to"
     )
     handover_acceptance_date = models.DateTimeField(null=True, blank=True)
+    attestation = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 
