@@ -84,8 +84,8 @@ class TrsViewSet(viewsets.ViewSet):
 
                 # find difference in dates / validate dates
                 hours = shared_fxns.find_date_difference(str(today_date.strftime('%Y-%m-%d')),departure_date,'hours')
-                # if hours < 48:
-                #     return Response({"details": "Request to be made at least 48hrs before travel date"}, status=status.HTTP_400_BAD_REQUEST)
+                if hours < 48:
+                    return Response({"details": "Request to be made at least 48hrs before travel date"}, status=status.HTTP_400_BAD_REQUEST)
 
                 exempted = ['HOD','HOF','CEO']
 
