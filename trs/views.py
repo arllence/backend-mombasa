@@ -86,8 +86,24 @@ class TrsViewSet(viewsets.ViewSet):
                 hours = shared_fxns.find_date_difference(str(today_date.strftime('%Y-%m-%d')),departure_date,'hours')
                 if hours < 48:
                     return Response({"details": "Request to be made at least 48hrs before travel date"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    department = SRRSDepartment.objects.get(id=department)
+                except Exception as e:
+                    return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
 
-                exempted = ['HOD','HOF','CEO']
+
+                exempted = ['HOF','CEO']
+
+                if 'HOD' in roles:
+                    is_department_hod = Hods.objects.filter(
+                        Q(department=department) & 
+                        Q(hod=request.user)).exists()
+                    
+                    if is_department_hod:
+                        exempted.append('HOD')
+                    else:
+                        roles.remove('HOD')
 
                 if not send_to:
                     if any(item in exempted for item in roles):
@@ -155,12 +171,6 @@ class TrsViewSet(viewsets.ViewSet):
                         employee_no = authenticated_user.employee_no
                 except Exception as e:
                     pass
-
-                try:
-                    department = SRRSDepartment.objects.get(id=department)
-                except Exception as e:
-                    return Response({"details": "Unknown Department !"}, status=status.HTTP_400_BAD_REQUEST)
-
                 
                 with transaction.atomic():
                     traveler_raw = {
@@ -270,7 +280,10 @@ class TrsViewSet(viewsets.ViewSet):
                         )
 
                     if send_to == 'HOD':
-                        managers_emails = list(get_user_model().objects.filter(Q(groups__name='HOD') & Q(srrs_department=department) ).values_list('email', flat=True))
+                        # managers_emails = list(get_user_model().objects.filter(Q(groups__name='HOD') & Q(srrs_department=department) ).values_list('email', flat=True))
+                        managers_emails = list(Hods.objects.filter(Q(department=department) ).values_list('hod__email', flat=True))
+                        if not managers_emails:
+                            return Response({"details": "Selected Department has no HOD assigned !"}, status=status.HTTP_400_BAD_REQUEST)
 
                     if send_to == 'SLT':
                         if department.slt:
@@ -649,23 +662,23 @@ class TrsViewSet(viewsets.ViewSet):
                 try:
                     resps = []
                     if "HOD" in roles:
-
+                        department_ids = list(Hods.objects.filter(Q(hod=request.user) ).values_list('department__id', flat=True))
                         if query == 'salary-advance':
                             targets = models.AdvanceSalaryRequests.objects.filter(
-                                Q(traveler__department=request.user.srrs_department),is_deleted=False).order_by('-date_created')
+                                Q(traveler__department__in=department_ids),is_deleted=False).order_by('-date_created')
                             resp = [x.traveler for x in targets]
 
                         elif query == 'pending':
                             resp = models.Traveler.objects.filter(
-                                Q(department=request.user.srrs_department) & 
+                                Q(department__in=department_ids) & 
                                 Q(requires_hod_approval=True) , is_hod_approved=False, is_deleted=False).order_by('-date_created')
 
                         else:
-                            resp = models.Traveler.objects.filter((Q(department=request.user.srrs_department) &  Q(requires_hod_approval=True)) |  Q(traveler=authenticated_user), is_deleted=False).order_by('-date_created')
+                            resp = models.Traveler.objects.filter((Q(department__in=department_ids) &  Q(requires_hod_approval=True)) |  Q(traveler=authenticated_user), is_deleted=False).order_by('-date_created')
 
                         resps += resp
 
-                    if "USER_MANAGER" in roles:
+                    if "SUPERUSER" in roles:
                         if query == 'salary-advance':
                             targets = models.AdvanceSalaryRequests.objects.filter(Q(is_deleted=False)).order_by('-date_created')
                             resp = [
