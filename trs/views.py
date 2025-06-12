@@ -78,8 +78,6 @@ class TrsViewSet(viewsets.ViewSet):
                 send_to = payload.get('send_to', None)
                 tid = shared_fxns.generate_unique_identifier()
 
-                if salary_advance_required and not salary_amount_required:
-                    return Response({"details": "Enter Travel Advance Amount"}, status=status.HTTP_400_BAD_REQUEST)
 
                 # Get today's date
                 today_date = datetime.date.today()
@@ -139,9 +137,12 @@ class TrsViewSet(viewsets.ViewSet):
                         for item in advance_requests:
                             salary_amount_required += int(item['amount'])
 
+                        if int(salary_amount_required) < 1:
+                            return Response({"details": "Set advance amount for each employee !"}, status=status.HTTP_400_BAD_REQUEST)
+
                     else:
                         if int(salary_amount_required) < 1:
-                            return Response({"details": "Advance Amount Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"details": "Advance Amount Required"}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 # update employee no
