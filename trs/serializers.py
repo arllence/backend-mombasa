@@ -1,7 +1,7 @@
 import math
 from urllib import request
 from django.db.models import  Q
-from acl.serializers import UsersSerializer, FetchSRRSDepartmentSerializer, FetchDepartmentSerializer
+from acl.serializers import SlimUsersSerializer, UsersSerializer, FetchSRRSDepartmentSerializer, FetchDepartmentSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
 from trs import models
 from rest_framework import serializers
@@ -268,7 +268,15 @@ class CostingSerializer(serializers.Serializer):
     traveler = serializers.CharField(max_length=500)
     bill_settlement_by = serializers.CharField(max_length=500)
     
+class NoteSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    comments = serializers.CharField(style={'type': 'textarea'})
 
+class FetchNoteSerializer(serializers.ModelSerializer):
+    owner = SlimUsersSerializer()
+    class Meta:
+        model = models.Note
+        fields = '__all__'
 
 
 

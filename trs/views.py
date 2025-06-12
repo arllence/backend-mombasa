@@ -1617,7 +1617,106 @@ class TrsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
+
+    @action(methods=["POST","GET"],
+            detail=False,
+            url_path="notes",
+            url_name="notes")
+    def notes(self, request):
+
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        # allowed = ["FMS_ADMIN", "SUPERUSER"]
+
+        # if not any(role in allowed for role in roles):
+        #     return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == "POST":
+
+            payload = request.data
+            roles = user_util.fetchusergroups(request.user.id) 
+
+            serializer = serializers.NoteSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                comment = payload.get('comments')
+
+                try:
+                    travelerInstance = models.Traveler.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown trip"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
                 
+                with transaction.atomic():
+                    raw = {
+                        "owner": request.user,
+                        "traveler": travelerInstance,
+                        "note": comment,
+                    }
+                    models.Note.objects.create(**raw)
+
+                    # Send Note Notifications
+                emails = []
+
+                emails = list(models.StatusChange.objects.filter(Q(traveler=travelerInstance)).values_list('action_by__email', flat=True))
+
+                if travelerInstance.created_by:
+                    emails.append(travelerInstance.created_by.email)
+
+                try:
+                    emails.remove(request.user.email)
+                except:
+                    pass
+
+                subject = f"[TRF] Note Issued for {travelerInstance.tid}"
+                message = f"Hello. \nA note has been added for Trip of id: {travelerInstance.tid} <br>by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.<br>The Note:<br> <i>{comment}.</i><br>"
+
+                uri = f"requests/view/{str(travelerInstance.id)}"
+                link = "http://172.20.0.42:8000/" + uri
+                platform = 'View Travel'
+
+                message_template = read_template("general_template.html")
+                message = message_template.substitute(
+                    CONTENT=message,
+                    LINK=link,
+                    PLATFORM=platform
+                )
+                
+                try:
+                    mail = {
+                        "email" : list(set(emails)), 
+                        "subject" : subject,
+                        "message" : message,
+                        "is_html": True
+                    }
+                    Sendmail.objects.create(**mail)
+                except Exception as e:
+                    logger.error(e)
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.Note.objects.filter(Q(traveler=request_id))
+
+                    resp = serializers.FetchNoteSerializer(
+                        resp, many=True, context={"user_id":request.user.id}).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response([], status=status.HTTP_200_OK)           
     
    
 class TRSReportsViewSet(viewsets.ViewSet):

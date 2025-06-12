@@ -212,3 +212,25 @@ class Costing(models.Model):
 
     class Meta:
         db_table = u'"{}\".\"costings"'.format(settings.TRAVEL_REQUEST_SYSTEM)
+
+
+class Note(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="traveler_note_by"
+    )
+    traveler = models.ForeignKey(
+        Traveler, on_delete=models.DO_NOTHING,
+        related_name="note_traveler_instance"
+    )
+    note = models.TextField()
+   
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.traveler.uid)
+
+    class Meta:
+        db_table = u'"{}\".\"notes"'.format(settings.TRAVEL_REQUEST_SYSTEM)
