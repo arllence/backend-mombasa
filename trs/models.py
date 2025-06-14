@@ -27,6 +27,11 @@ class Traveler(models.Model):
        related_name="rejected_by",
        null=True, blank=True
     )
+    preferred_hod = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="preferred_hod",
+       null=True, blank=True
+    )
     department = models.ForeignKey(
        SRRSDepartment, on_delete=models.DO_NOTHING, 
        related_name="department",

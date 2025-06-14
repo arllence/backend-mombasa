@@ -75,8 +75,15 @@ class TrsViewSet(viewsets.ViewSet):
                 requesting_for = payload.get('requesting_for')
                 travel_cost = payload.get('travel_cost')
                 travel_cost_items = payload.get('travel_cost_items')
+                preferred_hod = payload.get('preferred_hod')
                 send_to = payload.get('send_to', None)
                 tid = shared_fxns.generate_unique_identifier()
+
+                if preferred_hod:
+                    try:
+                        preferred_hod = User.objects.get(id=preferred_hod)
+                    except:
+                        return Response({"details": "Unknown preferred HOD !"}, status=status.HTTP_400_BAD_REQUEST)
 
 
                 # Get today's date
@@ -184,7 +191,8 @@ class TrsViewSet(viewsets.ViewSet):
                         "salary_advance_required": salary_advance_required,
                         "tid": tid,
                         "travel_cost": travel_cost,
-                        "travel_cost_items": travel_cost_items
+                        "travel_cost_items": travel_cost_items,
+                        "preferred_hod": preferred_hod
                     }  
 
                     if is_individual:
@@ -281,7 +289,10 @@ class TrsViewSet(viewsets.ViewSet):
 
                     if send_to == 'HOD':
                         # managers_emails = list(get_user_model().objects.filter(Q(groups__name='HOD') & Q(srrs_department=department) ).values_list('email', flat=True))
-                        managers_emails = list(Hods.objects.filter(Q(department=department) ).values_list('hod__email', flat=True))
+                        if preferred_hod:
+                            managers_emails = [preferred_hod.email]
+                        else:
+                            managers_emails = list(Hods.objects.filter(Q(department=department) ).values_list('hod__email', flat=True))
                         if not managers_emails:
                             return Response({"details": "Selected Department has no HOD assigned !"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -428,6 +439,7 @@ class TrsViewSet(viewsets.ViewSet):
                 requesting_for = payload.get('requesting_for')
                 travel_cost = payload.get('travel_cost')
                 travel_cost_items = payload.get('travel_cost_items')
+                preferred_hod = payload.get('preferred_hod')
 
 
                 if requesting_for == 'OTHERS':
@@ -485,6 +497,13 @@ class TrsViewSet(viewsets.ViewSet):
                     traveler = models.Traveler.objects.get(id=record_id)
                 except Exception as e:
                     return Response({"details": "Unknown Travel !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if preferred_hod:
+                    try:
+                        preferred_hod = User.objects.get(id=preferred_hod)
+                    except:
+                        return Response({"details": "Unknown preferred HOD !"}, status=status.HTTP_400_BAD_REQUEST)
+                
 
                 
                 with transaction.atomic():
@@ -498,7 +517,8 @@ class TrsViewSet(viewsets.ViewSet):
                         "requesting_for": requesting_for,
                         "salary_advance_required": salary_advance_required,
                         "travel_cost": travel_cost,
-                        "travel_cost_items": travel_cost_items
+                        "travel_cost_items": travel_cost_items,
+                        "preferred_hod": preferred_hod,
                     }  
 
                     if is_individual:
@@ -544,23 +564,26 @@ class TrsViewSet(viewsets.ViewSet):
                     models.StatusChange.objects.create(**raw)
 
                     # Notify CEO / FINANCE
-                    managers_emails = list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
-                    if traveler.requires_hof_approval:
-                        list(managers_emails) + list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
+                    # managers_emails = list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
+                    # if traveler.requires_hof_approval:
+                    #     list(managers_emails) + list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
 
-                    # Notify selected send to
-                    subject = f"Travel Request {traveler.tid} Resubmitted [TRF-AKHK]"
-                    message = f"Hello, \nTravel request: {traveler.tid} has been resubmitted by\n{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
+                    # # Notify selected send to
+                    # subject = f"Travel Request {traveler.tid} Resubmitted [TRF-AKHK]"
+                    # message = f"Hello, \nTravel request: {traveler.tid} has been resubmitted by\n{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
 
-                    try:
-                        mail = {
-                            "email" :  list(set(managers_emails)), 
-                            "subject" : subject,
-                            "message" : message,
-                        }
-                        Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        logger.error(e)
+                    if preferred_hod:
+                        subject = f"Travel Request {traveler.tid} Pending Approval [TRF-AKHK]"
+                        message = f"Hello, \nTravel request: {traveler.tid} has been submitted by\n{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nTRS-AKHK"
+                        try:
+                            mail = {
+                                "email" :  [preferred_hod.email], 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            Sendmail.objects.create(**mail)
+                        except Exception as e:
+                            logger.error(e)
    
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Travel Request resubmitted", f"Travel Request Id: {traveler.id}")
@@ -674,7 +697,9 @@ class TrsViewSet(viewsets.ViewSet):
                                 Q(requires_hod_approval=True) , is_hod_approved=False, is_deleted=False).order_by('-date_created')
 
                         else:
-                            resp = models.Traveler.objects.filter((Q(department__in=department_ids) &  Q(requires_hod_approval=True)) |  Q(traveler=authenticated_user), is_deleted=False).order_by('-date_created')
+                            resp = models.Traveler.objects.filter(
+                                (Q(department__in=department_ids) &  Q(requires_hod_approval=True)) |  
+                                Q(traveler=authenticated_user) |  Q(preferred_hod=authenticated_user), is_deleted=False).order_by('-date_created')
 
                         resps += resp
 
