@@ -1315,6 +1315,23 @@ class TrsViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
+    @action(methods=["GET"],
+            detail=False,
+            url_path="is-department-hod",
+            url_name="is-department-hod")
+    def is_department_hod(self, request):
+        department_id = request.query_params.get('department_id') or request.user.srrs_department
+        roles = user_util.fetchusergroups(request.user.id)
+        if 'HOD' in roles:
+            is_department_hod = Hods.objects.filter(
+                Q(department=department_id) & 
+                Q(hod=request.user)).exists()
+            
+            if is_department_hod:
+                return Response(True, status=status.HTTP_200_OK)
+
+        return Response(False, status=status.HTTP_200_OK)
+    
     @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
             url_path="forward-request",
