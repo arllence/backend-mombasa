@@ -392,7 +392,7 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
             role = Group.objects.get(name=role_name)
         except (ValidationError, ObjectDoesNotExist):
             return Response({'details': 'Role does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-        selected_users = get_user_model().objects.filter(groups__name=role.name)
+        selected_users = get_user_model().objects.filter(groups__name=role.name).order_by('first_name')
         user_info = serializers.UsersSerializer(selected_users, many=True)
         return Response(user_info.data, status=status.HTTP_200_OK)
     
