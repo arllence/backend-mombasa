@@ -170,6 +170,7 @@ class SubDepartment(models.Model):
     )
 
     name = models.CharField(max_length=500)
+    is_privileges = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

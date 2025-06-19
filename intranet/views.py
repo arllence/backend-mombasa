@@ -420,6 +420,9 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             return paginator.get_paginated_response(serializer.data)
                  
         elif request.method == "DELETE":
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
 
             request_id = request.query_params.get('request_id')
             request_ids = request.query_params.get('request_ids')
@@ -606,6 +609,9 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
 
             request_id = request.query_params.get('request_id')
             request_ids = request.query_params.get('request_ids')
@@ -984,6 +990,9 @@ class QuickLinksViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
 
             request_id = request.query_params.get('request_id')
             if not request_id:
@@ -1084,6 +1093,9 @@ class QipsViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
 
             request_id = request.query_params.get('request_id')
             if not request_id:
@@ -1183,6 +1195,9 @@ class QipsViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
 
             request_id = request.query_params.get('request_id')
             if not request_id:
@@ -1283,6 +1298,9 @@ class QipsViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
 
             request_id = request.query_params.get('request_id')
             if not request_id:
@@ -1319,6 +1337,7 @@ class DepartmentsViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 department_id = payload['department_id']
                 sub_departments = payload['sub_departments']
+                is_privileges = payload.get('is_privileges') or False
 
                 try:
                     departmentInstance = models.SRRSDepartment.objects.get(id=department_id)
@@ -1328,8 +1347,9 @@ class DepartmentsViewSet(viewsets.ViewSet):
                 with transaction.atomic():
                     for sub_department in sub_departments:
                         models.SubDepartment.objects.create(
-                            name=sub_department,
+                            name=sub_department['name'],
                             department=departmentInstance,
+                            is_privileges= True if sub_department['is_privileges'] == 'true' else False,
                             created_by=request.user
                         )
                     
@@ -1389,7 +1409,11 @@ class DepartmentsViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-
+            roles = user_util.fetchusergroups(request.user.id) 
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
             request_id = request.query_params.get('request_id')
             if not request_id:
                 return Response({"details": "Cannot complete request !"}, 
@@ -1489,7 +1513,10 @@ class DepartmentsViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
             request_id = request.query_params.get('request_id')
             if not request_id:
                 return Response({"details": "Cannot complete request !"}, 
@@ -1588,7 +1615,10 @@ class SurveyViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
             request_id = request.query_params.get('request_id')
             if not request_id:
                 return Response({"details": "Cannot complete request !"}, 
@@ -1687,7 +1717,10 @@ class SurveyViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
             request_id = request.query_params.get('request_id')
             if not request_id:
                 return Response({"details": "Cannot complete request !"}, 
@@ -1787,7 +1820,10 @@ class SurveyViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
             request_id = request.query_params.get('request_id')
             if not request_id:
                 return Response({"details": "Cannot complete request !"}, 
@@ -1804,7 +1840,7 @@ class SurveyViewSet(viewsets.ViewSet):
                 
     @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="links",url_name="links")
     def links(self, request):
-        # roles = user_util.fetchusergroups(request.user.id) 
+        roles = user_util.fetchusergroups(request.user.id) 
 
         if request.method == "POST":
 
@@ -1927,7 +1963,10 @@ class SurveyViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
             request_id = request.query_params.get('request_id')
             if not request_id:
                 return Response({"details": "Cannot complete request !"}, 
@@ -2026,6 +2065,9 @@ class ModuleViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
 
             request_id = request.query_params.get('request_id')
             if not request_id:
@@ -2125,6 +2167,9 @@ class ModuleViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
 
             request_id = request.query_params.get('request_id')
             if not request_id:
@@ -2225,6 +2270,9 @@ class ModuleViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
 
             request_id = request.query_params.get('request_id')
             if not request_id:
@@ -2242,7 +2290,7 @@ class ModuleViewSet(viewsets.ViewSet):
                 
     @action(methods=["POST","PUT","DELETE", "GET"], detail=False, url_path="links",url_name="links")
     def links(self, request):
-        # roles = user_util.fetchusergroups(request.user.id) 
+        roles = user_util.fetchusergroups(request.user.id) 
 
         if request.method == "POST":
 
@@ -2365,6 +2413,9 @@ class ModuleViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
+            if "ICT" not in roles:
+                return Response({"details": "Permission Denied"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
 
             request_id = request.query_params.get('request_id')
             if not request_id:
