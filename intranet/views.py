@@ -861,13 +861,21 @@ class DocumentManagerViewSet(viewsets.ViewSet):
         elif request.method == "GET":
 
             request_id = request.query_params.get('request_id')
+            query = request.query_params.get('q')
 
             if request_id:
                 documents = models.GeneralDocument.objects.get(Q(id=request_id) & Q(is_deleted=False))
 
             else:
                 if "SUPERUSER" in roles or "ICT" in roles:
-                    documents = models.GeneralDocument.objects.filter(Q(is_deleted=False)).order_by('title')
+                    if query:
+                        documents = models.GeneralDocument.objects.filter(
+                            Q(tag__icontains=query) | 
+                            Q(file_name__icontains=query) | 
+                            Q(title__icontains=query),
+                            is_deleted=False).order_by('title')
+                    else:
+                        documents = models.GeneralDocument.objects.filter(Q(is_deleted=False)).order_by('title')
                 else:
                     documents = []
             
