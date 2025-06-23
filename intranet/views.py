@@ -869,6 +869,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             else:
                 if "SUPERUSER" in roles or "ICT" in roles:
                     if query:
+                        query = query.strip()
                         documents = models.GeneralDocument.objects.filter(
                             Q(tag__icontains=query) | 
                             Q(file_name__icontains=query) | 
