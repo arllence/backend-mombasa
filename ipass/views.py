@@ -445,6 +445,71 @@ class IpassViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
             
+    
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
+            detail=False,
+            url_path="email-exempt",
+            url_name="email-exempt")
+    def email_exempt(self, request):
+        if request.method == "POST":
+            
+            with transaction.atomic():
+                is_existing = models.EmailExempt.objects.filter(Q(doctor=request.user)).exists()
+                if not is_existing:
+                    raw = {
+                        "doctor": request.user,
+                        "created_by": request.user
+                    }
+
+                    models.EmailExempt.objects.create(**raw)
+
+                return Response("Success", status=status.HTTP_200_OK)
+            
+
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    request = models.EmailExempt.objects.get(Q(id=request_id))
+                    request = serializers.FetchPlatformDoctorSerializer(request, many=False).data
+                    return Response(request, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+
+                    request = models.EmailExempt.objects.filter(Q(doctor=request.user)).order_by('-date_created')
+                    request = serializers.FetchPlatformDoctorSerializer(request, many=True).data
+                    return Response(request, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    models.EmailExempt.objects.get(id=request_id).delete()
+                    return Response('200', status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    models.EmailExempt.objects.get(doctor=request.user).delete()
+                    return Response('200', status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+          
    
 class ReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]

@@ -59,6 +59,28 @@ class PlatformDoctor(models.Model):
         db_table = u'"{}\".\"platform_doctors"'.format(settings.IPASS)
 
 
+class EmailExempt(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    doctor = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="ipass_email_exempt",
+    )
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="ipass_email_exempt_created_by"
+    )
+
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.doctor.first_name
+    
+    class Meta:
+        db_table = u'"{}\".\"email_exempts"'.format(settings.IPASS)
+
+
 class StatusChange(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     patient = models.ForeignKey(
