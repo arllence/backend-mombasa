@@ -150,14 +150,16 @@ class IpassViewSet(viewsets.ViewSet):
                             APPROVE=approve,
                             REJECT=reject
                         )
-                        mail = {
-                            "email" : [handover_to.email], 
-                            "subject" : subject,
-                            "message" : msg,
-                            "is_html": True
-                        }
+                        is_exempted = models.EmailExempt.objects.filter(Q(doctor=handover_to)).exists()
+                        if not is_exempted:
+                            mail = {
+                                "email" : [handover_to.email], 
+                                "subject" : subject,
+                                "message" : msg,
+                                "is_html": True
+                            }
 
-                        Sendmail.objects.create(**mail)
+                            Sendmail.objects.create(**mail)
 
                     except Exception as e:
                         logger.error(e)
