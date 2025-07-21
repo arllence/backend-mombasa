@@ -1817,6 +1817,11 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     issueInstance.assigned_to = None
                     issueInstance.save()
 
+                    models.Assignees.objects.filter(
+                        Q(issue=issueInstance) &
+                        Q(assignee=issueInstance)
+                    ).delete()
+
                     # track status change
                     raw = {
                         "issue": issueInstance,
