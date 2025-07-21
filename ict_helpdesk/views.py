@@ -1776,6 +1776,85 @@ class HelpDeskViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": serializer.errors}, 
                                 status=status.HTTP_400_BAD_REQUEST)    
+            
+    @action(methods=["POST"],
+            detail=False,
+            url_path="out-of-scope",
+            url_name="out-of-scope")
+    def out_of_scope(self, request):
+
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.MarkAsCompleteSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+
+                try:
+                    issueInstance = models.Issue.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown issue"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    issueInstance.status = 'SUBMITTED'
+                    issueInstance.assigned_to = None
+                    issueInstance.save()
+
+                    # track status change
+                    raw = {
+                        "issue": issueInstance,
+                        "status": 'OUT OF SCOPE',
+                        "status_for": 'ICT_ADMIN',
+                        "action_by": authenticated_user
+                    }
+
+                    models.StatusChange.objects.create(**raw)
+
+
+                    # Notify Admins
+                    emails = list(models.StatusChange.objects.filter(Q(issue=issueInstance) & Q(status='ASSIGNED')).values_list('action_by__email', flat=True))
+
+                    subject = f"[ICT HELPDESK] Issue {issueInstance.uid}  Out Of Scope  "
+                    message = f"Hello. \nIssue of id: {issueInstance.uid} assigned to {authenticated_user.first_name} {authenticated_user.last_name}\n has been marked as: OUT OF SCOPE on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}. \nPlease Reassign to appropriate team member"
+
+                    uri = f"requests/view/{str(issueInstance.id)}"
+                    link = "http://172.20.0.42:8011/" + uri
+                    platform = 'View Issue'
+
+                    message_template = read_template("general_template.html")
+                    message = message_template.substitute(
+                        CONTENT=message,
+                        LINK=link,
+                        PLATFORM=platform
+                    )
+                    
+                    try:
+                        mail = {
+                            "email" : list(set(emails)), 
+                            "subject" : subject,
+                            "message" : message,
+                            "is_html": True
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+                user_util.log_account_activity(
+                    authenticated_user, authenticated_user, "Issue out of scope", 
+                    f"out-of-scope Executed UID: {str(issueInstance.id)}")
+                
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST) 
 
     @action(methods=["POST"],
             detail=False,
