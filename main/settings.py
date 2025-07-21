@@ -48,18 +48,10 @@ INSTALLED_APPS = [
     'django_crontab',
     'rest_framework',
     'corsheaders',
-    'intranet',
-    'acl',
-    'mms',
-    'trs',
-    'srrs',
-    'asa',
-    'ams',
-    'sls',
-    'dbmanager',
-    'fms',
-    'cms',
-    'mhd', 'system_directory', 'smr', 'ict_helpdesk','ipass'
+    'intranet', 'acl', 'mms', 'trs', 'srrs',
+    'asa', 'ams', 'sls', 'dbmanager', 'fms', 'cms',
+    'mhd', 'system_directory', 'smr', 'ict_helpdesk', 
+    'ipass', 'invoice_tracking'
 ]
 
 MIDDLEWARE = [
@@ -134,6 +126,7 @@ SYSTEM_DIRECTORY = 'system_directory'
 STAFF_MEAL_REQUEST = 'smr'
 ICT_HELPDESK = 'ict_helpdesk'
 IPASS = 'ipass'
+INVOICE_TRACKING = 'invoice_tracking'
 
 
 
