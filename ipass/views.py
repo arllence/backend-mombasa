@@ -546,7 +546,7 @@ class ReportsViewSet(viewsets.ViewSet):
         q_filters = Q()
 
         if doctor:
-            q_filters &= Q(handover_to=doctor)
+            q_filters &= (Q(handover_to=doctor) | Q(handover_by=doctor))
 
         if date_from or date_to:
             if not date:
