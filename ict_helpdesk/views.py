@@ -1589,6 +1589,16 @@ class HelpDeskViewSet(viewsets.ViewSet):
                             return Response({"details": "Already Assigned"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
                         
+                        is_out_of_scope = models.StatusChange.objects.filter(
+                            Q(issue=issueInstance) & 
+                            Q(status='OUT OF SCOPE') &
+                            Q(action_by=assigned_to) 
+                        ).exists()
+
+                        if is_out_of_scope:
+                            return Response({"details": f"{assigned_to.first_name} already marked this issue as out of scope"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+                        
                         assignees.append(assigned_to)
 
                     except (ValidationError, ObjectDoesNotExist):
