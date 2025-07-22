@@ -59,6 +59,7 @@ class CoreViewSet(viewsets.ViewSet):
                 weigh_bill_no = payload['weigh_bill_no']
                 courier = payload['courier']
                 collector = payload['collector']
+                notes = payload.get('notes')
 
                 try:
                     facility = Facility.objects.get(id=facility)
@@ -72,7 +73,8 @@ class CoreViewSet(viewsets.ViewSet):
                         "facility": facility,
                         "weigh_bill_no": weigh_bill_no,
                         "courier": courier,
-                        "collector": collector
+                        "collector": collector,
+                        "notes": notes
                     } 
 
                     trackingInstance = models.Tracking.objects.create(
@@ -108,6 +110,7 @@ class CoreViewSet(viewsets.ViewSet):
                 weigh_bill_no = payload['weigh_bill_no']
                 courier = payload['courier']
                 collector = payload['collector']
+                notes = payload.get('notes')
 
                 try:
                     trackedInstance = models.Tracking.objects.get(id=request_id)
@@ -125,7 +128,8 @@ class CoreViewSet(viewsets.ViewSet):
                         "facility": facility,
                         "weigh_bill_no": weigh_bill_no,
                         "courier": courier,
-                        "collector": collector
+                        "collector": collector,
+                        "notes": notes
                     } 
 
                     models.Tracking.objects.filter(Q(id=request_id)).update(
@@ -179,6 +183,7 @@ class CoreViewSet(viewsets.ViewSet):
 
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
+            facility = request.query_params.get('facility')
             weigh_bill_no = request.query_params.get('weigh_bill_no')
             query = request.query_params.get('q')
 
@@ -218,7 +223,12 @@ class CoreViewSet(viewsets.ViewSet):
                             Q(status='RECEIVED')).order_by('-date_created')
                         
                     else:
-                        resp = models.Tracking.objects.all().order_by('-date_created')
+                        if facility:
+                            resp = models.Tracking.objects.filter(
+                            Q(facility=facility)).order_by('-date_created')
+                        else:
+                            resp = models.Tracking.objects.all().order_by('-date_created')
+                    
 
                     paginator = PageNumberPagination()
                     paginator.page_size = 50

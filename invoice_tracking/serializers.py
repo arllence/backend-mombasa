@@ -30,9 +30,9 @@ class SlimFetchTrackingSerializer(serializers.ModelSerializer):
 
 class FetchTrackingSerializer(serializers.ModelSerializer):
     facility = FetchFacilitySerializer()
-    created_by = UsersSerializer()
+    created_by = SlimUsersSerializer()
     is_creator = serializers.SerializerMethodField()
-    is_assigned = serializers.SerializerMethodField()
+    # is_assigned = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
     
     class Meta:
