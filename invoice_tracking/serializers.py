@@ -96,7 +96,6 @@ class FetchCancellationSerializer(serializers.ModelSerializer):
     facility = FetchFacilitySerializer()
     created_by = UsersSerializer()
     is_creator = serializers.SerializerMethodField()
-    is_assigned = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
     
     class Meta:
