@@ -308,7 +308,7 @@ class CoreViewSet(viewsets.ViewSet):
 
                     # track status change
                     raw = {
-                        "tracked": itemInstance,
+                        "cancelled": itemInstance,
                         "status": "SUBMITTED",
                         "action_by": authenticated_user
                     }
@@ -361,7 +361,7 @@ class CoreViewSet(viewsets.ViewSet):
 
                     # track status change
                     raw = {
-                        "tracked": itemInstance,
+                        "cancelled": itemInstance,
                         "status": "EDITED",
                         "action_by": authenticated_user
                     }
@@ -394,7 +394,7 @@ class CoreViewSet(viewsets.ViewSet):
 
                 # track status change
                 raw = {
-                    "tracked": itemInstance,
+                    "cancelled": itemInstance,
                     "status": "RECEIVED",
                     "action_by": authenticated_user
                 }
@@ -407,6 +407,7 @@ class CoreViewSet(viewsets.ViewSet):
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             invoice_no = request.query_params.get('invoice_no')
+            facility = request.query_params.get('facility')
             query = request.query_params.get('q')
 
             if request_id:
@@ -434,18 +435,29 @@ class CoreViewSet(viewsets.ViewSet):
                     print(e)
                     logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
             else:
                 try:
-                    if query == 'pending':
-                        resp = models.Cancellation.objects.filter(
-                            Q(status='PENDING')).order_by('-date_created')
-                        
-                    elif query == 'received':
-                        resp = models.Cancellation.objects.filter(
-                            Q(status='RECEIVED')).order_by('-date_created')
-                        
+                    if query:
+                        if query == 'pending':
+                            resp = models.Cancellation.objects.filter(
+                                Q(status='PENDING')).order_by('-date_created')
+                            
+                        elif query == 'received':
+                            resp = models.Cancellation.objects.filter(
+                                Q(status='RECEIVED')).order_by('-date_created')
+                            
+                        else:
+                            resp = models.Cancellation.objects.filter(
+                                Q(invoice_no__icontains=query) |
+                                Q(action__icontains=query) |
+                                Q(reason__icontains=query)).order_by('-date_created')
                     else:
-                        resp = models.Cancellation.objects.all().order_by('-date_created')
+                        if facility:
+                            resp = models.Cancellation.objects.filter(
+                            Q(facility=facility)).order_by('-date_created')
+                        else:
+                            resp = models.Cancellation.objects.all().order_by('-date_created')
 
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
