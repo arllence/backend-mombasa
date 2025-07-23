@@ -214,14 +214,21 @@ class CoreViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    if query == 'pending':
-                        resp = models.Tracking.objects.filter(
-                            Q(status='PENDING')).order_by('-date_created')
-                        
-                    elif query == 'received':
-                        resp = models.Tracking.objects.filter(
-                            Q(status='RECEIVED')).order_by('-date_created')
-                        
+                    if query:
+                        if query == 'pending':
+                            resp = models.Tracking.objects.filter(
+                                Q(status='PENDING')).order_by('-date_created')
+                            
+                        elif query == 'received':
+                            resp = models.Tracking.objects.filter(
+                                Q(status='RECEIVED')).order_by('-date_created')
+                            
+                        else:
+                            resp = models.Tracking.objects.filter(
+                                Q(weigh_bill_no__icontains=query) |
+                                Q(courier__icontains=query) |
+                                Q(collector__icontains=query)).order_by('-date_created')
+                            
                     else:
                         if facility:
                             resp = models.Tracking.objects.filter(
