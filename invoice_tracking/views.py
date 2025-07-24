@@ -654,7 +654,7 @@ class ReportsViewSet(viewsets.ViewSet):
 
 
         
-class TRSAnalyticsViewSet(viewsets.ViewSet):
+class AnalyticsViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
@@ -667,30 +667,20 @@ class TRSAnalyticsViewSet(viewsets.ViewSet):
     def general(self, request):
         roles = user_util.fetchusergroups(request.user.id)
 
-        if 'USER' in roles:
-            requests = models.Traveler.objects.filter(Q(is_deleted=False) & Q(traveler=request.user)).count()
-            # requested = models.Traveler.objects.filter(Q(status="REQUESTED") & Q(is_deleted=False) & Q(traveler=request.user)).count()
-            requested = models.Traveler.objects.filter(Q(status="REQUESTED") | Q(status="RESUBMITTED") & Q(traveler=request.user), is_deleted=False).count()
-
-            closed = models.Traveler.objects.filter(Q(status="CLOSED") & Q(is_deleted=False) & Q(traveler=request.user)).count()
-            # assigned = models.Traveler.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False) & Q(traveler=request.user)).count()
-            incomplete = models.Traveler.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False) & Q(traveler=request.user)).count()
-        else:
-            requests = models.Traveler.objects.filter(Q(is_deleted=False)).count()
-            requested = models.Traveler.objects.filter(Q(status="REQUESTED") | Q(status="RESUBMITTED"), is_deleted=False).count()
-            closed = models.Traveler.objects.filter(Q(status="CLOSED") & Q(is_deleted=False)).count()
-            assigned = models.Traveler.objects.filter(Q(status="ASSIGNED") & Q(is_deleted=False)).count()
-            incomplete = models.Traveler.objects.filter(Q(status="INCOMPLETE") & Q(is_deleted=False)).count()
-
-        if 'CEO' in roles or 'HOF' in roles:
-            requested = models.Traveler.objects.filter(Q(status="APPROVED"), is_ceo_approved=False, is_deleted=False).count()
+        trackings = {
+            "total" :  models.Tracking.objects.filter(Q(is_deleted=False)).count(),
+            "pending" :  models.Tracking.objects.filter(Q(status="PENDING") & Q(is_deleted=False)).count(),
+            "received" :  models.Tracking.objects.filter(Q(status="RECEIVED") & Q(is_deleted=False)).count(),
+        }
+        cancellations = {
+            "total" :  models.Cancellation.objects.filter(Q(is_deleted=False)).count(),
+            "pending" :  models.Cancellation.objects.filter(Q(status="PENDING") & Q(is_deleted=False)).count(),
+            "approved" :  models.Cancellation.objects.filter(Q(status="APPROVED") & Q(is_deleted=False)).count(),
+        }
 
         resp = {
-            "requests": requests,
-            "requested": requested,
-            "closed": closed,
-            # "assigned": assigned,
-            "incomplete": incomplete,
+            "trackings": trackings,
+            "cancellations": cancellations
         }
 
         return Response(resp, status=status.HTTP_200_OK)
