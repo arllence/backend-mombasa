@@ -169,10 +169,10 @@ class GenericsViewSet(viewsets.ViewSet):
                 payload = json.loads(request.data['payload'])
 
             # track user
-            # try:
-            track_user.get_client_info(request,'ict_helpdesk')
-            # except:
-            #     pass
+            try:
+                track_user.get_client_info(request,'ict_helpdesk')
+            except:
+                pass
 
             serializer = serializers.GenericIssueSerializer(
                     data=payload, many=False)
