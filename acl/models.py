@@ -211,6 +211,7 @@ class TrackUser(models.Model):
     data = models.JSONField()
     app = models.CharField(max_length=255)
     ip = models.CharField(max_length=255)
+    uid = models.CharField(max_length=255, null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -168,11 +168,6 @@ class GenericsViewSet(viewsets.ViewSet):
             else:
                 payload = json.loads(request.data['payload'])
 
-            # track user
-            try:
-                track_user.get_client_info(request,'ict_helpdesk')
-            except:
-                pass
 
             serializer = serializers.GenericIssueSerializer(
                     data=payload, many=False)
@@ -189,6 +184,12 @@ class GenericsViewSet(viewsets.ViewSet):
                 # issue_type = payload['issue_type']
 
                 uid = shared_fxns.generate_unique_identifier()
+
+                # track user
+                try:
+                    track_user.get_client_info(request,'ict_helpdesk', uid)
+                except:
+                    pass
 
                 if not name or not email:
                     return Response({"details": "Name and Email Required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -1118,6 +1119,12 @@ class HelpDeskViewSet(viewsets.ViewSet):
                 issue_type = payload['issue_type']
 
                 uid = shared_fxns.generate_unique_identifier()
+
+                # track user
+                try:
+                    track_user.get_client_info(request, 'ict_helpdesk', uid)
+                except:
+                    pass
 
                 try:
                     department = SRRSDepartment.objects.get(id=department)

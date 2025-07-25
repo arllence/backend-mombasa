@@ -1,7 +1,7 @@
 from django.db import transaction
 from acl.models import TrackUser
 
-def get_client_info(request, app):
+def get_client_info(request, app, uid):
     def get_ip():
         x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
         if x_forwarded_for:
@@ -29,6 +29,7 @@ def get_client_info(request, app):
     with transaction.atomic():
         raw = {
             "ip": get_ip(),
+            "uid": uid,
             "app": app.upper(),
             "data": client_info
         }

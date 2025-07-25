@@ -18,7 +18,7 @@ from mhd import models
 from mhd import serializers
 from mhd.utils import shared_fxns
 from django.db import IntegrityError, DatabaseError
-from acl.utils import user_util
+from acl.utils import track_user, user_util
 from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
 from django.db.models import Sum
 from django.core.mail import send_mail
@@ -241,6 +241,12 @@ class GenericsViewSet(viewsets.ViewSet):
                 subject = payload['subject']
 
                 uid = shared_fxns.generate_unique_identifier()
+
+                # track user
+                try:
+                    track_user.get_client_info(request,'mhd', uid)
+                except:
+                    pass
 
                 if not name or not email:
                     return Response({"details": "Name and Email Required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -1210,6 +1216,7 @@ class MHSViewSet(viewsets.ViewSet):
             payload = json.loads(request.data['payload'])
             attachment = request.FILES.get('attachments', None)
 
+            
             serializer = serializers.IssueSerializer(
                     data=payload, many=False)
             
@@ -1226,6 +1233,12 @@ class MHSViewSet(viewsets.ViewSet):
                 maintenance_type = payload.get('maintenance_type')  
 
                 uid = shared_fxns.generate_unique_identifier()
+
+                # track user
+                try:
+                    track_user.get_client_info(request, 'mhd', uid)
+                except:
+                    pass
 
                 try:
                     department = SRRSDepartment.objects.get(id=department)
