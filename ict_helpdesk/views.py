@@ -30,6 +30,9 @@ from django.db.models import F, ExpressionWrapper, DateTimeField, DurationField
 from rest_framework.pagination import PageNumberPagination
 
 from intranet.serializers import FullFetchDepartmentSerializer
+from acl.utils import track_user
+
+
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
@@ -165,8 +168,11 @@ class GenericsViewSet(viewsets.ViewSet):
             else:
                 payload = json.loads(request.data['payload'])
 
-
-            print("forwarded: ",forwarded)
+            # track user
+            # try:
+            track_user.get_client_info(request,'ict_helpdesk')
+            # except:
+            #     pass
 
             serializer = serializers.GenericIssueSerializer(
                     data=payload, many=False)
@@ -1093,6 +1099,12 @@ class HelpDeskViewSet(viewsets.ViewSet):
 
             payload = json.loads(request.data['payload'])
             attachment = request.FILES.get('attachments', None)
+
+            # track user
+            try:
+                track_user.get_client_info(request,'ict_helpdesk')
+            except:
+                pass
 
             serializer = serializers.IssueSerializer(
                     data=payload, many=False)

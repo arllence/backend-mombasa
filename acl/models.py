@@ -205,3 +205,16 @@ class Sendmail(models.Model):
 
     def __str__(self):
         return str(self.email)
+    
+class TrackUser(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    data = models.JSONField()
+    app = models.CharField(max_length=255)
+    ip = models.CharField(max_length=255)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "track_user"
+
+    def __str__(self):
+        return str(self.ip)

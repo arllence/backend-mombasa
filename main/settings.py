@@ -248,6 +248,7 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
     'Access-Control-Allow-Origin',
 ]
+CORS_ALLOW_CREDENTIALS = True
 
 MAINMEDIA = os.getenv('MAINMEDIA')
 
