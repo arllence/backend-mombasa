@@ -16,7 +16,7 @@ from django.db import transaction
 from fms import models
 from fms import serializers
 from django.db import IntegrityError, DatabaseError
-from acl.utils import user_util
+from acl.utils import track_user, user_util
 from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
 from fms.utils import shared_fxns
 from django.utils import timezone
@@ -151,6 +151,12 @@ class GenericsViewSet(viewsets.ViewSet):
 
 
                 uid = shared_fxns.generate_unique_identifier()
+
+                # track user
+                try:
+                    track_user.get_client_info(request, 'fms', uid)
+                except:
+                    pass
 
                 try:
                     department = SRRSDepartment.objects.get(id=department)
@@ -335,7 +341,11 @@ class FmsViewSet(viewsets.ViewSet):
 
                 uid = shared_fxns.generate_unique_identifier()
 
-
+                # track user
+                try:
+                    track_user.get_client_info(request, 'fms', uid)
+                except:
+                    pass
 
                 try:
                     department = SRRSDepartment.objects.get(id=department)
