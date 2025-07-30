@@ -44,6 +44,7 @@ class Cancellation(models.Model):
     action = models.CharField(max_length=255)
     reason = models.TextField(null=True, blank=True)
     status = models.CharField(max_length=50, default='PENDING')
+    type = models.CharField(max_length=50, null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_deleted = models.BooleanField(default=False)

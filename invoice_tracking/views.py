@@ -286,6 +286,7 @@ class CoreViewSet(viewsets.ViewSet):
                 invoice_no = payload['invoice_no']
                 action = payload['action']
                 reason = payload['reason']
+                type = payload['type']
 
                 try:
                     facility = Facility.objects.get(id=facility)
@@ -299,7 +300,8 @@ class CoreViewSet(viewsets.ViewSet):
                         "facility": facility,
                         "invoice_no": invoice_no,
                         "action": action,
-                        "reason": reason
+                        "reason": reason,
+                        "type": type
                     } 
 
                     itemInstance = models.Cancellation.objects.create(
@@ -335,6 +337,7 @@ class CoreViewSet(viewsets.ViewSet):
                 invoice_no = payload['invoice_no']
                 action = payload['action']
                 reason = payload['reason']
+                type = payload['type']
 
                 try:
                     itemInstance = models.Cancellation.objects.get(id=request_id)
@@ -352,7 +355,8 @@ class CoreViewSet(viewsets.ViewSet):
                         "facility": facility,
                         "invoice_no": invoice_no,
                         "action": action,
-                        "reason": reason
+                        "reason": reason,
+                        "type": type
                     } 
 
                     models.Cancellation.objects.filter(Q(id=request_id)).update(
@@ -388,14 +392,13 @@ class CoreViewSet(viewsets.ViewSet):
                 return Response({"details": "Unknown record"}, status=status.HTTP_400_BAD_REQUEST)
             
             with transaction.atomic():
-                itemInstance.received_on = datetime.datetime.now()
-                itemInstance.status = 'RECEIVED'
+                itemInstance.status = 'APPROVED'
                 itemInstance.save()
 
                 # track status change
                 raw = {
                     "cancelled": itemInstance,
-                    "status": "RECEIVED",
+                    "status": "APPROVED",
                     "action_by": authenticated_user
                 }
 
@@ -605,11 +608,11 @@ class ReportsViewSet(viewsets.ViewSet):
 
     @action(methods=["GET",],
             detail=False,
-            url_path="requests",
-            url_name="requests")
-    def requests(self, request):
+            url_path="trackings",
+            url_name="trackings")
+    def trackings(self, request):
                     
-        doctor = request.query_params.get('doctor')
+        facility = request.query_params.get('facility')
         date_from = request.query_params.get('date_from')
         date_to = request.query_params.get('date_to')
         x_status = request.query_params.get('status')
@@ -629,8 +632,8 @@ class ReportsViewSet(viewsets.ViewSet):
         
         q_filters = Q()
 
-        if doctor:
-            q_filters &= (Q(handover_to=doctor) | Q(handover_by=doctor))
+        if facility:
+            q_filters &= (Q(facility=facility))
 
         if date_from or date_to:
             if not date:
@@ -642,11 +645,63 @@ class ReportsViewSet(viewsets.ViewSet):
 
 
         if q_filters:
-            resp = models.Patient.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            resp = models.Tracking.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
         else:
-            resp = models.Patient.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+            resp = models.Tracking.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
 
-        resp = serializers.FetchPatientSerializer(resp, many=True, context={"user_id":request.user.id}).data
+        resp = serializers.FetchTrackingSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+        return Response(resp, status=status.HTTP_200_OK)
+    
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="cancellations",
+            url_name="cancellations")
+    def cancellations(self, request):
+                    
+        facility = request.query_params.get('facility')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        type = request.query_params.get('type')
+        x_status = request.query_params.get('status')
+        date = False
+
+        if date_to and date_from:
+            date = True
+
+        def create_date_range(date_from,date_to):
+            # Convert the string dates to datetime objects
+            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+
+            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+
+            return q_filters
+        
+        q_filters = Q()
+
+        if facility:
+            q_filters &= (Q(facility=facility))
+
+        if date_from or date_to:
+            if not date:
+                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
+            q_filters &= create_date_range(date_from,date_to)
+            
+        if x_status:
+            q_filters &= Q(status=x_status)
+
+        if type:
+            q_filters &= Q(type=type)
+
+
+        if q_filters:
+            resp = models.Cancellation.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+        else:
+            resp = models.Cancellation.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+
+        resp = serializers.FetchCancellationSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
         

@@ -78,7 +78,7 @@ class CreateCancellationSerializer(serializers.Serializer):
     invoice_no = serializers.CharField()
     action = serializers.CharField()
     reason = serializers.CharField()
-
+    type = serializers.CharField()
 
 class UpdateCancellationSerializer(serializers.Serializer):
     request_id = serializers.CharField()
@@ -86,6 +86,7 @@ class UpdateCancellationSerializer(serializers.Serializer):
     invoice_no = serializers.CharField()
     action = serializers.CharField()
     reason = serializers.CharField()
+    type = serializers.CharField()
 
 class SlimFetchCancellationSerializer(serializers.ModelSerializer):
     class Meta:
