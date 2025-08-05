@@ -74,7 +74,8 @@ class CoreViewSet(viewsets.ViewSet):
                         "weigh_bill_no": weigh_bill_no,
                         "courier": courier,
                         "collector": collector,
-                        "notes": notes
+                        "notes": notes,
+                        "uid" : shared_fxns.generate_unique_identifier()
                     } 
 
                     trackingInstance = models.Tracking.objects.create(
@@ -158,11 +159,18 @@ class CoreViewSet(viewsets.ViewSet):
                     return Response({"details": "All fields required"}, status=status.HTTP_400_BAD_REQUEST)
                 
             request_id = payload.get('request_id')
+            tracking_no = payload.get('tracking_no')
+
+            if not tracking_no:
+                return Response({"details": "Tracking Number required"}, status=status.HTTP_400_BAD_REQUEST)
 
             try:
                 trackedInstance = models.Tracking.objects.get(id=request_id)
             except Exception as e:
                 return Response({"details": "Unknown record"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if trackedInstance.uid != tracking_no.strip().upper():
+                return Response({"details": "Invalid Tracking Number required"}, status=status.HTTP_400_BAD_REQUEST)
             
             with transaction.atomic():
                 trackedInstance.received_on = datetime.datetime.now()
@@ -186,6 +194,10 @@ class CoreViewSet(viewsets.ViewSet):
             facility = request.query_params.get('facility')
             weigh_bill_no = request.query_params.get('weigh_bill_no')
             query = request.query_params.get('q')
+
+            is_admin = False
+            if 'PSD_ADMIN' in roles or 'SUPERUSER' in roles:
+                is_admin = True
 
             if request_id:
                 try:
@@ -224,17 +236,30 @@ class CoreViewSet(viewsets.ViewSet):
                                 Q(status='RECEIVED')).order_by('-date_created')
                             
                         else:
-                            resp = models.Tracking.objects.filter(
-                                Q(weigh_bill_no__icontains=query) |
-                                Q(courier__icontains=query) |
-                                Q(collector__icontains=query)).order_by('-date_created')
+                            if is_admin:
+                                resp = models.Tracking.objects.filter(
+                                    Q(weigh_bill_no__icontains=query) |
+                                    Q(courier__icontains=query) |
+                                    Q(collector__icontains=query)).order_by('-date_created')
+                            else:
+                                resp = models.Tracking.objects.filter(
+                                    Q(weigh_bill_no__icontains=query) |
+                                    Q(courier__icontains=query) |
+                                    Q(collector__icontains=query), created_by=request.user).order_by('-date_created')
                             
                     else:
-                        if facility:
-                            resp = models.Tracking.objects.filter(
-                            Q(facility=facility)).order_by('-date_created')
+                        if is_admin:
+                            if facility:
+                                resp = models.Tracking.objects.filter(
+                                Q(facility=facility)).order_by('-date_created')
+                            else:
+                                resp = models.Tracking.objects.all().order_by('-date_created')
                         else:
-                            resp = models.Tracking.objects.all().order_by('-date_created')
+                            if facility:
+                                resp = models.Tracking.objects.filter(
+                                Q(facility=facility) & Q(created_by=request.user)).order_by('-date_created')
+                            else:
+                                resp = models.Tracking.objects.filter(Q(created_by=request.user)).order_by('-date_created')
                     
 
                     paginator = PageNumberPagination()
@@ -301,7 +326,8 @@ class CoreViewSet(viewsets.ViewSet):
                         "invoice_no": invoice_no,
                         "action": action,
                         "reason": reason,
-                        "type": type
+                        "type": type,
+                        "uid" : shared_fxns.generate_unique_identifier()
                     } 
 
                     itemInstance = models.Cancellation.objects.create(
@@ -413,6 +439,10 @@ class CoreViewSet(viewsets.ViewSet):
             facility = request.query_params.get('facility')
             query = request.query_params.get('q')
 
+            is_admin = False
+            if 'PSD_ADMIN' in roles or 'SUPERUSER' in roles:
+                is_admin = True
+
             if request_id:
                 try:
                     resp = models.Cancellation.objects.get(id=request_id)
@@ -451,16 +481,31 @@ class CoreViewSet(viewsets.ViewSet):
                                 Q(status='RECEIVED')).order_by('-date_created')
                             
                         else:
-                            resp = models.Cancellation.objects.filter(
-                                Q(invoice_no__icontains=query) |
-                                Q(action__icontains=query) |
-                                Q(reason__icontains=query)).order_by('-date_created')
+                            if is_admin:
+                                resp = models.Cancellation.objects.filter(
+                                    Q(invoice_no__icontains=query) |
+                                    Q(action__icontains=query) |
+                                    Q(reason__icontains=query)).order_by('-date_created')
+                            else:
+                                resp = models.Cancellation.objects.filter(
+                                    Q(invoice_no__icontains=query) |
+                                    Q(action__icontains=query) |
+                                    Q(reason__icontains=query), created_by=request.user).order_by('-date_created')
                     else:
-                        if facility:
-                            resp = models.Cancellation.objects.filter(
-                            Q(facility=facility)).order_by('-date_created')
+                        if is_admin:
+                            if facility:
+                                resp = models.Cancellation.objects.filter(
+                                Q(facility=facility)).order_by('-date_created')
+                            else:
+                                resp = models.Cancellation.objects.all().order_by('-date_created')
                         else:
-                            resp = models.Cancellation.objects.all().order_by('-date_created')
+                            if facility:
+                                resp = models.Cancellation.objects.filter(
+                                Q(facility=facility) & Q(created_by=request.user)).order_by('-date_created')
+                            else:
+                                resp = models.Cancellation.objects.filter(
+                                    Q(created_by=request.user)).order_by('-date_created')
+
 
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
@@ -503,6 +548,8 @@ class CoreViewSet(viewsets.ViewSet):
                 data=payload, many=False)
             if serializer.is_valid():
                 admin = payload['admin']
+                is_approver = True if payload['is_approver'] == 'YES' else False
+                is_receiver = True if payload['is_receiver'] == 'YES' else False
 
                 try:
                     admin = User.objects.get(id=admin)
@@ -521,6 +568,8 @@ class CoreViewSet(viewsets.ViewSet):
                 with transaction.atomic():
                     raw = {
                         "admin": admin,
+                        "is_approver": is_approver,
+                        "is_receiver": is_receiver,
                         "created_by": request.user
                     }
 
@@ -532,6 +581,7 @@ class CoreViewSet(viewsets.ViewSet):
             
         elif request.method == "PUT":
             payload = request.data
+            user = request.user
 
             serializer = serializers.UpdatePlatformAdminSerializer(
                 data=payload, many=False)
@@ -539,6 +589,8 @@ class CoreViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 admin = payload['admin']
+                is_approver = True if payload['is_approver'] == 'YES' else False
+                is_receiver = True if payload['is_receiver'] == 'YES' else False
 
                 try:
                     request = models.PlatformAdmin.objects.get(id=request_id)
@@ -548,11 +600,22 @@ class CoreViewSet(viewsets.ViewSet):
                     logger.error(e)
                     print(e)
                     return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    admin = User.objects.get(id=admin)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown User"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
 
                     request.admin = admin
-                    request.created_by = request.user
+                    request.is_approver = is_approver
+                    request.is_receiver = is_receiver
+                    request.created_by = user
                     request.save()
 
                     return Response("Success", status=status.HTTP_200_OK)
@@ -573,7 +636,6 @@ class CoreViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-
                     request = models.PlatformAdmin.objects.filter(Q(is_deleted=False)).order_by('-date_created')
                     request = serializers.FetchPlatformAdminSerializer(request, many=True).data
                     return Response(request, status=status.HTTP_200_OK)

@@ -8,6 +8,7 @@ from ict_helpdesk.models import Facility
 
 class Tracking(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    uid = models.CharField(max_length=50, unique=True, null=True, blank=True)
     facility = models.ForeignKey(
        Facility, on_delete=models.DO_NOTHING, 
        related_name="ict_helpdesk_tracking_facility"
@@ -36,6 +37,7 @@ class Tracking(models.Model):
 
 class Cancellation(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    uid = models.CharField(max_length=50, unique=True, null=True, blank=True)
     facility = models.ForeignKey(
        Facility, on_delete=models.DO_NOTHING, 
        related_name="ict_helpdesk_cancellation_facility"
@@ -74,6 +76,8 @@ class PlatformAdmin(models.Model):
     )
 
     status = models.CharField(max_length=255, default='ACTIVE')
+    is_receiver = models.BooleanField(default=False)
+    is_approver = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
 

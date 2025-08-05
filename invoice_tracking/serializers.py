@@ -31,8 +31,9 @@ class SlimFetchTrackingSerializer(serializers.ModelSerializer):
 class FetchTrackingSerializer(serializers.ModelSerializer):
     facility = FetchFacilitySerializer()
     created_by = SlimUsersSerializer()
+    uid = serializers.SerializerMethodField()
     is_creator = serializers.SerializerMethodField()
-    # is_assigned = serializers.SerializerMethodField()
+    can_receive = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
     
     class Meta:
@@ -71,6 +72,33 @@ class FetchTrackingSerializer(serializers.ModelSerializer):
         except Exception as e:
             print(e)
             # logger.error(e)
+            return False   
+        
+    def get_can_receive(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            is_receiver = models.PlatformAdmin.objects.filter(
+                Q(admin=user_id) & Q(is_receiver=True)).exists()
+
+            return is_receiver
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False
+        
+    def get_uid(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            if str(obj.created_by.id) == user_id:
+                return obj.uid
+            else:
+                if obj.status == 'RECEIVED':
+                    return obj.uid
+                else:
+                    return '-'
+        except Exception as e:
+            print(e)
+            # logger.error(e)
             return False
         
 class CreateCancellationSerializer(serializers.Serializer):
@@ -98,6 +126,7 @@ class FetchCancellationSerializer(serializers.ModelSerializer):
     created_by = UsersSerializer()
     is_creator = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
+    can_approve = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Cancellation
@@ -132,6 +161,18 @@ class FetchCancellationSerializer(serializers.ModelSerializer):
             if str(obj.created_by.id) == user_id and obj.status == 'PENDING':
                 return True
             return False
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False
+        
+    def get_can_approve(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            is_approver = models.PlatformAdmin.objects.filter(
+                Q(admin=user_id) & Q(is_approver=True)).exists()
+
+            return is_approver
         except Exception as e:
             print(e)
             # logger.error(e)

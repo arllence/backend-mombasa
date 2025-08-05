@@ -1,7 +1,6 @@
 from datetime import datetime
 import string
 import random
-from ipass.models import Patient
 
 def find_date_difference(start_date,end_date,period):
     try:
@@ -32,12 +31,17 @@ def find_date_difference(start_date,end_date,period):
 
 
 def generate_unique_identifier():
+    from invoice_tracking.models import Tracking, Cancellation
+    characters = string.ascii_uppercase + string.digits
+    while True:
+        uid = ''.join(random.choices(characters, k=6))
+        
+        # Check for existence in both models with a single query using Q
+        if not (Tracking.objects.filter(uid=uid).exists() or Cancellation.objects.filter(uid=uid).exists()):
+            return uid
+        
+
+def default_generated_unique_identifier():
     characters = string.ascii_uppercase + string.digits
     uid = ''.join(random.choices(characters, k=6))
-
-    is_existing = Patient.objects.filter(uid=uid).exists()
-    if is_existing:
-        generate_unique_identifier()
-    else:
-        return uid
-
+    return uid
