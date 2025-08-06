@@ -2333,7 +2333,7 @@ class ReportsViewSet(viewsets.ViewSet):
             
         if r_status:
             if r_status == "QUOTE REQUESTED":
-                q_filters &= Q(quote_issue_instance__isnull=False)
+                q_filters &= Q(ict_quote_issue_instance__isnull=False)
             else:
                 q_filters &= Q(status=r_status)
 
