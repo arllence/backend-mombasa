@@ -35,6 +35,7 @@ class FetchTrackingSerializer(serializers.ModelSerializer):
     is_creator = serializers.SerializerMethodField()
     can_receive = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
+    received_by = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Tracking
@@ -100,6 +101,14 @@ class FetchTrackingSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return False
+        
+    def get_received_by(self, obj):
+        try:
+            record = models.TrackingStatusChange.objects.get(tracked=obj,status='RECEIVED')
+            serializer = FetchStatusChangeSerializer(record, many=False)
+            return serializer.data
+        except Exception as e:
+            return {}
         
 class CreateCancellationSerializer(serializers.Serializer):
     facility = serializers.CharField()
