@@ -541,7 +541,7 @@ class CoreViewSet(viewsets.ViewSet):
             url_path="platform-admins",
             url_name="platform-admins")
     def platform_admins(self, request):
-        # roles = user_util.fetchusergroups(request.user.id)
+        roles = user_util.fetchusergroups(request.user.id)
         if request.method == "POST":
             payload = request.data
             serializer = serializers.PlatformAdminSerializer(
@@ -582,6 +582,11 @@ class CoreViewSet(viewsets.ViewSet):
         elif request.method == "PUT":
             payload = request.data
             user = request.user
+
+            allowed = ["HOD", "SUPERUSER"]
+
+            if not any(role in allowed for role in roles):
+                return Response({"details": "Permission Denied !"}, status=status.HTTP_400_BAD_REQUEST)
 
             serializer = serializers.UpdatePlatformAdminSerializer(
                 data=payload, many=False)
