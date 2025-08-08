@@ -66,6 +66,7 @@ class AMSViewSet(viewsets.ViewSet):
             specific_location = payload['specific_location'] or None
             properties = payload['properties'] or None
             description = payload['description'] or None
+            procurement_date = payload['procurement_date'] or None
 
             exists = models.Asset.objects.filter(Q(asset_no=asset_no)).exists()
             if exists:
@@ -94,6 +95,7 @@ class AMSViewSet(viewsets.ViewSet):
                     "properties": properties,
                     "specific_location": specific_location,
                     "description": description,
+                    "procurement_date": procurement_date,
                     "created_by": authenticated_user
                 }
 
@@ -126,6 +128,7 @@ class AMSViewSet(viewsets.ViewSet):
             specific_location = payload['specific_location'] or None
             properties = payload['properties'] or None
             description = payload['description'] or None
+            procurement_date = payload['procurement_date'] or None
             
             try:
                 asset = models.Asset.objects.get(id=request_id)
@@ -150,7 +153,8 @@ class AMSViewSet(viewsets.ViewSet):
                     "properties": properties,
                     "specific_location": specific_location,
                     "description": description,
-                    "created_by": authenticated_user
+                    "procurement_date": procurement_date,
+                    "last_updated": timezone.now()
                 }
 
                 models.Asset.objects.filter(Q(id=request_id)).update(**raw_obj)

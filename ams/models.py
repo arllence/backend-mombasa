@@ -29,6 +29,7 @@ class Asset(models.Model):
        User, on_delete=models.DO_NOTHING, 
        related_name="asset_created_by"
     )
+    procurement_date = models.DateField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     last_updated = models.DateTimeField(auto_now=True, null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
