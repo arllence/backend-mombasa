@@ -329,4 +329,7 @@ class FetchPlatformAdminSerializer(serializers.ModelSerializer):
         model = models.PlatformAdmin
         fields = '__all__'
 
-
+class FetchEquipmentTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.EquipmentType
+        fields = '__all__'

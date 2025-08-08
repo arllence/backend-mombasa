@@ -240,3 +240,16 @@ class PlatformAdmin(models.Model):
     
     class Meta:
         db_table = u'"{}\".\"platform_admins"'.format(settings.ICT_HELPDESK)
+
+
+class EquipmentType(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=255)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = u'"{}\".\"equipment_types"'.format(settings.ICT_HELPDESK)

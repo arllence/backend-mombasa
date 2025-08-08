@@ -25,6 +25,7 @@ from django.db.models import Sum
 from django.core.mail import send_mail
 
 from rest_framework.pagination import PageNumberPagination
+from ict_helpdesk.models import Facility
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -55,52 +56,49 @@ class AMSViewSet(viewsets.ViewSet):
             if not serializer.is_valid():
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
-            barcode = payload['barcode'].strip()
-            serial_no = payload['serial_no'].strip()
+            asset_no = payload['asset_no'].strip()
+            facility = payload['facility'].strip()
             department = payload['department'].strip()
+            asset_status = payload['status'].strip()
+            type = payload['type'].strip()
+            category = payload['category'] or None
+            custodian = payload['custodian'] or None
+            specific_location = payload['specific_location'] or None
+            properties = payload['properties'] or None
+            description = payload['description'] or None
 
-            exists = models.Asset.objects.filter(Q(barcode=barcode) | Q(serial_no=serial_no)).exists()
+            exists = models.Asset.objects.filter(Q(asset_no=asset_no)).exists()
             if exists:
-                return Response({"details": "Asset with same barcode / serial number already added"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"details": "Asset already added"}, status=status.HTTP_400_BAD_REQUEST)
             
             try:
                 department = SRRSDepartment.objects.get(id=department)
             except Exception as e:
                 return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
             
-            # cleanse payload
-            del payload['barcode']
-            del payload['serial_no']
-            del payload['department']
+            try:
+                facility = Facility.objects.get(id=facility)
+            except Exception as e:
+                return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
+            
     
             with transaction.atomic():
                 raw_obj = {
-                    "barcode": barcode,
-                    "serial_no": serial_no,
+                    "asset_no": asset_no,
+                    "facility": facility,
                     "department": department,
-                    "data": payload,
+                    "status": asset_status,
+                    "type": type,
+                    "category": category,
+                    "custodian": custodian,
+                    "properties": properties,
+                    "specific_location": specific_location,
+                    "description": description,
                     "created_by": authenticated_user
                 }
 
                 newInstance = models.Asset.objects.create(**raw_obj)
 
-
-                # Notify HOD
-                subject = f"New Access Request Received [ASA-AKHK]"
-                message = f"Hello, \n\nA new access request from department: {department.name},\nhas been submitted by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nASA-AKHK"
-                
-                try:
-                    mail = {
-                        "email" : [department.hod.email], 
-                        "subject" : subject,
-                        "message" : message,
-                    }
-
-                    Sendmail.objects.create(**mail)
-
-                except Exception as e:
-                    logger.error(e)
-                    print("mail error: ", e)
 
             user_util.log_account_activity(
                 authenticated_user, authenticated_user, "Asset created", f"Asset Id: {newInstance.id}")
@@ -118,9 +116,16 @@ class AMSViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
             request_id = payload['request_id'].strip()
-            barcode = payload['barcode'].strip()
-            serial_no = payload['serial_no'].strip()
+            asset_no = payload['asset_no'].strip()
+            facility = payload['facility'].strip()
             department = payload['department'].strip()
+            asset_status = payload['status'].strip()
+            type = payload['type'].strip()
+            category = payload['category'] or None
+            custodian = payload['custodian'] or None
+            specific_location = payload['specific_location'] or None
+            properties = payload['properties'] or None
+            description = payload['description'] or None
             
             try:
                 asset = models.Asset.objects.get(id=request_id)
@@ -132,22 +137,27 @@ class AMSViewSet(viewsets.ViewSet):
             except Exception as e:
                 return Response({"details": "Unknown department"}, status=status.HTTP_400_BAD_REQUEST)
             
-            # cleanse payload
-            del payload['barcode']
-            del payload['serial_no']
-            del payload['department']
     
             with transaction.atomic():
-                asset.barcode = barcode
-                asset.serial_no = serial_no
-                asset.department = department
-                asset.data = payload
-                asset.last_updated = timezone.now()
+                raw_obj = {
+                    "asset_no": asset_no,
+                    "facility": facility,
+                    "department": department,
+                    "status": asset_status,
+                    "type": type,
+                    "category": category,
+                    "custodian": custodian,
+                    "properties": properties,
+                    "specific_location": specific_location,
+                    "description": description,
+                    "created_by": authenticated_user
+                }
 
-                asset.save()
+                models.Asset.objects.filter(Q(id=request_id)).update(**raw_obj)
+
 
             user_util.log_account_activity(
-                authenticated_user, authenticated_user, "Asset updated", f"Asset Id: {asset.id}")
+                authenticated_user, authenticated_user, "Asset updated", f"Asset Id: {request_id}")
             
             return Response('success', status=status.HTTP_200_OK)
      
@@ -161,8 +171,8 @@ class AMSViewSet(viewsets.ViewSet):
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
-            barcode = request.query_params.get('barcode')
-            serial_no = request.query_params.get('serial_no')
+            type = request.query_params.get('type')
+            asset_no = request.query_params.get('asset_no')
             query = request.query_params.get('q')
             slim = request.query_params.get('slim')
 
@@ -171,11 +181,11 @@ class AMSViewSet(viewsets.ViewSet):
             if request_id:
                 q_filters &= Q(id=request_id)
 
-            if barcode:
-                q_filters &= Q(barcode=barcode)
+            if type:
+                q_filters &= Q(type=type)
 
-            if serial_no:
-                q_filters &= Q(serial_no=serial_no)
+            if asset_no:
+                q_filters &= Q(asset_no=asset_no)
 
             if q_filters:
                 try:

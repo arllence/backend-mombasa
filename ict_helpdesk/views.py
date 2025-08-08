@@ -1084,6 +1084,93 @@ class HelpDeskViewSet(viewsets.ViewSet):
             except Exception as e:
                 print(e)
                 return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+            
+    
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
+            detail=False,
+            url_path="equipment-types",
+            url_name="equipment-types")
+    def EquipmentType(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.GeneralNameSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                name = payload['name'].upper()
+
+                with transaction.atomic():
+                    raw = {
+                        "name": name
+                    }
+                    models.EquipmentType.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateGeneralNameSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                name = payload['name'].upper()
+
+                try:
+                    requestInstance = models.EquipmentType.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown Equipment Type"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    requestInstance.name = name
+                    requestInstance.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.EquipmentType.objects.get(Q(id=request_id))
+                    resp = serializers.FetchJobTypeSerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Equipment Type"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    resp = models.EquipmentType.objects.filter(is_deleted=False).order_by('name')
+                    resp = serializers.FetchEquipmentTypeSerializer(resp,many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                raw = {"is_deleted":True}
+                models.EquipmentType.objects.filter(id=request_id).update(**raw)
+                return Response('200', status=status.HTTP_200_OK)
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                print(e)
+                return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
                  
 
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
