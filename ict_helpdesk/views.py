@@ -1925,7 +1925,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
 
                     models.Assignees.objects.filter(
                         Q(issue=issueInstance) &
-                        Q(assignee=issueInstance)
+                        Q(assignee=request.user)
                     ).delete()
 
                     # track status change
