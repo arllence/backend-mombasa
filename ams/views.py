@@ -177,6 +177,7 @@ class AMSViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             type = request.query_params.get('type')
             asset_no = request.query_params.get('asset_no')
+            facility = request.query_params.get('facility')
             query = request.query_params.get('q')
             slim = request.query_params.get('slim')
 
@@ -191,43 +192,33 @@ class AMSViewSet(viewsets.ViewSet):
             if asset_no:
                 q_filters &= Q(asset_no=asset_no)
 
+            if facility:
+                q_filters &= Q(facility=facility)
+
+            if query:
+                q_filters &= (Q(asset_no__icontains=query) | 
+                              Q(asset_no__icontains=query) | 
+                              Q(category__icontains=query) |
+                              Q(status__icontains=query) |
+                              Q(created_by__first_name__icontains=query) |
+                              Q(created_by__last_name__icontains=query) |
+                              Q(specific_location__icontains=query) |
+                              Q(custodian__icontains=query) |
+                              Q(type__icontains=query) |
+                              Q(description__icontains=query) 
+                            )
+
             if q_filters:
-                try:
-                    resp = models.Asset.objects.filter(q_filters).first()
-
-                    if slim:
-                        resp = serializers.SlimFetchAssetSerializer(resp, many=False, context={"user_id":request.user.id}).data
-                    else:
-                        resp = serializers.FetchAssetSerializer(resp, many=False, context={"user_id":request.user.id}).data
-
-                    return Response(resp, status=status.HTTP_200_OK)
-                
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Asset!"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                
+                resp = models.Asset.objects.filter(q_filters)
+               
             else:
                 try:
 
-                    if any(role in ['SUPERUSER','ICT','MMD'] for role in roles):
+                    if any(role in ['SUPERUSER','ICT'] for role in roles):
                         resp = models.Asset.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
 
                     else:
                         resp = models.Asset.objects.filter(Q(created_by=request.user), is_deleted=False).order_by('-date_created')
-
-
-                    paginator = PageNumberPagination()
-                    paginator.page_size = 50
-                    result_page = paginator.paginate_queryset(resp, request)
-                    serializer = serializers.FetchAssetSerializer(
-                        result_page, many=True, context={"user_id":request.user.id})
-                    return paginator.get_paginated_response(serializer.data)
-                
-                
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)
                 
@@ -235,6 +226,13 @@ class AMSViewSet(viewsets.ViewSet):
                     logger.error(e)
                     print(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            serializer = serializers.FetchAssetSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            return paginator.get_paginated_response(serializer.data)
         
         elif request.method == "DELETE":
             request_id = request.query_params.get('request_id')
