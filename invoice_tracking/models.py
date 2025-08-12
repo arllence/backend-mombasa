@@ -13,6 +13,7 @@ class Tracking(models.Model):
        Facility, on_delete=models.DO_NOTHING, 
        related_name="ict_helpdesk_tracking_facility"
     )
+    type = models.CharField(max_length=255, null=True, blank=True)
     weigh_bill_no = models.CharField(max_length=255)
     courier = models.CharField(max_length=255)
     collector = models.CharField(max_length=255)

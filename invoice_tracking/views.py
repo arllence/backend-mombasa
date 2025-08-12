@@ -55,6 +55,7 @@ class CoreViewSet(viewsets.ViewSet):
                     data=payload, many=False)
             
             if serializer.is_valid():
+                type = payload['type']
                 facility = payload['facility']
                 weigh_bill_no = payload['weigh_bill_no']
                 courier = payload['courier']
@@ -70,6 +71,7 @@ class CoreViewSet(viewsets.ViewSet):
                 with transaction.atomic():
                     raw = {
                         "created_by": authenticated_user,
+                        "type": type,
                         "facility": facility,
                         "weigh_bill_no": weigh_bill_no,
                         "courier": courier,
@@ -111,6 +113,7 @@ class CoreViewSet(viewsets.ViewSet):
                 weigh_bill_no = payload['weigh_bill_no']
                 courier = payload['courier']
                 collector = payload['collector']
+                type = payload['type']
                 notes = payload.get('notes')
 
                 try:
@@ -129,6 +132,7 @@ class CoreViewSet(viewsets.ViewSet):
                         "facility": facility,
                         "weigh_bill_no": weigh_bill_no,
                         "courier": courier,
+                        "type": type,
                         "collector": collector,
                         "notes": notes
                     } 

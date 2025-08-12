@@ -15,6 +15,7 @@ class CreateTrackingSerializer(serializers.Serializer):
     weigh_bill_no = serializers.CharField()
     courier = serializers.CharField()
     collector = serializers.CharField()
+    type = serializers.CharField()
 
 class UpdateTrackingSerializer(serializers.Serializer):
     request_id = serializers.CharField()
