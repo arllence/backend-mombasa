@@ -167,22 +167,20 @@ class FetchIssueSerializer(serializers.ModelSerializer):
         
     def get_tat(self, obj):
         try:
-            # diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
-            # if diff < 1:
-            #     return "1 Hour"
-            # return str(diff) + " Hours"
+            diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
+            return str(diff)
             
-            diff = (obj.date_closed - obj.date_created).days
-            if diff == 0:
-                diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
-                if diff < 1:
-                    diff = str(int((obj.date_closed - obj.date_created).total_seconds() // 60)) + " Minute(s)"
-                else:
-                 diff = str(diff) + " Hour(s)"
-            else:
-                diff = str(diff) + " Day(s)"
+            # diff = (obj.date_closed - obj.date_created).days
+            # if diff == 0:
+            #     diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
+            #     if diff < 1:
+            #         diff = str(int((obj.date_closed - obj.date_created).total_seconds() // 60)) + " Minute(s)"
+            #     else:
+            #      diff = str(diff) + " Hour(s)"
+            # else:
+            #     diff = str(diff) + " Day(s)"
 
-            return diff
+            # return diff
         
         except Exception as e:
             print(e)
@@ -234,22 +232,22 @@ class SlimFetchIssueSerializer(serializers.ModelSerializer):
         
     def get_tat(self, obj):
         try:
-            # diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
+            diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
             # if diff < 1:
             #     return "1 Hour"
-            # return str(diff) + " Hours"
+            return str(diff)
             
-            diff = (obj.date_closed - obj.date_created).days
-            if diff == 0:
-                diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
-                if diff < 1:
-                    diff = str(int((obj.date_closed - obj.date_created).total_seconds() // 60)) + " Minute(s)"
-                else:
-                 diff = str(diff) + " Hour(s)"
-            else:
-                diff = str(diff) + " Day(s)"
+            # diff = (obj.date_closed - obj.date_created).days
+            # if diff == 0:
+            #     diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
+            #     if diff < 1:
+            #         diff = str(int((obj.date_closed - obj.date_created).total_seconds() // 60)) + " Minute(s)"
+            #     else:
+            #      diff = str(diff) + " Hour(s)"
+            # else:
+            #     diff = str(diff) + " Day(s)"
 
-            return diff
+            # return diff
         
         except Exception as e:
             print(e)
