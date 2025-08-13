@@ -15,7 +15,7 @@ class UpdateGeneralNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=255)
 
 class AssetSerializer(serializers.Serializer):
-    asset_no = serializers.CharField(max_length=500)
+    # asset_no = serializers.CharField(max_length=500)
     type = serializers.CharField(max_length=500)
     status = serializers.CharField(max_length=255)
     facility = serializers.CharField(max_length=255)
@@ -23,7 +23,7 @@ class AssetSerializer(serializers.Serializer):
 
 class UpdateAssetSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
-    asset_no = serializers.CharField(max_length=500)
+    # asset_no = serializers.CharField(max_length=500)
     type = serializers.CharField(max_length=500)
     status = serializers.CharField(max_length=255)
     facility = serializers.CharField(max_length=255)
