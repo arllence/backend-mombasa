@@ -56,7 +56,7 @@ class AMSViewSet(viewsets.ViewSet):
             if not serializer.is_valid():
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
-            asset_no = payload['asset_no'].strip()
+            asset_no = payload['asset_no'].strip() or None
             facility = payload['facility'].strip()
             department = payload['department'].strip()
             asset_status = payload['status'].strip()
@@ -68,9 +68,10 @@ class AMSViewSet(viewsets.ViewSet):
             description = payload['description'] or None
             procurement_date = payload['procurement_date'] or None
 
-            exists = models.Asset.objects.filter(Q(asset_no=asset_no)).exists()
-            if exists:
-                return Response({"details": "Asset already added"}, status=status.HTTP_400_BAD_REQUEST)
+            if asset_no:
+                exists = models.Asset.objects.filter(Q(asset_no=asset_no)).exists()
+                if exists:
+                    return Response({"details": "Asset already added"}, status=status.HTTP_400_BAD_REQUEST)
             
             try:
                 department = SRRSDepartment.objects.get(id=department)
