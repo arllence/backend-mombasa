@@ -33,6 +33,7 @@ class FetchPrioritySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Priority
         fields = '__all__'
+        
 
 class GenericIssueSerializer(serializers.Serializer):
     name = serializers.CharField()

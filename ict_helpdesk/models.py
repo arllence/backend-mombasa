@@ -55,6 +55,7 @@ class Priority(models.Model):
         return self.name
 
     class Meta:
+        ordering = ['numbering'] 
         db_table = u'"{}\".\"priority"'.format(settings.ICT_HELPDESK)
 
 class Issue(models.Model):
