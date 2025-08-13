@@ -973,7 +973,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    resp = models.Priority.objects.filter(is_deleted=False).order_by('name')
+                    resp = models.Priority.objects.filter(is_deleted=False).order_by('numbering')
                     resp = serializers.FetchPrioritySerializer(resp,many=True).data
                     return Response(resp, status=status.HTTP_200_OK)
                     
