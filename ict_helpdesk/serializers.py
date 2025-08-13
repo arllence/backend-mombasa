@@ -167,8 +167,8 @@ class FetchIssueSerializer(serializers.ModelSerializer):
         
     def get_tat(self, obj):
         try:
-            diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
-            return str(diff)
+            diff = (obj.date_closed - obj.date_created).total_seconds() / 3600
+            return f"{diff:.1f}"
             
             # diff = (obj.date_closed - obj.date_created).days
             # if diff == 0:
@@ -232,10 +232,8 @@ class SlimFetchIssueSerializer(serializers.ModelSerializer):
         
     def get_tat(self, obj):
         try:
-            diff = (obj.date_closed - obj.date_created).total_seconds() // 3600
-            # if diff < 1:
-            #     return "1 Hour"
-            return str(diff)
+            diff = (obj.date_closed - obj.date_created).total_seconds() / 3600
+            return f"{diff:.1f}"
             
             # diff = (obj.date_closed - obj.date_created).days
             # if diff == 0:
