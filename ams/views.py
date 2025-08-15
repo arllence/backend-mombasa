@@ -215,7 +215,7 @@ class AMSViewSet(viewsets.ViewSet):
             else:
                 try:
 
-                    if any(role in ['SUPERUSER','ICT'] for role in roles):
+                    if any(role in ['SUPERUSER','ICT','ICT_ADMIN'] for role in roles):
                         resp = models.Asset.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
 
                     else:
