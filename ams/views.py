@@ -56,7 +56,7 @@ class AMSViewSet(viewsets.ViewSet):
             if not serializer.is_valid():
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
-            asset_no = payload['asset_no'].strip() or None
+            asset_no = payload['asset_no'].strip() if payload['asset_no'] else None
             facility = payload['facility'].strip()
             department = payload['department'].strip()
             asset_status = payload['status'].strip()
@@ -119,7 +119,7 @@ class AMSViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
             request_id = payload['request_id'].strip()
-            asset_no = payload['asset_no'].strip()
+            asset_no = payload['asset_no'].strip() if payload['asset_no'] else None
             facility = payload['facility'].strip()
             department = payload['department'].strip()
             asset_status = payload['status'].strip()
