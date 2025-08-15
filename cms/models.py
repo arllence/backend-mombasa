@@ -79,3 +79,21 @@ class PlatformAdmin(models.Model):
     
     class Meta:
         db_table = u'"{}\".\"platform_admins"'.format(settings.CONTRACT_MANAGEMENT_SYSTEM)
+
+
+class TrackNotification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    contract = models.ForeignKey(
+       Contract, on_delete=models.DO_NOTHING, 
+       related_name="contract_model"
+    )
+    recipients = models.JSONField()
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.contract.uid
+    
+    class Meta:
+        db_table = u'"{}\".\"track_notifications"'.format(settings.CONTRACT_MANAGEMENT_SYSTEM)
