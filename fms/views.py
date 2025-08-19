@@ -690,6 +690,8 @@ class FmsViewSet(viewsets.ViewSet):
                 assigned_to = payload['assign_to']
                 comment = payload.get('comment') or None
 
+                next_status = "ASSIGNED"
+
                 try:
                     incidentInstance = models.Incident.objects.get(id=request_id)
                 except (ValidationError, ObjectDoesNotExist):
@@ -702,6 +704,9 @@ class FmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown assignee"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
                 
+                if incidentInstance.status == 'ASSIGNED':
+                    next_status = "REASSIGNED"
+                
                 with transaction.atomic():
                     incidentInstance.assigned_to = assigned_to
                     incidentInstance.assignee_comment = comment
@@ -711,8 +716,8 @@ class FmsViewSet(viewsets.ViewSet):
                     # track status change
                     raw = {
                         "incident": incidentInstance,
-                        "status": 'ASSIGNED',
-                        "status_for": '/'.join(roles),
+                        "status": next_status,
+                        "status_for": 'FMS_ADMIN',
                         "action_by": authenticated_user
                     }
 
