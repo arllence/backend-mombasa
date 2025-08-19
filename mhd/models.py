@@ -278,3 +278,86 @@ class PlatformAdmin(models.Model):
     
     class Meta:
         db_table = u'"{}\".\"platform_admins"'.format(settings.MAINTENANCE_HELPDESK_SYSTEM)
+
+
+class JobCard(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    job_card_no = models.CharField(max_length=100, unique=True)
+    issue = models.ForeignKey(
+        Issue, on_delete=models.DO_NOTHING,
+        related_name="job_card_issue_instance"
+    )
+    status = models.CharField(max_length=255, default='REQUESTED')
+    requested_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="job_card_requested_by",
+       null=True, blank=True
+    )
+
+    # Description
+    supplier = models.CharField(max_length=200, blank=True)
+
+    # Costs
+    material_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    labour_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+
+    # Contracts and approvals
+    contract_type = models.CharField(max_length=300, blank=True)
+    contract_to = models.CharField(max_length=300, blank=True)
+    lpo_no = models.CharField(max_length=100, blank=True)
+
+    is_hod_approved = models.BooleanField(default=False)
+    is_slt_approved = models.BooleanField(default=False)
+    is_ceo_approved = models.BooleanField(default=False)
+
+    payments_made_to = models.CharField(max_length=300, blank=True)
+    payments_date = models.DateField(null=True, blank=True)
+
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return str(self.issue.uid)
+
+    class Meta:
+        db_table = u'"{}\".\"job_cards"'.format(settings.MAINTENANCE_HELPDESK_SYSTEM)
+
+
+class MaterialItem(models.Model):
+    job_card = models.ForeignKey(JobCard, related_name='materials', on_delete=models.CASCADE)
+    description = models.CharField(max_length=500)
+    quantity = models.DecimalField(max_digits=10, decimal_places=2, default=1)
+    unit_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_cost = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    def save(self, *args, **kwargs):
+        # keep total in sync (user can override but this will compute)
+        self.total_cost = (self.quantity or 0) * (self.unit_cost or 0)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.description[:50]}"
+    
+    class Meta:
+        db_table = u'"{}\".\"job_card_materials"'.format(settings.MAINTENANCE_HELPDESK_SYSTEM)
+
+class JobCardStatusChange(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    job_card = models.ForeignKey(
+        JobCard, on_delete=models.DO_NOTHING,
+        related_name="status_change_job_card_instance"
+    )
+    status = models.CharField(max_length=255)
+    status_for = models.CharField(max_length=255, null=True, blank=True)
+    action_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING
+    )
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.job_card.uid)
+
+    class Meta:
+        db_table = u'"{}\".\"job_card_status_changes"'.format(settings.MAINTENANCE_HELPDESK_SYSTEM)

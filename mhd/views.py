@@ -3042,6 +3042,252 @@ class MHSViewSet(viewsets.ViewSet):
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+class JobCardViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+    search_fields = ['id', ]
+    
+
+    def get_queryset(self):
+        return []
+    
+
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
+            detail=False,
+            url_path="core",
+            url_name="core")
+    def core(self, request):
+        roles = user_util.fetchusergroups(request.user.id)
+        if request.method == "POST":
+            payload = request.data
+            serializer = serializers.JobCardSerializer(
+                data=payload, many=False)
+            if serializer.is_valid():
+                issue = payload['issue']
+                supplier = payload['supplier']
+                materials = payload['materials']
+                material_cost = payload['material_cost']
+                labour_cost = payload['labour_cost']
+                contract_type = payload['contract_type']
+                contract_to = payload['contract_to']
+                lpo_no = payload['lpo_no']
+                payments_made_to = payload['payments_made_to']
+                payments_date = payload['payments_date']
+
+                try:
+                    issueInstance = models.Issue.objects.get(id=issue)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown issue"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+                if not serializers.MaterialItemSerializer(data=materials, many=False):
+                    return Response({"details": "Materials required"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    raw = {
+                        "issue": issueInstance,
+                        "job_card_no": issueInstance.uid,
+                        "supplier": supplier,
+                        "material_cost": material_cost,
+                        "labour_cost": labour_cost,
+                        "contract_type": contract_type,
+                        "contract_to": contract_to,
+                        "lpo_no": lpo_no,
+                        "payments_made_to": payments_made_to,
+                        "payments_date": payments_date,
+                        "requested_by": request.user
+                    }
+                    jobCardInstance = models.JobCard.objects.create(**raw)
+
+                    # save job card materials
+                    for m in materials:
+                        models.MaterialItem.objects.create(job_card=jobCardInstance, **m)
+
+                    # send notification email
+                    emails = list(models.PlatformAdmin.objects.filter(Q(category=issueInstance.category) & Q(location=issueInstance.facility.category), is_hod=True).values_list('admin__email', flat=True))
+                    subject = f"[MHD] New Job Card Raised: {issueInstance.uid} ."
+                    message = f"Hello. \nNew Job card for issue id: {issueInstance.uid}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending approval.\n\nRegards\nMHD-AKHK\n\n"
+
+                    try:
+                        if emails:
+                            mail = {
+                                "email" : list(set(emails)), 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            
+                            Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateGeneralNameSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                name = payload['name']
+
+                try:
+                    requestInstance = models.Section.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown Section"}, status=status.HTTP_400_BAD_REQUEST)
+
+                with transaction.atomic():
+                    requestInstance.name = name
+                    requestInstance.save()
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PATCH":
+            # Approvals hod / slt / ceo
+
+            if not any(role in ["HOD","SLT","CEO","SUPERUSER","MHD_ADMIN"] for role in roles):
+                return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            payload = request.data
+
+            serializer = serializers.PatchJobCardSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                request_status = payload['status']
+
+                try:
+                    requestInstance = models.JobCard.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown Job Card"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if request_status == 'REJECTED':
+                    requestInstance.status = "REJECTED"
+                    requestInstance.save()
+
+                else:
+
+                    if "MHD_ADMIN" in roles:
+                        adminInstance = models.PlatformAdmin.objects.get(admin=request.user)
+                        is_hod = adminInstance.is_hod
+                        is_slt = adminInstance.is_slt
+
+                        if is_hod:
+                            requestInstance.is_hod_approved = True
+                            requestInstance.status = "HOD APPROVED"
+                            request_status = "HOD APPROVED"
+                            status_for = "HOD"
+
+                        if is_slt:
+                            requestInstance.is_slt_approved = True
+                            requestInstance.status = "SLT APPROVED"
+                            request_status = "SLT APPROVED"
+                            status_for = "SLT"
+                        
+                    if "CEO" in roles:
+                        requestInstance.is_ceo_approved = True
+                        requestInstance.status = "CEO APPROVED"
+                        request_status = "CEO APPROVED"
+                        status_for = "CEO"
+
+                # track status change
+                raw = {
+                    "job_card": requestInstance,
+                    "status": request_status,
+                    "status_for": status_for,
+                    "action_by": request.user
+                }
+
+                with transaction.atomic():
+                    requestInstance.save()
+                    models.JobCardStatusChange.objects.create(**raw)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            location = request.query_params.get('location')
+            if request_id:
+                try:
+                    resp = models.JobCard.objects.get(Q(id=request_id))
+                    resp = serializers.FetchJobCardSerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown JobCard"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    resp = []
+                    if "MHD_ADMIN" in roles:
+                        admin = models.PlatformAdmin.objects.get(admin=request.user)
+                        is_hod = admin.is_hod
+                        is_slt = admin.is_slt
+
+                        filters = Q(status__in=['REOPENED']) & Q(is_deleted=False)
+
+                        if location:
+                            filters &= Q(issue__facility__category=location)
+
+                        # Define separate query parts
+                        hod_filter = Q(is_hod_approved=False)
+                        slt_filter = Q(is_hod_approved=True) & Q(is_slt_approved=False)
+
+                        # Combine filters based on roles
+                        if is_hod and is_slt:
+                            filters &= (hod_filter | slt_filter)
+                        elif is_hod:
+                            filters &= hod_filter
+                        elif is_slt:
+                            filters &= slt_filter
+                        else:
+                            filters = None
+
+                        # Apply the final filter
+                        if filters:
+                            resp = models.JobCard.objects.filter(filters).order_by('-date_created')
+                        else:
+                            resp = models.JobCard.objects.none()
+
+                    if "CEO" in roles:
+                        resp = models.JobCard.objects.filter(Q(is_hod_approved=True) & Q(is_slt_approved=True) & Q(is_ceo_approved=False), is_deleted=False ).order_by('-date_created')
+
+                    resp = serializers.FetchJobCardSerializer(resp, many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                    
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
+            try:
+                raw = {"is_deleted":True}
+                models.JobCard.objects.filter(id=request_id).update(**raw)
+                return Response('200', status=status.HTTP_200_OK)
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+            except Exception as e:
+                print(e)
+                return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+                
+ 
+
    
 class ReportsViewSet(viewsets.ViewSet):
 

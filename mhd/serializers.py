@@ -100,6 +100,7 @@ class FetchIssueSerializer(serializers.ModelSerializer):
     tat = serializers.SerializerMethodField()
     assignees = serializers.SerializerMethodField()
     quotes = serializers.SerializerMethodField()
+    job_card = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Issue
@@ -195,6 +196,16 @@ class FetchIssueSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return ""
+        
+    def get_job_card(self, obj):
+        try:
+            request = models.JobCard.objects.get(issue=obj)
+            serializer = FetchJobCardSerializer(request, many=False)
+            return serializer.data
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return None
     
 
 class SlimFetchIssueSerializer(serializers.ModelSerializer):
@@ -331,3 +342,84 @@ class FetchPlatformAdminSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class JobCardSerializer(serializers.Serializer):
+    issue = serializers.CharField(max_length=500)
+    materials = serializers.ListField(min_length=1)
+    supplier = serializers.CharField(max_length=500)
+    material_cost = serializers.FloatField()
+    labour_cost = serializers.FloatField()
+    contract_type = serializers.CharField(max_length=500)
+    contract_to = serializers.CharField(max_length=500)
+
+class UpdateJobCardSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    issue = serializers.CharField(max_length=500)
+    materials = serializers.ListField(min_length=1)
+    supplier = serializers.CharField(max_length=500)
+    material_cost = serializers.FloatField()
+    labour_cost = serializers.FloatField()
+    contract_type = serializers.CharField(max_length=500)
+    contract_to = serializers.CharField(max_length=500)
+
+class FetchJobCardSerializer(serializers.ModelSerializer):
+    requested_by = SlimUsersSerializer()
+    materials = serializers.SerializerMethodField()
+    can_approve = serializers.SerializerMethodField()
+
+    def get_materials(self, obj):
+        try:
+            request = models.MaterialItem.objects.filter(job_card=obj)
+            serializer = MaterialItemSerializer(request, many=True)
+            return serializer.data
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
+        
+    def get_can_approve(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            roles = get_user_roles(user_id)
+
+            # Only certain roles can approve
+            if not any(role in {"CEO", "SUPERUSER", "MHD_ADMIN"} for role in roles):
+                return False
+
+            # MHD_ADMIN specific logic
+            if "MHD_ADMIN" in roles:
+                try:
+                    approver = models.PlatformAdmin.objects.get(admin=user_id)
+                except models.PlatformAdmin.DoesNotExist:
+                    return False
+
+                if approver.is_hod and not obj.is_hod_approved:
+                    return True
+
+                if approver.is_slt and obj.is_hod_approved and not obj.is_slt_approved:
+                    return True
+
+            # CEO approval logic
+            if "CEO" in roles and obj.is_hod_approved and obj.is_slt_approved:
+                return True
+
+            return False
+
+        except KeyError:
+            print("Missing user_id in context.")
+        except Exception as e:
+            print(f"Error in get_can_approve: {e}")
+
+        return False
+
+    class Meta:
+        model = models.JobCard
+        fields = '__all__'
+
+class MaterialItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.MaterialItem
+        fields = '__all__'
+
+class PatchJobCardSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    status = serializers.CharField(max_length=500)
