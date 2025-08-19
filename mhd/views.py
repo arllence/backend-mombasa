@@ -3051,7 +3051,7 @@ class JobCardViewSet(viewsets.ViewSet):
         return []
     
 
-    @action(methods=["POST", "GET", "PUT", "DELETE"],
+    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
             url_path="core",
             url_name="core")
@@ -3216,6 +3216,7 @@ class JobCardViewSet(viewsets.ViewSet):
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             location = request.query_params.get('location')
+            query = request.query_params.get('q')
             if request_id:
                 try:
                     resp = models.JobCard.objects.get(Q(id=request_id))
@@ -3239,6 +3240,9 @@ class JobCardViewSet(viewsets.ViewSet):
                         if location:
                             filters &= Q(issue__facility__category=location)
 
+                        if query == 'approved':
+                            filters &= Q(status__in=['CEO APPROVED'])
+
                         # Define separate query parts
                         hod_filter = Q(is_hod_approved=False)
                         slt_filter = Q(is_hod_approved=True) & Q(is_slt_approved=False)
@@ -3260,10 +3264,21 @@ class JobCardViewSet(viewsets.ViewSet):
                             resp = models.JobCard.objects.none()
 
                     if "CEO" in roles:
-                        resp = models.JobCard.objects.filter(Q(is_hod_approved=True) & Q(is_slt_approved=True) & Q(is_ceo_approved=False), is_deleted=False ).order_by('-date_created')
+                        if query == 'approved':
+                            resp = models.JobCard.objects.filter(Q(status='CEO APPROVED')).order_by('-date_created')
+                        else:
+                            resp = models.JobCard.objects.filter(Q(is_hod_approved=True) & Q(is_slt_approved=True) & Q(is_ceo_approved=False) ).order_by('-date_created')
 
-                    resp = serializers.FetchJobCardSerializer(resp, many=True).data
-                    return Response(resp, status=status.HTTP_200_OK)
+
+                    paginator = PageNumberPagination()
+                    paginator.page_size = 50
+                    result_page = paginator.paginate_queryset(resp, request)
+                    serializer = serializers.FetchJobCardSerializer(
+                        result_page, many=True, context={"user_id":request.user.id})
+                    return paginator.get_paginated_response(serializer.data)
+
+                    # resp = serializers.FetchJobCardSerializer(resp, many=True).data
+                    # return Response(resp, status=status.HTTP_200_OK)
                     
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
