@@ -3234,7 +3234,7 @@ class JobCardViewSet(viewsets.ViewSet):
                         is_hod = admin.is_hod
                         is_slt = admin.is_slt
 
-                        filters = Q(status__in=['REOPENED']) & Q(is_deleted=False)
+                        filters = Q(is_deleted=False)
 
                         if location:
                             filters &= Q(issue__facility__category=location)
