@@ -3261,15 +3261,22 @@ class JobCardViewSet(viewsets.ViewSet):
                         # Apply the final filter
                         if filters:
                             if query == 'approved':
-                                resp = models.JobCard.objects.filter(status="CEO APPROVED").order_by('-date_created')
+                                filters = (Q(status='CEO APPROVED'))
+                                if location:
+                                    filters &= Q(issue__facility__category=location)
+                                resp = models.JobCard.objects.filter(filters).order_by('-date_created')
                             else:
                                 resp = models.JobCard.objects.filter(filters).order_by('-date_created')
                         else:
                             resp = models.JobCard.objects.none()
 
                     if "CEO" in roles:
+                        
                         if query == 'approved':
-                            resp = models.JobCard.objects.filter(Q(status='CEO APPROVED')).order_by('-date_created')
+                            filters = (Q(status='CEO APPROVED'))
+                            if location:
+                                filters &= Q(issue__facility__category=location)
+                            resp = models.JobCard.objects.filter(filters).order_by('-date_created')
                         else:
                             resp = models.JobCard.objects.filter(Q(is_hod_approved=True) & Q(is_slt_approved=True) & Q(is_ceo_approved=False) & ~Q(status='REJECTED')).order_by('-date_created')
 
