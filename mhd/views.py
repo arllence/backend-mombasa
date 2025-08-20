@@ -3174,7 +3174,7 @@ class JobCardViewSet(viewsets.ViewSet):
                     status_for = None
 
                 else:
-
+                    is_hod, is_slt, is_ceo = [False, False, False]
                     if "MHD_ADMIN" in roles:
                         adminInstance = models.PlatformAdmin.objects.get(admin=request.user)
                         is_hod = adminInstance.is_hod
@@ -3197,6 +3197,7 @@ class JobCardViewSet(viewsets.ViewSet):
                         requestInstance.status = "CEO APPROVED"
                         request_status = "CEO APPROVED"
                         status_for = "CEO"
+                        is_ceo = True
 
                 # track status change
                 raw = {
@@ -3209,6 +3210,42 @@ class JobCardViewSet(viewsets.ViewSet):
                 with transaction.atomic():
                     requestInstance.save()
                     models.JobCardStatusChange.objects.create(**raw)
+
+                    # send requestor notification email
+                    emails = [requestInstance.requested_by.email]
+                    subject = f"[MHD] Job Card Status: {requestInstance.job_card_no} ."
+                    message = f"Hello. \nJob card for issue id: {requestInstance.job_card_no}, \nhas been {request_status} by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nMHD-AKHK\n\n"
+
+                    try:
+                        if emails:
+                            mail = {
+                                "email" : list(set(emails)), 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            
+                            Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+                    # send approver notification email
+                    if is_hod:
+                        emails = list(models.PlatformAdmin.objects.filter(is_slt=True).values_list('admin__email', flat=True))
+                    if is_slt:
+                        emails =  list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
+                    subject = f"[MHD] Job Card {requestInstance.job_card_no} Pending Approval."
+                    message = f"Hello. \nJob card for issue id: {requestInstance.job_card_no}, \nis pending your approval\nVisit http://172.20.0.42:8009/requests/job-cards\n\nRegards\nMHD-AKHK\n\n"
+                    try:
+                        if emails:
+                            mail = {
+                                "email" : list(set(emails)), 
+                                "subject" : subject,
+                                "message" : message,
+                            }
+                            
+                            Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
