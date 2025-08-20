@@ -3171,6 +3171,7 @@ class JobCardViewSet(viewsets.ViewSet):
                 if request_status == 'REJECTED':
                     requestInstance.status = "REJECTED"
                     requestInstance.save()
+                    status_for = None
 
                 else:
 
@@ -3235,7 +3236,7 @@ class JobCardViewSet(viewsets.ViewSet):
                         is_hod = admin.is_hod
                         is_slt = admin.is_slt
 
-                        filters = Q(is_deleted=False)
+                        filters = (Q(is_deleted=False) & ~Q(status='REJECTED'))
 
                         if location:
                             filters &= Q(issue__facility__category=location)
@@ -3270,7 +3271,7 @@ class JobCardViewSet(viewsets.ViewSet):
                         if query == 'approved':
                             resp = models.JobCard.objects.filter(Q(status='CEO APPROVED')).order_by('-date_created')
                         else:
-                            resp = models.JobCard.objects.filter(Q(is_hod_approved=True) & Q(is_slt_approved=True) & Q(is_ceo_approved=False) ).order_by('-date_created')
+                            resp = models.JobCard.objects.filter(Q(is_hod_approved=True) & Q(is_slt_approved=True) & Q(is_ceo_approved=False) & ~Q(status='REJECTED')).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
