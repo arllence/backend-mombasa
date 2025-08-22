@@ -62,7 +62,6 @@ class FetchTrainingMaterialSerializer(serializers.ModelSerializer):
         
 class UploadFileSerializer(serializers.Serializer):
     training_id = serializers.CharField()
-    file_type = serializers.CharField()
 
 # TrainingAssignment
 

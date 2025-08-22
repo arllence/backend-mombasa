@@ -1,7 +1,7 @@
 import datetime
 import json
 import logging
-from datetime import timedelta
+from datetime import date, timedelta
 from django.utils import timezone
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
@@ -510,7 +510,162 @@ class CoreViewSet(viewsets.ViewSet):
                     return Response('200', status=status.HTTP_200_OK)    
                 except Exception as e:
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)          
-    
+
+
+    @action(methods=["POST", "GET", "DELETE"],
+            detail=False,
+            url_path="upload-certificate",
+            url_name="upload-certificate")
+    def upload_certificate(self, request):
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = json.loads(request.data['payload'])
+
+            exts = ['pdf']
+            for f in request.FILES.getlist('documents'):
+                original_file_name = f.name
+                ext = original_file_name.split('.')[-1].strip().lower()
+                if ext not in exts:
+                    return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
+            
+           
+            # serialize training payload
+            serializer = serializers.UploadFileSerializer(
+                    data=payload, many=False)
+            if not serializer.is_valid():
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+            training_id = payload['training_id']
+
+            try:
+                targetInstance = models.TrainingAssignment.objects.get(training=training_id,user=request.user)
+            except Exception as e:
+                return Response({"details": "No assignment"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+            with transaction.atomic():
+                f = request.FILES.getlist('documents')[0]
+                targetInstance.certificate = f
+                targetInstance.is_completed = True
+                targetInstance.date_completed =  date.today()
+                targetInstance.save()
+     
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Certificate uploaded", f"Assignment Id: {targetInstance.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            training_id = request.query_params.get('training_id')
+            query = request.query_params.get('q')
+            slim = request.query_params.get('slim')
+            previous = request.query_params.get('previous')
+
+            if request_id:
+                try:
+                    resp = models.Document.objects.get(Q(id=request_id))
+
+                    if slim:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            elif training_id:
+                try:
+                    resp = models.Document.objects.get(Q(training=training_id))
+
+                    if slim:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            elif query:
+                try:
+                    resp = models.Document.objects.filter(
+                        Q(file_name__icontains=query) |
+                        Q(file_type__icontains=query) |
+                        Q(training__uid__icontains=query) |
+                        Q(training__title__icontains=query) |
+                        Q(training__department__name__icontains=query)
+                    )
+
+                    if slim:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=True, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            else:
+                try:
+
+                    if any(role in ['SUPERUSER','HR','CTP_ADMIN'] for role in roles):
+
+                        resp = models.Document.objects.filter(is_deleted=False).order_by('-date_created')
+
+                    else:
+                        resp = models.Document.objects.filter(Q(is_deleted=False) & (Q(uploaded_by=request.user)) ).order_by('-date_created')
+
+
+
+                    paginator = PageNumberPagination()
+                    paginator.page_size = 50
+                    result_page = paginator.paginate_queryset(resp, request)
+                    serializer = serializers.SlimFetchDocumentSerializer(
+                        result_page, many=True, context={"user_id":request.user.id})
+                    return paginator.get_paginated_response(serializer.data)
+                
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.Document.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)    
+                except Exception as e:
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+
 
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
