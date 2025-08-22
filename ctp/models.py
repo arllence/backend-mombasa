@@ -48,7 +48,7 @@ class TrainingAssignment(models.Model):
     date_completed = models.DateField(blank=True, null=True)
     is_completed = models.BooleanField(default=False, db_index=True)
     certificate = models.FileField(upload_to="documents/training/certificates/", blank=True, null=True)
-    date_created = models.DateTimeField(blank=True, null=True, db_index=True)
+    date_created = models.DateTimeField(auto_now_add=True, blank=True, null=True, db_index=True)
     is_deleted = models.BooleanField(default=False)
 
 

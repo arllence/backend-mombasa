@@ -28,6 +28,7 @@ class UpdateTrainingMaterialSerializer(serializers.Serializer):
     department = serializers.CharField(max_length=255)
 
 class SlimFetchTrainingMaterialSerializer(serializers.ModelSerializer):
+    department = SlimFetchSRRSDepartmentSerializer()
     class Meta:
         model = models.TrainingMaterial
         fields = '__all__'
@@ -81,8 +82,9 @@ class SlimFetchTrainingAssignmentSerializer(serializers.ModelSerializer):
 
 class FetchTrainingAssignmentSerializer(serializers.ModelSerializer):
     training = SlimFetchTrainingMaterialSerializer()
-    documents = serializers.SerializerMethodField()
+    # documents = serializers.SerializerMethodField()
     user = SlimUsersSerializer()
+    assigned_by = SlimUsersSerializer()
     
     class Meta:
         model = models.TrainingAssignment

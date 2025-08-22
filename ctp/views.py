@@ -410,16 +410,23 @@ class CoreViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             department_id = request.query_params.get('department_id')
             training_id = request.query_params.get('training_id')
+            r_status = request.query_params.get('status')
             query = request.query_params.get('q')
             slim = request.query_params.get('slim')
 
             filters = Q(is_deleted=False)
+
+            print(r_status)
 
             if training_id:
                 filters &= Q(training=training_id)
 
             if department_id:
                 filters &= Q(training__department=department_id)
+
+            if r_status:
+                is_complete = True if r_status == 'COMPLETE' else False
+                filters &= Q(is_completed=is_complete)
 
             if query:
                 filters &= (
@@ -450,14 +457,7 @@ class CoreViewSet(viewsets.ViewSet):
                 try:
                     resp = models.TrainingAssignment.objects.filter(
                         filters
-                    )
-
-                    if slim:
-                        resp = serializers.SlimFetchTrainingAssignmentSerializer(resp, many=True, context={"user_id":request.user.id}).data
-                    else:
-                        resp = serializers.SlimFetchTrainingAssignmentSerializer(resp, many=True, context={"user_id":request.user.id}).data
-
-                    return Response(resp, status=status.HTTP_200_OK)
+                    ).order_by('-date_created')
                 
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
@@ -483,15 +483,7 @@ class CoreViewSet(viewsets.ViewSet):
                             resp = []                        
 
                     else:
-                        resp = models.TrainingAssignment.objects.filter(Q(is_deleted=False) & (Q(created_by=request.user)) ).order_by('-date_created')
-
-                    paginator = PageNumberPagination()
-                    paginator.page_size = 50
-                    result_page = paginator.paginate_queryset(resp, request)
-                    serializer = serializers.FetchTrainingAssignmentSerializer(
-                        result_page, many=True, context={"user_id":request.user.id})
-                    return paginator.get_paginated_response(serializer.data)
-                
+                        resp = models.TrainingAssignment.objects.filter(Q(is_deleted=False) & (Q(user=request.user)) ).order_by('-date_created')
                 
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)
@@ -500,6 +492,13 @@ class CoreViewSet(viewsets.ViewSet):
                     logger.error(e)
                     print(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            serializer = serializers.FetchTrainingAssignmentSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            return paginator.get_paginated_response(serializer.data)
         
         elif request.method == "DELETE":
             request_id = request.query_params.get('request_id')
