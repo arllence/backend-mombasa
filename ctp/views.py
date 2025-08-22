@@ -416,8 +416,6 @@ class CoreViewSet(viewsets.ViewSet):
 
             filters = Q(is_deleted=False)
 
-            print(r_status)
-
             if training_id:
                 filters &= Q(training=training_id)
 
