@@ -24,6 +24,7 @@ urlpatterns = [
     path(API_VERSION, include('ict_helpdesk.urls')),
     path(API_VERSION, include('ipass.urls')),
     path(API_VERSION, include('invoice_tracking.urls')),
+    path(API_VERSION, include('ctp.urls')),
     re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
     re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
 
