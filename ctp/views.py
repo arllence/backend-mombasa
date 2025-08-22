@@ -68,6 +68,7 @@ class CoreViewSet(viewsets.ViewSet):
             
             title = payload['title']
             type = payload['type']
+            external_link = payload['external_link']
             description = payload['description']
             department = payload['department']
             
@@ -84,6 +85,7 @@ class CoreViewSet(viewsets.ViewSet):
                     "uid" : uid,
                     "title" : title,
                     "type" : type,
+                    "external_url" : external_link,
                     "description" : description,
                     "department" : department,
                     "created_by": request.user
@@ -124,6 +126,7 @@ class CoreViewSet(viewsets.ViewSet):
             request_id = payload['request_id']
             title = payload['title']
             type = payload['type']
+            external_link = payload['external_link']
             description = payload['description']
             department = payload['department']
         
@@ -144,6 +147,7 @@ class CoreViewSet(viewsets.ViewSet):
                 raw = {
                     "title" : title,
                     "type" : type,
+                    "external_url" : external_link,
                     "description" : description,
                     "department" : department,
                 }
