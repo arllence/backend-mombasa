@@ -222,7 +222,7 @@ class AMSViewSet(viewsets.ViewSet):
                             )
 
             if q_filters:
-                resp = models.Asset.objects.filter(q_filters)
+                resp = models.Asset.objects.filter(q_filters).order_by('asset_no')
                
             else:
                 try:
