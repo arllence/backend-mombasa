@@ -177,7 +177,7 @@ class AMSViewSet(viewsets.ViewSet):
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
             type = request.query_params.get('type')
-            status = request.query_params.get('status')
+            r_status = request.query_params.get('status')
             asset_no = request.query_params.get('asset_no')
             facility = request.query_params.get('facility')
             department = request.query_params.get('department')
@@ -193,8 +193,8 @@ class AMSViewSet(viewsets.ViewSet):
             if type:
                 q_filters &= Q(type=type)
 
-            if status:
-                q_filters &= Q(status=status)
+            if r_status:
+                q_filters &= Q(status=r_status)
 
             if department:
                 q_filters &= Q(department=department)
