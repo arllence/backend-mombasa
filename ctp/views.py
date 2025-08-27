@@ -192,6 +192,19 @@ class CoreViewSet(viewsets.ViewSet):
             slim = request.query_params.get('slim')
             resp = []
 
+            filters = Q(is_deleted=False)
+
+            if department_id:
+                filters &= Q(department=department_id)
+
+            if query:
+                filters &= (
+                    Q(title__icontains=query) |
+                    Q(uid__icontains=query) |
+                    Q(type__icontains=query) |
+                    Q(department__name__icontains=query)
+                )
+
             if request_id:
                 try:
                     resp = models.TrainingMaterial.objects.get(Q(id=request_id))
@@ -210,47 +223,28 @@ class CoreViewSet(viewsets.ViewSet):
                     print(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
                 
-            elif department_id:
-                try:
-                    resp = models.TrainingMaterial.objects.filter(
-                        Q(department=department_id)).order_by('-date_created')
-
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
-                
-            elif query:
-                try:
-                    resp = models.TrainingMaterial.objects.filter(
-                        Q(title__icontains=query) |
-                        Q(uid__icontains=query) |
-                        Q(type__icontains=query) |
-                        Q(department__name__icontains=query)
-                    ).order_by('-date_created')
-                
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                
             else:
                 try:
 
                     if any(role in ['SUPERUSER','CTP_ADMIN', 'HR'] for role in roles):
 
-                        resp = models.TrainingMaterial.objects.filter(is_deleted=False).order_by('-date_created')
+                        if filters:
+                            resp = models.TrainingMaterial.objects.filter(filters).order_by('-date_created')
+                        else:
+                            resp = models.TrainingMaterial.objects.filter(is_deleted=False).order_by('-date_created')
 
                     elif any(role in ['HOD'] for role in roles):
-                        try:
-                            dept = (Hods.objects.get(hod=request.user)).department
+                        dept = (Hods.objects.get(hod=request.user)).department
+                        if filters:
+                            filters |= (Q(created_by=request.user) | Q(department=dept) )
+                            resp = models.TrainingMaterial.objects.filter(filters).order_by('-date_created')
+                        else:
                             resp = models.TrainingMaterial.objects.filter(
-                            Q(department=dept) | Q(created_by=request.user),
-                            is_deleted=False).order_by('-date_created')
-                        except:
-                            resp = []                        
+                                Q(department=dept) | Q(created_by=request.user),
+                                 is_deleted=False).order_by('-date_created')                   
 
                     else:
-                        resp = models.TrainingMaterial.objects.filter(Q(is_deleted=False) & (Q(created_by=request.user)) ).order_by('-date_created')
+                        resp = models.TrainingMaterial.objects.filter(Q(is_deleted=False) & (Q(created_by=request.user) | Q(department=request.user.srrs_department)) ).order_by('-date_created')
                 
                 
                 except (ValidationError, ObjectDoesNotExist):
@@ -450,38 +444,43 @@ class CoreViewSet(viewsets.ViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
-                
-            elif filters:
-                try:
-                    resp = models.TrainingAssignment.objects.filter(
-                        filters
-                    ).order_by('-date_created')
-                
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)      
+                   
                 
             else:
                 try:
 
                     if any(role in ['SUPERUSER','CTP_ADMIN', 'HR'] for role in roles):
 
-                        resp = models.TrainingAssignment.objects.filter(is_deleted=False).order_by('-date_created')
+                        if filters:
+                            resp = models.TrainingAssignment.objects.filter(
+                                    filters
+                                ).order_by('-date_created')
+                        else:
+                            resp = models.TrainingAssignment.objects.filter(is_deleted=False).order_by('-date_created')
 
                     elif any(role in ['HOD'] for role in roles):
-                        try:
-                            dept = (Hods.objects.get(hod=request.user)).department
+                        dept = (Hods.objects.get(hod=request.user)).department
+                        if filters:
+                            filters |= (Q(training__department=dept) | Q(created_by=request.user))
                             resp = models.TrainingAssignment.objects.filter(
-                            Q(training__department=dept) | Q(created_by=request.user),
-                            is_deleted=False).order_by('-date_created')
-                        except:
-                            resp = []                        
+                                    filters
+                                ).order_by('-date_created')
+                        else:
+                            try:
+                                resp = models.TrainingAssignment.objects.filter(
+                                Q(training__department=dept) | Q(created_by=request.user),
+                                is_deleted=False).order_by('-date_created')
+                            except:
+                                resp = []                        
 
                     else:
-                        resp = models.TrainingAssignment.objects.filter(Q(is_deleted=False) & (Q(user=request.user)) ).order_by('-date_created')
+                        if filters:
+                            filters &= Q(user=request.user)
+                            resp = models.TrainingAssignment.objects.filter(
+                                    filters
+                                ).order_by('-date_created')
+                        else:
+                            resp = models.TrainingAssignment.objects.filter(Q(is_deleted=False) & (Q(user=request.user)) ).order_by('-date_created')
                 
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)

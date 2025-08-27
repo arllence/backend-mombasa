@@ -41,6 +41,7 @@ class SlimFetchDocumentSerializer(serializers.ModelSerializer):
 class FetchTrainingMaterialSerializer(serializers.ModelSerializer):
     department = SlimFetchSRRSDepartmentSerializer()
     documents = serializers.SerializerMethodField()
+    assignment = serializers.SerializerMethodField()
     created_by = SlimUsersSerializer()
     
     class Meta:
@@ -59,6 +60,19 @@ class FetchTrainingMaterialSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return [] 
         
+    def get_assignment(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            request = models.TrainingAssignment.objects.get(training=obj, user=user_id, is_deleted=False)
+            serializer = SlimFetchTrainingAssignmentSerializer(request, many=False)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return None
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return None 
+        
         
 class UploadFileSerializer(serializers.Serializer):
     training_id = serializers.CharField()
@@ -75,6 +89,7 @@ class UpdateTrainingAssignmentSerializer(serializers.Serializer):
     training = serializers.CharField()
 
 class SlimFetchTrainingAssignmentSerializer(serializers.ModelSerializer):
+    assigned_by = SlimUsersSerializer()
     class Meta:
         model = models.TrainingAssignment
         fields = '__all__'
