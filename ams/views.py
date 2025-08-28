@@ -87,6 +87,7 @@ class AMSViewSet(viewsets.ViewSet):
             with transaction.atomic():
                 raw_obj = {
                     "asset_no": asset_no,
+                    "serial_no": shared_fxns.get_serial_number(properties),
                     "facility": facility,
                     "department": department,
                     "status": asset_status,
@@ -145,6 +146,7 @@ class AMSViewSet(viewsets.ViewSet):
             with transaction.atomic():
                 raw_obj = {
                     "asset_no": asset_no,
+                    "serial_no": shared_fxns.get_serial_number(properties),
                     "facility": facility,
                     "department": department,
                     "status": asset_status,

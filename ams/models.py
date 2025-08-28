@@ -10,6 +10,7 @@ from ict_helpdesk.models import Facility
 class Asset(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     asset_no = models.CharField(max_length=500, unique=True, null=True, blank=True)
+    serial_no = models.CharField(max_length=500, unique=True, null=True, blank=True)
     type = models.CharField(max_length=100, null=True, blank=True)
     category = models.CharField(max_length=100, null=True, blank=True)
     status = models.CharField(max_length=100, null=True, blank=True)

@@ -35,21 +35,6 @@ def find_date_difference(start_date,end_date,period):
         return 'error'
 
 
-def identify_file_type(ext):
-    images = ['jpeg', 'jpg', 'png', 'tiff']
-    videos = ['mp4','webm', 'mkv']
-    files = ['pdf']
-
-    if ext.lower() in images:
-        return 'IMAGE'
-    elif ext.lower() in videos:
-        return 'VIDEO'
-    elif ext.lower() in files:
-        return 'FILE'
-    else:
-        return 'UNKNOWN'
-
-
 def generate_unique_identifier():
     characters = string.ascii_uppercase + string.digits
     uid ='AKHK-' + ''.join(random.choices(characters, k=6))
@@ -73,4 +58,10 @@ def convert_to_json_serializable(data):
         return convert_to_json_serializable(data.__dict__)
     else:
         return data
+
+def get_serial_number(properties):
+    for item in properties:
+        if "serial" in item.get("property", "").lower():
+            return item.get("value")
+    return None  # Return None if no serial number is found
 
