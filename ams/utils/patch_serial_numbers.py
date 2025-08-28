@@ -1,4 +1,4 @@
-from shared_fxns import get_serial_number
+from ams.utils.shared_fxns import get_serial_number
 from ams.models import Asset
 
 def patchSerialNumber():
@@ -8,4 +8,3 @@ def patchSerialNumber():
         print("SERIAL NO: ", serial_no, "ASSET NO: ", asset.asset_no)
         asset.serial_no = serial_no
         asset.save()
-
