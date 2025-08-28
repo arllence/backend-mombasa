@@ -62,6 +62,6 @@ def convert_to_json_serializable(data):
 def get_serial_number(properties):
     for item in properties:
         if "serial" in item.get("property", "").lower():
-            return item.get("value")
+            return item.get("value").strip()
     return None  # Return None if no serial number is found
 
