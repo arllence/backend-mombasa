@@ -5,6 +5,7 @@ def patchSerialNumber():
     assets = Asset.objects.all()
     for asset in assets:
         serial_no = get_serial_number(asset.properties)
+        serial_no = serial_no.strip() if serial_no else None
         print("SERIAL NO: ", serial_no, "ASSET NO: ", asset.asset_no)
         asset.serial_no = serial_no
         asset.save()
