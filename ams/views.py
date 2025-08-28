@@ -220,6 +220,7 @@ class AMSViewSet(viewsets.ViewSet):
                               Q(specific_location__icontains=query) |
                               Q(custodian__icontains=query) |
                               Q(type__icontains=query) |
+                              Q(serial_no__icontains=query) |
                               Q(description__icontains=query) 
                             )
 
