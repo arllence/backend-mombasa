@@ -17,6 +17,7 @@ class TrainingMaterial(models.Model):
     uid = models.CharField(max_length=50, unique=True)
     title = models.CharField(max_length=255, db_index=True)
     type = models.CharField(max_length=255, null=True, blank=True, db_index=True)
+    category = models.CharField(max_length=255, default='GENERAL', null=True, blank=True, db_index=True)
     description = models.TextField(blank=True)
     external_url = models.URLField(null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
@@ -31,6 +32,7 @@ class TrainingMaterial(models.Model):
             models.Index(fields=["department"]),
             models.Index(fields=["title"]),
             models.Index(fields=["type"]),
+            models.Index(fields=["category"]),
             models.Index(fields=["created_by"]),
             models.Index(fields=["department", "title"]),  # composite
         ]

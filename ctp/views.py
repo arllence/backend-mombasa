@@ -71,6 +71,7 @@ class CoreViewSet(viewsets.ViewSet):
             external_link = payload['external_link']
             description = payload['description']
             department = payload['department']
+            category = payload['category']
             
                  
             try:
@@ -85,6 +86,7 @@ class CoreViewSet(viewsets.ViewSet):
                     "uid" : uid,
                     "title" : title,
                     "type" : type,
+                    "category" : category,
                     "external_url" : external_link,
                     "description" : description,
                     "department" : department,
@@ -129,6 +131,7 @@ class CoreViewSet(viewsets.ViewSet):
             external_link = payload['external_link']
             description = payload['description']
             department = payload['department']
+            category = payload['category']
         
                  
             try:
@@ -147,6 +150,7 @@ class CoreViewSet(viewsets.ViewSet):
                 raw = {
                     "title" : title,
                     "type" : type,
+                    "category" : category,
                     "external_url" : external_link,
                     "description" : description,
                     "department" : department,
@@ -234,17 +238,25 @@ class CoreViewSet(viewsets.ViewSet):
                             resp = models.TrainingMaterial.objects.filter(is_deleted=False).order_by('-date_created')
 
                     elif any(role in ['HOD'] for role in roles):
-                        dept = (Hods.objects.get(hod=request.user)).department
+                        try:
+                            dept = (Hods.objects.get(hod=request.user)).department
+                        except:
+                            return Response({"details": "HOD role not understood"}, status=status.HTTP_400_BAD_REQUEST)
+                        
                         if filters:
                             filters |= (Q(created_by=request.user) | Q(department=dept) )
                             resp = models.TrainingMaterial.objects.filter(filters).order_by('-date_created')
                         else:
                             resp = models.TrainingMaterial.objects.filter(
-                                Q(department=dept) | Q(created_by=request.user),
-                                 is_deleted=False).order_by('-date_created')                   
+                                Q(department=dept) | 
+                                Q(created_by=request.user) | 
+                                Q(category='GENERAL'), is_deleted=False).order_by('-date_created')                   
 
                     else:
-                        resp = models.TrainingMaterial.objects.filter(Q(is_deleted=False) & (Q(created_by=request.user) | Q(department=request.user.srrs_department)) ).order_by('-date_created')
+                        resp = models.TrainingMaterial.objects.filter(Q(is_deleted=False) & 
+                                                                      (Q(created_by=request.user) | 
+                                                                       Q(department=request.user.srrs_department) |
+                                                                       Q(category='GENERAL')) ).order_by('-date_created')
                 
                 
                 except (ValidationError, ObjectDoesNotExist):
@@ -396,7 +408,24 @@ class CoreViewSet(viewsets.ViewSet):
 
   
         elif request.method == "PATCH":
+            # self assign training
             payload = request.data
+            training_id = payload.get('training_id')
+
+            if not training_id:
+                return Response({"details": "Select training"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                training = models.TrainingMaterial.objects.get(id=training_id)
+            except Exception as e:
+                return Response({"details": "Unknown training"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            raw = {
+                "training" : training,
+                "user": request.user,
+                "assigned_by": request.user
+            }
+            models.TrainingAssignment.objects.create(**raw)
             
             return Response('success', status=status.HTTP_200_OK)
             
@@ -459,7 +488,11 @@ class CoreViewSet(viewsets.ViewSet):
                             resp = models.TrainingAssignment.objects.filter(is_deleted=False).order_by('-date_created')
 
                     elif any(role in ['HOD'] for role in roles):
-                        dept = (Hods.objects.get(hod=request.user)).department
+                        try:
+                            dept = (Hods.objects.get(hod=request.user)).department
+                        except:
+                            return Response({"details": "HOD role not understood"}, status=status.HTTP_400_BAD_REQUEST)
+                        
                         if filters:
                             filters |= (Q(training__department=dept) | Q(created_by=request.user))
                             resp = models.TrainingAssignment.objects.filter(

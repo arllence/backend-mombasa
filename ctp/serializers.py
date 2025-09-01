@@ -24,6 +24,7 @@ class UpdateTrainingMaterialSerializer(serializers.Serializer):
     request_id = serializers.CharField()
     title = serializers.CharField()
     type = serializers.CharField()
+    category = serializers.CharField()
     description = serializers.CharField()
     department = serializers.CharField(max_length=255)
 
