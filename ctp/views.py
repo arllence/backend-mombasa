@@ -12,7 +12,6 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.contrib.auth import get_user_model
-from django.db.models import  Q
 from django.db import transaction
 from ctp import models
 from ctp import serializers
@@ -23,7 +22,9 @@ from ctp.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
 from django.conf import settings
-from django.contrib.auth.models import Group
+from django.db.models import Count, Q, F, Value
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, Concat
+
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -202,12 +203,17 @@ class CoreViewSet(viewsets.ViewSet):
                 filters &= Q(department=department_id)
 
             if query:
-                filters &= (
-                    Q(title__icontains=query) |
-                    Q(uid__icontains=query) |
-                    Q(type__icontains=query) |
-                    Q(department__name__icontains=query)
-                )
+                if query == 'all':
+                    resp = models.TrainingMaterial.objects.filter(is_deleted=False).order_by('title')
+                    resp = serializers.SlimFetchTrainingMaterialSerializer(resp, many=True, context={"user_id":request.user.id}).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                else:
+                    filters &= (
+                        Q(title__icontains=query) |
+                        Q(uid__icontains=query) |
+                        Q(type__icontains=query) |
+                        Q(department__name__icontains=query)
+                    )
 
             if request_id:
                 try:
@@ -983,42 +989,98 @@ class ReportsViewSet(viewsets.ViewSet):
 
     @action(methods=["GET",],
             detail=False,
-            url_path="contracts",
-            url_name="contracts")
-    def contracts(self, request):
+            url_path="general",
+            url_name="general")
+    def general(self, request):
                     
         department = request.query_params.get('department')
-        commencement_date = request.query_params.get('date_from')
-        expiry_date = request.query_params.get('date_to')
+        training = request.query_params.get('training')
+        r_status = request.query_params.get('status')
 
         q_filters = Q()
 
         if department:
-            q_filters &= Q(department=department)
+            q_filters &= Q(user__srrs_department=department)
 
-        if commencement_date:
-            commencement_date = datetime.datetime.strptime(commencement_date, '%Y-%m-%d')
-            q_filters &= Q(commencement_date=commencement_date)
+        if training:
+            q_filters &= Q(training=training)
 
-        if expiry_date:
-            expiry_date = datetime.datetime.strptime(expiry_date, '%Y-%m-%d')
-            q_filters &= Q(expiry_date=expiry_date)
+        if r_status:
+            r_status = True if r_status == 'COMPLETE' else False
+            q_filters &= Q(is_completed=r_status)
 
         if q_filters:
-            resp = models.TrainingMaterial.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            resp = models.TrainingAssignment.objects.filter(
+                Q(is_deleted=False) & q_filters).order_by('-date_created')
         else:
-            roles = user_util.fetchusergroups(request.user.id)  
-
-            if "MMD" in roles or "SUPERUSER" in roles:
-                resp = models.TrainingMaterial.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
-                
-            else:
-                resp = models.TrainingMaterial.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('-date_created')[:50]
+            resp = models.TrainingAssignment.objects.filter(
+                Q(is_deleted=False)).order_by('-date_created')[:50]
 
 
-        resp = serializers.FetchContractSerializer(resp, many=True, context={"user_id":request.user.id}).data
+        resp = serializers.FetchTrainingAssignmentSerializer(
+            resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
+
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="departmental",
+            url_name="departmental")
+    def department_training_report(self, request):
+        """
+        Aggregated report for a department with per-training breakdown.
+        """
+        department_id = request.query_params.get('department') or None
+        training_id = request.query_params.get('training') or None
+
+        if not department_id:
+            return Response({"details": "Department required"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+        filters = Q()
+
+        if department_id:
+            filters &= Q(user__srrs_department=department_id)
+
+        if training_id:
+            filters &= Q(training=training_id)
+
+        total = models.TrainingAssignment.objects.filter(filters).count()
+        completed = models.TrainingAssignment.objects.filter(
+            user__srrs_department=department_id, is_completed=True
+        ).count()
+        pending = total - completed
+
+        # Per-training breakdown
+        breakdown = (
+            models.TrainingAssignment.objects.filter(filters)
+            .values(
+                training_uid=F("training__pk"), 
+                training_title=F("training__title"),
+                user_uid=F("user__id"),
+                user_name=Concat(F("user__first_name"), Value(" "), F("user__last_name"))
+            )
+            .annotate(
+                total_assigned=Count("id"),
+                completed=Count("id", filter=Q(is_completed=True)),
+            )
+            .annotate(pending=F("total_assigned") - F("completed"))
+            .annotate(
+                completion_rate=F("completed") * 100.0 / F("total_assigned")
+            )
+        )
+
+        return Response(
+            {
+                "department_id": department_id,
+                "total_assignments": total,
+                "completed": completed,
+                "pending": pending,
+                "completion_rate": (completed / total * 100) if total > 0 else 0,
+                "per_training": list(breakdown),
+            }, status=status.HTTP_200_OK
+        )
     
         
 class AnalyticsViewSet(viewsets.ViewSet):
@@ -1052,3 +1114,166 @@ class AnalyticsViewSet(viewsets.ViewSet):
         }
 
         return Response(resp, status=status.HTTP_200_OK)
+    
+    
+    @action(methods=["GET",],
+            detail=False,
+            url_path="summary",
+            url_name="summary")
+    def summary(self, request):
+        """
+            Dashboard summary view for training platform.
+        """
+        # Filters
+        active_materials = models.TrainingMaterial.objects.filter(is_deleted=False)
+        active_assignments = models.TrainingAssignment.objects.filter(is_deleted=False)
+
+        # Time Filter (Last 6 months)
+        six_months_ago = timezone.now().date() - timedelta(days=180)
+
+        # Base stats
+        total_materials = active_materials.count()
+        total_assignments = active_assignments.count()
+        completed_assignments = active_assignments.filter(is_completed=True).count()
+        overdue_assignments = active_assignments.filter(
+            is_completed=False, 
+            completion_date__lt=timezone.now().date()
+        ).count()
+
+        completion_rate = (
+            (completed_assignments / total_assignments) * 100
+            if total_assignments > 0 else 0
+        )
+
+        # Materials per Department
+        materials_by_department = active_materials.values('department__name').annotate(
+            count=Count('id')
+        )
+
+        # Assignments per Department (via user)
+        assignments_by_department = active_assignments.values(
+            'user__department__name'
+        ).annotate(count=Count('id'))
+
+        # Completion Trend (last 6 months)
+        completions_over_time = active_assignments.filter(
+            is_completed=True,
+            date_completed__gte=six_months_ago
+        ).extra(select={'month': "DATE_TRUNC('month', date_completed)"}).values('month').annotate(
+            count=Count('id')
+        ).order_by('month')
+
+        return Response({
+            "summary": {
+                "total_training_materials": total_materials,
+                "total_assignments": total_assignments,
+                "completed_assignments": completed_assignments,
+                "completion_rate": round(completion_rate, 2),
+                "overdue_assignments": overdue_assignments,
+            },
+            "materials_by_department": list(materials_by_department),
+            "assignments_by_department": list(assignments_by_department),
+            "completions_over_time": [
+                {"month": item["month"].strftime("%Y-%m"), "count": item["count"]}
+                for item in completions_over_time
+            ]
+        })
+    
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="completion-report",
+            url_name="completion-report")
+    def completion_report(self,request):
+        """
+        Combined report:
+        - Trend over time
+        - Department breakdown (with completion rate)
+        - Training breakdown (with completion rate)
+        """
+        period = request.GET.get("period", "month")
+        department_id = request.GET.get("department_id")
+        training_id = request.GET.get("training_id")
+
+        # Choose grouping function
+        if period == "day":
+            trunc_func = TruncDay("date_completed")
+        elif period == "week":
+            trunc_func = TruncWeek("date_completed")
+        else:
+            trunc_func = TruncMonth("date_completed")
+
+        # Base queryset
+        qs = models.TrainingAssignment.objects.all()
+
+        # Apply filters
+        if department_id:
+            qs = qs.filter(user__department_id=department_id)
+        if training_id:
+            qs = qs.filter(training_id=training_id)
+
+        # --- 1. Trend over time (completed only)
+        trend_data = (
+            qs.filter(is_completed=True)
+            .annotate(period=trunc_func)
+            .values("period")
+            .annotate(total_completed=Count("id"))
+            .order_by("period")
+        )
+        trend = [
+            {
+                "period": entry["period"].strftime("%Y-%m-%d"),
+                "total_completed": entry["total_completed"],
+            }
+            for entry in trend_data
+        ]
+
+        # --- 2. Breakdown by department (completion rate)
+        dept_data = (
+            qs.values("user__department__id", "user__department__name")
+            .annotate(
+                total_assigned=Count("id"),
+                total_completed=Count("id", filter=Q(is_completed=True)),
+            )
+            .order_by("user__department__name")
+        )
+        department_breakdown = [
+            {
+                "department_id": entry["user__department__id"],
+                "department_name": entry["user__department__name"],
+                "total_assigned": entry["total_assigned"],
+                "total_completed": entry["total_completed"],
+                "completion_rate": round(
+                    (entry["total_completed"] / entry["total_assigned"]) * 100, 2
+                ) if entry["total_assigned"] > 0 else 0,
+            }
+            for entry in dept_data
+        ]
+
+        # --- 3. Breakdown by training (completion rate)
+        training_data = (
+            qs.values("training__id", "training__title")
+            .annotate(
+                total_assigned=Count("id"),
+                total_completed=Count("id", filter=Q(is_completed=True)),
+            )
+            .order_by("training__title")
+        )
+        training_breakdown = [
+            {
+                "training_id": entry["training__id"],
+                "training_title": entry["training__title"],
+                "total_assigned": entry["total_assigned"],
+                "total_completed": entry["total_completed"],
+                "completion_rate": round(
+                    (entry["total_completed"] / entry["total_assigned"]) * 100, 2
+                ) if entry["total_assigned"] > 0 else 0,
+            }
+            for entry in training_data
+        ]
+
+        return Response({
+            "trend": trend,
+            "department_breakdown": department_breakdown,
+            "training_breakdown": training_breakdown,
+        })
