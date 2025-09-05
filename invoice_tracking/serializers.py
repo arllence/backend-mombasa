@@ -192,9 +192,10 @@ class FetchCancellationSerializer(serializers.ModelSerializer):
     def get_approved_by(self, obj):
         try:
             record = models.CancellationStatusChange.objects.get(cancelled=obj,status='APPROVED')
-            serializer = FetchStatusChangeSerializer(record, many=False)
+            serializer = FetchCancelledStatusChangeSerializer(record, many=False)
             return serializer.data
         except Exception as e:
+            print(e)
             return {}
         
         
@@ -203,7 +204,12 @@ class FetchStatusChangeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.TrackingStatusChange
         fields = '__all__'
-    
+
+class FetchCancelledStatusChangeSerializer(serializers.ModelSerializer):
+    action_by = UsersSerializer()
+    class Meta:
+        model = models.CancellationStatusChange
+        fields = '__all__'    
 
 class PlatformAdminSerializer(serializers.Serializer):
     admin = serializers.CharField(max_length=500)
