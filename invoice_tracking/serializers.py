@@ -137,6 +137,7 @@ class FetchCancellationSerializer(serializers.ModelSerializer):
     is_creator = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
     can_approve = serializers.SerializerMethodField()
+    approved_by = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Cancellation
@@ -187,6 +188,14 @@ class FetchCancellationSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return False
+        
+    def get_approved_by(self, obj):
+        try:
+            record = models.CancellationStatusChange.objects.get(cancelled=obj,status='APPROVED')
+            serializer = FetchStatusChangeSerializer(record, many=False)
+            return serializer.data
+        except Exception as e:
+            return {}
         
         
 class FetchStatusChangeSerializer(serializers.ModelSerializer):
