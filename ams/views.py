@@ -211,6 +211,7 @@ class AMSViewSet(viewsets.ViewSet):
                 q_filters &= Q(facility=facility)
 
             if query:
+                query = query.strip()
                 q_filters &= (Q(asset_no__icontains=query) | 
                               Q(asset_no__icontains=query) | 
                               Q(category__icontains=query) |
