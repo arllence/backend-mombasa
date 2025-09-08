@@ -181,7 +181,7 @@ class GenericsViewSet(viewsets.ViewSet):
                 category = payload.get('category')
                 facility = payload['facility']
                 subject = payload['subject']
-                # issue_type = payload['issue_type']
+                telephone = payload.get('telephone')
 
                 uid = shared_fxns.generate_unique_identifier()
 
@@ -236,6 +236,7 @@ class GenericsViewSet(viewsets.ViewSet):
                         "subject": subject,
                         "email": email,
                         "name": name,
+                        "telephone": telephone,
                         "uid": uid
                     }
 

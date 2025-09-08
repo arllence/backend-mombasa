@@ -108,6 +108,7 @@ class Issue(models.Model):
     subject = models.CharField(max_length=255, null=True, blank=True)
     name = models.CharField(max_length=255, null=True, blank=True)
     email = models.CharField(max_length=255, null=True, blank=True)
+    telephone = models.CharField(max_length=255, null=True, blank=True)
     is_acknowledged = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_assigned = models.DateTimeField(null=True, blank=True)
