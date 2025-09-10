@@ -96,16 +96,19 @@ class OHC(models.Model):
 
 class User(AbstractBaseUser, PermissionsMixin):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    email = models.CharField(max_length=100, unique=True)
+    email = models.CharField(max_length=100, unique=True, db_index=True)
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
-    employee_no = models.CharField(max_length=50, null=True, blank=True)
-    is_active = models.BooleanField(default=False)
+    employee_no = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    staff_status = models.CharField(max_length=50, default="PERMANENT", db_index=True)
+    is_active = models.BooleanField(default=False, db_index=True)
     is_superuser = models.BooleanField(default=False)
-    is_staff = models.BooleanField(default=False)
-    is_suspended = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False, db_index=True)
+    is_suspended = models.BooleanField(default=False, db_index=True)
     is_defaultpassword = models.BooleanField(default=True)
-    date_created = models.DateTimeField(auto_now_add=True)
+    profile_updated = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True, db_index=True)
+
     department = models.ForeignKey(
         Department, related_name="user_department", 
         null=True, blank=True,
@@ -114,24 +117,28 @@ class User(AbstractBaseUser, PermissionsMixin):
     srrs_department = models.ForeignKey(
         SRRSDepartment, related_name="srrs_user_department", 
         null=True, blank=True,
-        on_delete=models.DO_NOTHING
+        on_delete=models.DO_NOTHING,
+        db_index=True
     )
     sub_department = models.ForeignKey(
         SubDepartment, related_name="srrs_user_sub_department", 
         null=True, blank=True,
-        on_delete=models.DO_NOTHING
+        on_delete=models.DO_NOTHING,
+        db_index=True
     )
     ohc = models.ForeignKey(
         OHC, related_name="srrs_user_ohc", 
         null=True, blank=True,
-        on_delete=models.DO_NOTHING
+        on_delete=models.DO_NOTHING,
+        db_index=True
     )
+
     objects = UserManager()
 
     USERNAME_FIELD = "email"
 
     def __str__(self):
-        return '%s' % (str(self.id))
+        return str(self.id)
 
     def has_perm(self, perm, obj=None):
         return True
@@ -141,6 +148,19 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     class Meta:
         db_table = "systemusers"
+        indexes = [
+            models.Index(fields=["email"]),
+            models.Index(fields=["employee_no"]),
+            models.Index(fields=["staff_status"]),
+            models.Index(fields=["is_active"]),
+            models.Index(fields=["is_staff"]),
+            models.Index(fields=["is_suspended"]),
+            models.Index(fields=["date_created"]),
+            models.Index(fields=["srrs_department"]),
+            models.Index(fields=["sub_department"]),
+            models.Index(fields=["ohc"]),
+        ]
+
 
 
 class Hods(models.Model):

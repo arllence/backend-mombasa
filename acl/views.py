@@ -747,15 +747,33 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             def set_name(name):
                 return name.split(' ',1)
             
-            def set_department(department):
+            def set_department(name):
                 try:
-                    department = models.SRRSDepartment.objects.get(name=department)
+                    department_qs = models.SRRSDepartment.objects.filter(name__icontains=name)
+                    return department_qs.first() if department_qs.exists() else None
                 except (ValidationError, ObjectDoesNotExist):
-                    department = None
-                return department
+                    return None
+                
+            def set_sub_department(name):
+                name = set_name(name)[0]
+                try:
+                    resp_qs = models.SubDepartment.objects.filter(name__icontains=name)
+                    return resp_qs.first() if resp_qs.exists() else None
+                except (ValidationError, ObjectDoesNotExist):
+                    return None
+                
+            def set_ohc(name):
+                name = set_name(name)[0]
+                try:
+                    resp_qs = models.OHC.objects.filter(name__icontains=name)
+                    return resp_qs.first() if resp_qs.exists() else None
+                except (ValidationError, ObjectDoesNotExist):
+                    return None
             
             f = request.FILES.getlist('documents')[0]
             if f.name.endswith('.csv'):
+
+                emails = list(get_user_model().objects.all().values_list('email', flat=True))
 
                 # decoded_file = f.read().decode('utf-8')
                 decoded_file = f.read().decode('windows-1254')
@@ -770,13 +788,16 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                         last_name=set_name(row[0])[1].strip().capitalize(), 
                         email=row[1].strip().lower(), 
                         srrs_department=set_department(row[2].strip()),
+                        sub_department=set_sub_department(row[3].strip()),
+                        ohc=set_ohc(row[4].strip()),
+                        staff_status=row[5].strip(),
                         is_active=True,
                         is_superuser=False,
                         is_staff=False,
                         is_suspended=False,
                         password=make_password("welcome@123"),
                     )
-                    for row in csv_data
+                    for row in csv_data if row[1].strip().lower() not in emails
                 ]
 
                 newInstances = models.User.objects.bulk_create(users)
