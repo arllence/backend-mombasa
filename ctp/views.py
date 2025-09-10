@@ -192,7 +192,9 @@ class CoreViewSet(viewsets.ViewSet):
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
-            department_id = request.query_params.get('department_id')
+            department_id = request.query_params.get('department')
+            type = request.query_params.get('type')
+            category = request.query_params.get('category')
             query = request.query_params.get('q')
             slim = request.query_params.get('slim')
             resp = []
@@ -201,6 +203,12 @@ class CoreViewSet(viewsets.ViewSet):
 
             if department_id:
                 filters &= Q(department=department_id)
+
+            if category:
+                filters &= Q(category=category)
+
+            if type:
+                filters &= Q(type=type)
 
             if query:
                 if query == 'all':
@@ -259,10 +267,10 @@ class CoreViewSet(viewsets.ViewSet):
                                 Q(category='GENERAL'), is_deleted=False).order_by('-date_created')                   
 
                     else:
-                        resp = models.TrainingMaterial.objects.filter(Q(is_deleted=False) & 
-                                                                      (Q(created_by=request.user) | 
-                                                                       Q(department=request.user.srrs_department) |
-                                                                       Q(category='GENERAL')) ).order_by('-date_created')
+                        filters &= (Q(created_by=request.user) | 
+                                    Q(department=request.user.srrs_department) |
+                                    Q(category='GENERAL'))
+                        resp = models.TrainingMaterial.objects.filter(filters).order_by('-date_created')
                 
                 
                 except (ValidationError, ObjectDoesNotExist):
