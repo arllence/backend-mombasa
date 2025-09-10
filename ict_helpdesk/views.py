@@ -500,6 +500,8 @@ class GenericsViewSet(viewsets.ViewSet):
                         emails.append(assignee.assigned_by.email)
                 if issueInstance.assigned_to:
                     emails.append(issueInstance.assigned_to.email)
+                if user:
+                    emails.append(user.email)
                 try:
                     emails.remove(request.user.email)
                 except:
