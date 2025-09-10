@@ -3174,7 +3174,7 @@ class JobCardViewSet(viewsets.ViewSet):
                     status_for = None
 
                 else:
-                    is_hod, is_slt, is_ceo = [False, False, False]
+                    is_hod, is_slt, is_ceo, is_cash_office = [False, False, False, False]
                     if "MHD_ADMIN" in roles:
                         adminInstance = models.PlatformAdmin.objects.get(admin=request.user)
                         is_hod = adminInstance.is_hod
@@ -3198,6 +3198,12 @@ class JobCardViewSet(viewsets.ViewSet):
                         request_status = "CEO APPROVED"
                         status_for = "CEO"
                         is_ceo = True
+
+                    if "CASH_OFFICE" in roles:
+                        requestInstance.is_cash_office_approved = True
+                        request_status = "DISBURSED"
+                        status_for = "CASH OFFICE"
+                        is_cash_office = True
 
                 # track status change
                 raw = {
@@ -3229,10 +3235,14 @@ class JobCardViewSet(viewsets.ViewSet):
                         logger.error(e)
 
                     # send approver notification email
+                    emails = []
                     if is_hod:
                         emails = list(models.PlatformAdmin.objects.filter(is_slt=True).values_list('admin__email', flat=True))
                     if is_slt:
                         emails =  list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
+                    if is_ceo:
+                        emails =  list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE')).values_list('email', flat=True))
+                        
                     subject = f"[MHD] Job Card {requestInstance.job_card_no} Pending Approval."
                     message = f"Hello. \nJob card for issue id: {requestInstance.job_card_no}, \nis pending your approval\nVisit http://172.20.0.42:8009/requests/job-cards\n\nRegards\nMHD-AKHK\n\n"
                     try:
@@ -3242,7 +3252,6 @@ class JobCardViewSet(viewsets.ViewSet):
                                 "subject" : subject,
                                 "message" : message,
                             }
-                            
                             Sendmail.objects.create(**mail)
                     except Exception as e:
                         logger.error(e)
@@ -3316,6 +3325,16 @@ class JobCardViewSet(viewsets.ViewSet):
                             resp = models.JobCard.objects.filter(filters).order_by('-date_created')
                         else:
                             resp = models.JobCard.objects.filter(Q(is_hod_approved=True) & Q(is_slt_approved=True) & Q(is_ceo_approved=False) & ~Q(status='REJECTED')).order_by('-date_created')
+
+                    if "CASH_OFFICE" in roles:
+                        
+                        if query == 'approved':
+                            filters = (Q(is_cash_office_approved=True))
+                            if location:
+                                filters &= Q(issue__facility__category=location)
+                            resp = models.JobCard.objects.filter(filters).order_by('-date_created')
+                        else:
+                            resp = models.JobCard.objects.filter(Q(is_ceo_approved=True) & Q(is_slt_approved=True) & Q(is_ceo_approved=False) & ~Q(status='REJECTED')).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
