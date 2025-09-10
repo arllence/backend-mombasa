@@ -3334,7 +3334,7 @@ class JobCardViewSet(viewsets.ViewSet):
                                 filters &= Q(issue__facility__category=location)
                             resp = models.JobCard.objects.filter(filters).order_by('-date_created')
                         else:
-                            resp = models.JobCard.objects.filter(Q(is_ceo_approved=True) & ~Q(status='REJECTED')).order_by('-date_created')
+                            resp = models.JobCard.objects.filter(Q(is_ceo_approved=True) & Q(is_cash_office_approved=False) & ~Q(status='REJECTED')).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
