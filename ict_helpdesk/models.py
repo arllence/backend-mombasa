@@ -256,3 +256,31 @@ class EquipmentType(models.Model):
 
     class Meta:
         db_table = u'"{}\".\"equipment_types"'.format(settings.ICT_HELPDESK)
+
+
+class Document(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    issue = models.ForeignKey(
+        Issue, on_delete=models.DO_NOTHING, 
+        related_name="ticket_documents", db_index=True)
+    
+    uploaded_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="ticket_document_uploaded_by"
+    )
+
+    document = models.FileField(upload_to='documents/ict_helpdesk/uploads/')
+    file_name = models.CharField(max_length=500)
+    file_type = models.CharField(max_length=255)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.file_name}"
+    
+    class Meta:
+        db_table = u'"{}\".\"documents"'.format(settings.ICT_HELPDESK)
+        indexes = [
+            models.Index(fields=["issue"])
+        ]

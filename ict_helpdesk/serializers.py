@@ -330,3 +330,12 @@ class FetchEquipmentTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.EquipmentType
         fields = '__all__'
+
+class UploadFileSerializer(serializers.Serializer):
+    issue_id = serializers.CharField()
+    upload_type = serializers.CharField()
+
+class SlimFetchDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Document
+        fields = '__all__'

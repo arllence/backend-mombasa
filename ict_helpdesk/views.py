@@ -2295,6 +2295,172 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            
+    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
+            detail=False,
+            url_path="documents",
+            url_name="documents")
+    def documents(self, request):
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = json.loads(request.data['payload'])
+
+            exts = ['pdf']
+            for f in request.FILES.getlist('documents'):
+                original_file_name = f.name
+                ext = original_file_name.split('.')[-1].strip().lower()
+                if ext not in exts:
+                    return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
+            
+           
+            # serialize payload
+            serializer = serializers.UploadFileSerializer(
+                    data=payload, many=False)
+            if not serializer.is_valid():
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+            issue_id = payload['issue_id']
+            file_type = payload['upload_type']
+
+            try:
+                targetInstance = models.Issue.objects.get(id=issue_id)
+            except Exception as e:
+                return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+            with transaction.atomic():
+                # create contract instance
+
+                for f in request.FILES.getlist('documents'):
+                    try:
+                        original_file_name = f.name.upper()                        
+                        models.Document.objects.create(
+                            document=f,
+                            file_name=original_file_name, 
+                            file_type=file_type, 
+                            issue=targetInstance, 
+                            uploaded_by=request.user
+                        )
+
+                    except Exception as e:
+                        logger.error(e)
+                        print(e)
+                        return Response({"details": "Error saving files"}, status=status.HTTP_400_BAD_REQUEST)  
+                
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "File uploaded", f"Issue Id: {targetInstance.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            issue_id = request.query_params.get('issue_id')
+            query = request.query_params.get('q')
+            slim = request.query_params.get('slim')
+
+            if request_id:
+                try:
+                    resp = models.Document.objects.get(Q(id=request_id))
+
+                    if slim:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            elif issue_id:
+                try:
+                    resp = models.Document.objects.filter(Q(issue=issue_id))
+
+                    if slim:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=True, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            elif query:
+                try:
+                    resp = models.Document.objects.filter(
+                        Q(file_name__icontains=query) |
+                        Q(file_type__icontains=query) |
+                        Q(issue__uid__icontains=query) |
+                        Q(issue__department__name__icontains=query)
+                    )
+
+                    if slim:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=True, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            else:
+                try:
+
+                    if any(role in ['SUPERUSER','ICT_ADMIN'] for role in roles):
+
+                        resp = models.Document.objects.filter(is_deleted=False).order_by('-date_created')
+
+                    else:
+                        resp = models.Document.objects.filter(Q(is_deleted=False) & (Q(uploaded_by=request.user)) ).order_by('-date_created')
+
+
+
+                    paginator = PageNumberPagination()
+                    paginator.page_size = 50
+                    result_page = paginator.paginate_queryset(resp, request)
+                    serializer = serializers.SlimFetchDocumentSerializer(
+                        result_page, many=True, context={"user_id":request.user.id})
+                    return paginator.get_paginated_response(serializer.data)
+                
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.Document.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)    
+                except Exception as e:
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST) 
 
 
    

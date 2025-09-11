@@ -745,7 +745,7 @@ class CoreViewSet(viewsets.ViewSet):
             try:
                 targetInstance = models.TrainingMaterial.objects.get(id=training_id)
             except Exception as e:
-                return Response({"details": "Unknown contract"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
                     
             with transaction.atomic():
                 # create contract instance
