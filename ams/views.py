@@ -247,7 +247,7 @@ class AMSViewSet(viewsets.ViewSet):
                 
             if action == 'report':
                 serializer = serializers.FetchAssetSerializer(
-                result_page, many=True, context={"user_id":request.user.id})
+                resp, many=True, context={"user_id":request.user.id})
                 return Response(serializer.data, status=status.HTTP_200_OK)   
 
                 
