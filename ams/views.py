@@ -185,6 +185,7 @@ class AMSViewSet(viewsets.ViewSet):
             department = request.query_params.get('department')
             category = request.query_params.get('category')
             query = request.query_params.get('q')
+            action = request.query_params.get('action')
             slim = request.query_params.get('slim')
 
             q_filters = Q()
@@ -243,6 +244,12 @@ class AMSViewSet(viewsets.ViewSet):
                     logger.error(e)
                     print(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            if action == 'report':
+                serializer = serializers.FetchAssetSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+                return Response(serializer.data, status=status.HTTP_200_OK)   
+
                 
             paginator = PageNumberPagination()
             paginator.page_size = 50
