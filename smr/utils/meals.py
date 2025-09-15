@@ -45,7 +45,7 @@ def mark_approaching_expiry():
     print(f"[{timestamp}] Main Fn Starting...")
 
     start_date = timezone.now().date() + timedelta(days=1)
-    end_date = start_date + timedelta(days=3)
+    end_date = start_date + timedelta(days=1)
 
 
     # Filter pending approvals
