@@ -844,8 +844,8 @@ class SMRViewSet(viewsets.ViewSet):
                                 ).order_by('-date_created')
                     elif "CEO" in roles:
                         resp = models.Meal.objects.filter(
-                                    Q(status='SLT APPROVED') | Q(slt=request.user) , is_deleted=False
-                                ).exclude(Q(status__in=['EXPIRED','REJECTED'])).order_by('-date_created')
+                                    Q(status='SLT APPROVED') | Q(slt=request.user) | Q(department__slt=request.user)  , is_deleted=False
+                                ).exclude(Q(status__in=['EXPIRED','REJECTED','CEO APPROVED'])).order_by('-date_created')
                         # resp = models.Meal.objects.filter(
                         #             Q(status='SLT APPROVED') & Q(date_of_event__gte=today), is_deleted=False
                         #         ).order_by('-date_created')
