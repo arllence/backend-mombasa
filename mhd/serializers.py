@@ -390,7 +390,7 @@ class FetchJobCardSerializer(serializers.ModelSerializer):
             # MHD_ADMIN specific logic
             if "MHD_ADMIN" in roles:
                 try:
-                    approver = models.PlatformAdmin.objects.get(admin=user_id)
+                    approver = models.PlatformAdmin.objects.filter(admin=user_id).first()
                 except models.PlatformAdmin.DoesNotExist:
                     return False
 
