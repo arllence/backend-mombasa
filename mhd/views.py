@@ -3177,7 +3177,7 @@ class JobCardViewSet(viewsets.ViewSet):
                 else:
                     is_hod, is_slt, is_ceo, is_cash_office = [False, False, False, False]
                     if "MHD_ADMIN" in roles:
-                        adminInstance = models.PlatformAdmin.objects.get(admin=request.user)
+                        adminInstance = models.PlatformAdmin.objects.filter(admin=request.user).first()
                         is_hod = adminInstance.is_hod
                         is_slt = adminInstance.is_slt
 
