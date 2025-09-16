@@ -3103,7 +3103,8 @@ class JobCardViewSet(viewsets.ViewSet):
                         models.MaterialItem.objects.create(job_card=jobCardInstance, **m)
 
                     # send notification email
-                    emails = list(models.PlatformAdmin.objects.filter(Q(category=issueInstance.category) & Q(location=issueInstance.facility.category), is_hod=True).values_list('admin__email', flat=True))
+                    # emails = list(models.PlatformAdmin.objects.filter(Q(category=issueInstance.category) & Q(location=issueInstance.facility.category), is_hod=True).values_list('admin__email', flat=True))
+                    emails = list(models.PlatformAdmin.objects.filter(Q(category=issueInstance.category), is_hod=True).values_list('admin__email', flat=True))
                     subject = f"[MHD] New Job Card Raised: {issueInstance.uid} ."
                     message = f"Hello. \nNew Job card for issue id: {issueInstance.uid}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending approval.\n\nRegards\nMHD-AKHK\n\n"
 
