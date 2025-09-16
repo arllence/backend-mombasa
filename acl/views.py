@@ -60,7 +60,7 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
                 return Response({"details": "Invalid Credentials"}, status=status.HTTP_400_BAD_REQUEST)
         else:
             is_authenticated = authenticate(
-                email=email, password=password)
+                email=email.lower(), password=password)
             
         # original
         # is_authenticated = authenticate(
