@@ -198,9 +198,11 @@ class FetchIssueSerializer(serializers.ModelSerializer):
             return ""
         
     def get_job_card(self, obj):
+        user_id = str(self.context["user_id"])
+
         try:
             request = models.JobCard.objects.get(issue=obj)
-            serializer = FetchJobCardSerializer(request, many=False)
+            serializer = FetchJobCardSerializer(request, many=False, context={"user_id":user_id})
             return serializer.data
         except Exception as e:
             print(e)
