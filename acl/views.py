@@ -911,7 +911,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
 
 
                 subject = "Platform Access Details"
-                message = f"Dear {first_name}, \nYour email is {email}\nYour password is: {password}\nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nPSMDQS-AKHK"
+                message = f"Dear {first_name}, \nYour email is {email}\nYour password is: {password}\nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nAKHK-ICT"
 
                 try:
                     send_mail(subject, message, 'notification@akhskenya.org', [email])
