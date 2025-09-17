@@ -813,7 +813,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                         is_suspended=False,
                         password=make_password("welcome@123"),
                     )
-                    for row in csv_data if row[1].strip().lower() not in emails
+                    for row in csv_data if row[7].strip().lower() not in emails
                 ]
 
                 newInstances = models.User.objects.bulk_create(users)
