@@ -774,7 +774,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             if f.name.endswith('.csv'):
 
                 emails = list(get_user_model().objects.all().values_list('email', flat=True))
-                
+
                 # decoded_file = f.read().decode('utf-8')
                 decoded_file = f.read().decode('windows-1254')
                 csv_data = csv.reader(decoded_file.splitlines(), delimiter=',')
@@ -782,41 +782,41 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 # Skip the header row
                 next(csv_data)
 
-                try:
-                    for row in csv_data:
-                        email = row[7].strip().lower()
-                        cadre=row[6].strip()
-                        employee_no=row[0].strip()
-                        if email in emails:
-                            user = get_user_model().objects.get(email=email)
-                            user.cadre = cadre
-                            user.employee_no = employee_no
-                            user.save()
-                        continue
-                except Exception as e:
-                    logger.error(e)
+                # try:
+                #     for row in csv_data:
+                #         email = row[7].strip().lower()
+                #         cadre=row[6].strip()
+                #         employee_no=row[0].strip()
+                #         if email in emails:
+                #             user = get_user_model().objects.get(email=email)
+                #             user.cadre = cadre
+                #             user.employee_no = employee_no
+                #             user.save()
+                #         continue
+                # except Exception as e:
+                #     logger.error(e)
 
-                # users = [
-                #     models.User(
-                #         employee_no=row[0].strip(), 
-                #         first_name=set_name(row[1])[0].strip().capitalize(), 
-                #         last_name=set_name(row[1])[1].strip().capitalize(), 
-                #         email=row[7].strip().lower(), 
-                #         srrs_department=set_department(row[2].strip()),
-                #         sub_department=set_sub_department(row[4].strip()),
-                #         ohc=set_ohc(row[3].strip()),
-                #         staff_status=row[5].strip(),
-                #         cadre=row[6].strip(),
-                #         is_active=True,
-                #         is_superuser=False,
-                #         is_staff=False,
-                #         is_suspended=False,
-                #         password=make_password("welcome@123"),
-                #     )
-                #     for row in csv_data if row[1].strip().lower() not in emails
-                # ]
+                users = [
+                    models.User(
+                        employee_no=row[0].strip(), 
+                        first_name=set_name(row[1])[0].strip().capitalize(), 
+                        last_name=set_name(row[1])[1].strip().capitalize(), 
+                        email=row[7].strip().lower(), 
+                        srrs_department=set_department(row[2].strip()),
+                        sub_department=set_sub_department(row[4].strip()),
+                        ohc=set_ohc(row[3].strip()),
+                        staff_status=row[5].strip(),
+                        cadre=row[6].strip(),
+                        is_active=True,
+                        is_superuser=False,
+                        is_staff=False,
+                        is_suspended=False,
+                        password=make_password("welcome@123"),
+                    )
+                    for row in csv_data if row[1].strip().lower() not in emails
+                ]
 
-                # newInstances = models.User.objects.bulk_create(users)
+                newInstances = models.User.objects.bulk_create(users)
 
                 try:
                     group_details = Group.objects.get(name="USER")
@@ -824,8 +824,8 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     return Response({'details': 'Role does not exist'}, 
                                     status=status.HTTP_400_BAD_REQUEST)
 
-                # for instance in newInstances:
-                #     group_details.user_set.add(instance) 
+                for instance in newInstances:
+                    group_details.user_set.add(instance) 
                 
                 subject = "Training Platform Access Details"
                 def set_message(instance):
