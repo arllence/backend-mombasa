@@ -784,13 +784,15 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
 
                 users = [
                     models.User(
-                        first_name=set_name(row[0])[0].strip().capitalize(), 
-                        last_name=set_name(row[0])[1].strip().capitalize(), 
-                        email=row[1].strip().lower(), 
+                        employee_no=row[0].strip(), 
+                        first_name=set_name(row[1])[0].strip().capitalize(), 
+                        last_name=set_name(row[1])[1].strip().capitalize(), 
+                        email=row[7].strip().lower(), 
                         srrs_department=set_department(row[2].strip()),
-                        sub_department=set_sub_department(row[3].strip()),
-                        ohc=set_ohc(row[4].strip()),
+                        sub_department=set_sub_department(row[4].strip()),
+                        ohc=set_ohc(row[3].strip()),
                         staff_status=row[5].strip(),
+                        cadre=row[6].strip(),
                         is_active=True,
                         is_superuser=False,
                         is_staff=False,
@@ -800,32 +802,47 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     for row in csv_data if row[1].strip().lower() not in emails
                 ]
 
-                newInstances = models.User.objects.bulk_create(users)
+                # newInstances = models.User.objects.bulk_create(users)
 
                 try:
-                    group_details = Group.objects.get(name="IPASS")
+                    group_details = Group.objects.get(name="USER")
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Role does not exist'}, 
-                                    status=status.HTTP_400_BAD_REQUEST) 
+                                    status=status.HTTP_400_BAD_REQUEST)
+
+                # for instance in newInstances:
+                #     group_details.user_set.add(instance) 
                 
-                subject = "IPASS Platform Access Details"
+                subject = "Training Platform Access Details"
                 def set_message(instance):
-                    message = f"Dear {instance.first_name}, \n\nYour email is: {instance.email}\nYour password is: welcome@123\nPlatform Link: http://172.20.0.42:8012/ \nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nIPASS-AKHK"
+                    message = f"Dear {instance.first_name}, \n\nYour email is: {instance.email}\nYour password is: welcome@123\nPlatform Link: http://172.20.0.42:8014/ \nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nICT-AKHK"
                     return message
-                # send_mail(subject, message, 'notification@akhskenya.org', [email])
 
-                for instance in newInstances:
-                    group_details.user_set.add(instance)
+                
 
-                mails = [
-                    models.Sendmail(
-                        email=[instance.email], 
-                        subject=subject,
-                        message=set_message(instance),
-                    )
-                    for instance in newInstances
-                ]
+                # mails = [
+                #     models.Sendmail(
+                #         email=[instance.email], 
+                #         subject=subject,
+                #         message=set_message(instance),
+                #     )
+                #     for instance in newInstances
+                # ]
                 # models.Sendmail.objects.bulk_create(mails)
+
+                try:
+                    for row in csv_data:
+                        email = row[7].strip().lower()
+                        cadre=row[6].strip(),
+                        employee_no=row[0].strip(), 
+                        if email in emails:
+                            user = get_user_model().objects.get(email=email)
+                            user.cadre = cadre
+                            user.employee_no = employee_no
+                            user.save()
+                        continue
+                except Exception as e:
+                    logger.error(e)
 
 
                 return Response('Data uploaded successfully', status=status.HTTP_200_OK)
