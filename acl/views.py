@@ -774,7 +774,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             if f.name.endswith('.csv'):
 
                 emails = list(get_user_model().objects.all().values_list('email', flat=True))
-
+                
                 # decoded_file = f.read().decode('utf-8')
                 decoded_file = f.read().decode('windows-1254')
                 csv_data = csv.reader(decoded_file.splitlines(), delimiter=',')
@@ -785,8 +785,8 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 try:
                     for row in csv_data:
                         email = row[7].strip().lower()
-                        cadre=row[6].strip(),
-                        employee_no=row[0].strip(), 
+                        cadre=row[6].strip()
+                        employee_no=row[0].strip()
                         if email in emails:
                             user = get_user_model().objects.get(email=email)
                             user.cadre = cadre
