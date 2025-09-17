@@ -101,6 +101,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     last_name = models.CharField(max_length=50)
     employee_no = models.CharField(max_length=50, null=True, blank=True, db_index=True)
     staff_status = models.CharField(max_length=50, default="PERMANENT", db_index=True)
+    cadre = models.CharField(max_length=50, null=True, blank=True, db_index=True)
     is_active = models.BooleanField(default=False, db_index=True)
     is_superuser = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False, db_index=True)
@@ -152,6 +153,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             models.Index(fields=["email"]),
             models.Index(fields=["employee_no"]),
             models.Index(fields=["staff_status"]),
+            models.Index(fields=["cadre"]),
             models.Index(fields=["is_active"]),
             models.Index(fields=["is_staff"]),
             models.Index(fields=["is_suspended"]),
