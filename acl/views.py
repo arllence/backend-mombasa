@@ -782,25 +782,39 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 # Skip the header row
                 next(csv_data)
 
-                users = [
-                    models.User(
-                        employee_no=row[0].strip(), 
-                        first_name=set_name(row[1])[0].strip().capitalize(), 
-                        last_name=set_name(row[1])[1].strip().capitalize(), 
-                        email=row[7].strip().lower(), 
-                        srrs_department=set_department(row[2].strip()),
-                        sub_department=set_sub_department(row[4].strip()),
-                        ohc=set_ohc(row[3].strip()),
-                        staff_status=row[5].strip(),
+                try:
+                    for row in csv_data:
+                        email = row[7].strip().lower()
                         cadre=row[6].strip(),
-                        is_active=True,
-                        is_superuser=False,
-                        is_staff=False,
-                        is_suspended=False,
-                        password=make_password("welcome@123"),
-                    )
-                    for row in csv_data if row[1].strip().lower() not in emails
-                ]
+                        employee_no=row[0].strip(), 
+                        if email in emails:
+                            user = get_user_model().objects.get(email=email)
+                            user.cadre = cadre
+                            user.employee_no = employee_no
+                            user.save()
+                        continue
+                except Exception as e:
+                    logger.error(e)
+
+                # users = [
+                #     models.User(
+                #         employee_no=row[0].strip(), 
+                #         first_name=set_name(row[1])[0].strip().capitalize(), 
+                #         last_name=set_name(row[1])[1].strip().capitalize(), 
+                #         email=row[7].strip().lower(), 
+                #         srrs_department=set_department(row[2].strip()),
+                #         sub_department=set_sub_department(row[4].strip()),
+                #         ohc=set_ohc(row[3].strip()),
+                #         staff_status=row[5].strip(),
+                #         cadre=row[6].strip(),
+                #         is_active=True,
+                #         is_superuser=False,
+                #         is_staff=False,
+                #         is_suspended=False,
+                #         password=make_password("welcome@123"),
+                #     )
+                #     for row in csv_data if row[1].strip().lower() not in emails
+                # ]
 
                 # newInstances = models.User.objects.bulk_create(users)
 
@@ -830,19 +844,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 # ]
                 # models.Sendmail.objects.bulk_create(mails)
 
-                try:
-                    for row in csv_data:
-                        email = row[7].strip().lower()
-                        cadre=row[6].strip(),
-                        employee_no=row[0].strip(), 
-                        if email in emails:
-                            user = get_user_model().objects.get(email=email)
-                            user.cadre = cadre
-                            user.employee_no = employee_no
-                            user.save()
-                        continue
-                except Exception as e:
-                    logger.error(e)
+                
 
 
                 return Response('Data uploaded successfully', status=status.HTTP_200_OK)
