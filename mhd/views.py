@@ -3159,7 +3159,7 @@ class JobCardViewSet(viewsets.ViewSet):
         elif request.method == "PATCH":
             # Approvals hod / slt / ceo
 
-            if not any(role in ["HOD","SLT","CEO","SUPERUSER","MHD_ADMIN"] for role in roles):
+            if not any(role in ["HOD","SLT","CEO","SUPERUSER","MHD_ADMIN","CASH_OFFICE"] for role in roles):
                 return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
             
             payload = request.data
