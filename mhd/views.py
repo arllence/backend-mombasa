@@ -942,7 +942,11 @@ class MHSViewSet(viewsets.ViewSet):
                 data=payload, many=False)
             if serializer.is_valid():
                 name = payload['name']
-                category = payload['category'].upper()
+                try:
+                    category = payload['category'].upper()
+                except Exception as e:
+                    return Response({"details": "Category required"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
                     raw = {
@@ -964,7 +968,11 @@ class MHSViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 name = payload['name']
-                category = payload['category'].upper()
+                try:
+                    category = payload['category'].upper()
+                except Exception as e:
+                    return Response({"details": "Category required"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
 
                 try:
                     requestInstance = models.Facility.objects.get(id=request_id)
