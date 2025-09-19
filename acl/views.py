@@ -506,13 +506,17 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         """
         Retrievs logged in user profile
         """
+        serializing = request.query_params.get('serializer')
         authenticated_user = request.user
         payload = request.data
         try:
             user_details = get_user_model().objects.get(id=authenticated_user.id)
         except (ValidationError, ObjectDoesNotExist):
             return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-        user_info = serializers.UsersSerializer(user_details, many=False)
+        if serializing == 'slim':
+            user_info = serializers.SlimUsersSerializer(user_details, many=False)
+        else:
+            user_info = serializers.UsersSerializer(user_details, many=False)
         return Response(user_info.data, status=status.HTTP_200_OK)
 
 class ICTSupportViewSet(viewsets.ModelViewSet):

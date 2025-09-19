@@ -153,10 +153,11 @@ class SlimUsersSerializer(serializers.ModelSerializer):
     email = serializers.CharField()
     first_name = serializers.CharField()
     last_name = serializers.CharField()
+    profile_updated = serializers.BooleanField()
     class Meta:
         model = get_user_model()
         fields = [
-            'id', 'email', 'first_name', 'last_name'
+            'id', 'email', 'first_name', 'last_name', 'profile_updated'
         ]
 
 class CreateUserSerializer(serializers.Serializer):
