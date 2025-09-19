@@ -979,7 +979,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             with transaction.atomic():
                 cluster = payload['cluster']
                 department = payload['department']
-                ohc = payload.get('ohc')
+                ohc = payload.get('ohc') or None
 
                 try:
                     department = models.SRRSDepartment.objects.get(id=department)
