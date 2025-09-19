@@ -11,6 +11,9 @@ deploy_backend:
     - echo "📁 Navigating to project directory..."
     - cd /opt/psmdqs/mms-backend
 
+    - echo "✅ Marking directory as safe for Git"
+    - git config --global --add safe.directory /opt/psmdqs/mms-backend
+
     - echo "📥 Pulling latest code from GitHub..."
     - git pull origin main
 
