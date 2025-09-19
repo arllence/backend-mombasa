@@ -15,6 +15,7 @@ deploy_backend:
     - git config --global --add safe.directory /opt/psmdqs/mms-backend
 
     - echo "✅ Adding GitHub to known_hosts"
+    - mkdir -p ~/.ssh
     - ssh-keyscan github.com >> ~/.ssh/known_hosts
 
     - echo "📥 Pulling latest code from GitHub..."
