@@ -10,7 +10,7 @@ deploy_backend:
   before_script:
   - echo "🔐 Setting up SSH authentication"
   - mkdir -p ~/.ssh
-  - echo "$GITHUB_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+  - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
   - chmod 600 ~/.ssh/id_rsa
   - ssh-keyscan github.com >> ~/.ssh/known_hosts
   - ssh -T git@github.com
