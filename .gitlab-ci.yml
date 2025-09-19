@@ -1,0 +1,26 @@
+stages:
+  - deploy
+
+deploy_backend:
+  stage: deploy
+  tags:
+    - backend  # 🏷️ This must match your GitLab Runner's tag
+  only:
+    - main  # 🔁 Replace with your deploy branch if different
+  script:
+    - echo "📁 Navigating to project directory..."
+    - cd /opt/psmdqs/mms-backend
+
+    - echo "📥 Pulling latest code from GitHub..."
+    - git pull origin main
+
+    - echo "🐍 Activating virtual environment..."
+    - source /opt/psmdqs/mms-backend/venv/bin/activate
+
+    - echo "🛠 Running Django migrations..."
+    - python manage.py migrate --noinput
+
+    - echo "🚀 Restarting Gunicorn via Supervisor..."
+    - sudo /usr/bin/supervisorctl reload
+
+    - echo "✅ Deployment complete!"
