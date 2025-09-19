@@ -7,16 +7,19 @@ deploy_backend:
     - backend  # 🏷️ This must match your GitLab Runner's tag
   only:
     - main  # 🔁 Replace with your deploy branch if different
+  before_script:
+  - echo "🔐 Setting up SSH authentication"
+  - mkdir -p ~/.ssh
+  - echo "$GITHUB_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+  - chmod 600 ~/.ssh/id_rsa
+  - ssh-keyscan github.com >> ~/.ssh/known_hosts
+  - ssh -T git@github.com
   script:
     - echo "📁 Navigating to project directory..."
     - cd /opt/psmdqs/mms-backend
 
     - echo "✅ Marking directory as safe for Git"
     - git config --global --add safe.directory /opt/psmdqs/mms-backend
-
-    - echo "✅ Adding GitHub to known_hosts"
-    - mkdir -p ~/.ssh
-    - ssh-keyscan github.com >> ~/.ssh/known_hosts
 
     - echo "📥 Pulling latest code from GitHub..."
     - git pull origin main
