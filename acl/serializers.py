@@ -119,6 +119,10 @@ class EditUserSerializer(serializers.Serializer):
     # id_number = serializers.CharField()
     account_id = serializers.CharField()
 
+class UpdateUserProfileSerializer(serializers.Serializer):
+    cluster = serializers.CharField()
+    department = serializers.CharField()
+
 
 class UsersSerializer(serializers.ModelSerializer):
     id = serializers.CharField()
@@ -127,6 +131,7 @@ class UsersSerializer(serializers.ModelSerializer):
     last_name = serializers.CharField()
     is_active = serializers.CharField()
     is_suspended = serializers.CharField()
+    profile_updated = serializers.BooleanField()
     department = FetchDepartmentSerializer()
     srrs_department = FetchSRRSDepartmentSerializer()
     sub_department = FetchSubDepartmentSerializer()
@@ -135,7 +140,7 @@ class UsersSerializer(serializers.ModelSerializer):
     class Meta:
         model = get_user_model()
         fields = [
-            'id', 'email', 'first_name', 'last_name', 'employee_no', 'is_active', 'is_suspended','department', 'srrs_department', 'sub_department', 'ohc','user_groups', 'date_created'
+            'id', 'email', 'first_name', 'last_name', 'employee_no', 'profile_updated', 'is_active', 'is_suspended','department', 'srrs_department', 'sub_department', 'ohc','user_groups', 'date_created'
         ]
 
     def get_user_groups(self, obj):

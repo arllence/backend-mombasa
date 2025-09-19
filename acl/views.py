@@ -968,6 +968,47 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
 
         else:
             return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+    
+    @action(methods=["POST"], detail=False, url_path="update-user-profile", url_name="update-user-profile")
+    def update_user_profile(self, request):
+
+        payload = request.data
+
+        serializer = serializers.UpdateUserProfileSerializer(data=payload, many=False)
+        if serializer.is_valid():
+            with transaction.atomic():
+                cluster = payload['cluster']
+                department = payload['department']
+                ohc = payload.get('ohc')
+
+                try:
+                    department = models.SRRSDepartment.objects.get(id=department)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Department does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                try:
+                    cluster = models.SubDepartment.objects.get(id=cluster)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({'details': 'Cluster does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+                
+                if ohc:
+                    try:
+                        ohc = models.OHC.objects.get(id=ohc)
+                    except (ValidationError, ObjectDoesNotExist):
+                        return Response({'details': 'OHC does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+                    
+                user = request.user
+                user.srrs_department = department
+                user.sub_department = cluster
+                user.sub_department = cluster
+                user.profile_updated = True
+                user.ohc = ohc
+
+                user.save()
+
+                return Response('200', status=status.HTTP_200_OK)
+        else:
+            return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
 
     @action(methods=["POST"], detail=False, url_path="suspend-user", url_name="suspend-user")
