@@ -7,13 +7,7 @@ deploy_backend:
     - backend  # 🏷️ This must match your GitLab Runner's tag
   only:
     - main  # 🔁 Replace with your deploy branch if different
-  before_script:
-  - echo "🔐 Setting up SSH authentication"
-  - mkdir -p ~/.ssh
-  - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-  - chmod 600 ~/.ssh/id_rsa
-  - ssh-keyscan github.com >> ~/.ssh/known_hosts
-  - ssh -T git@github.com
+
   script:
     - echo "📁 Navigating to project directory..."
     - cd /opt/psmdqs/mms-backend
