@@ -1123,6 +1123,22 @@ class AnalyticsViewSet(viewsets.ViewSet):
 
         return Response(resp, status=status.HTTP_200_OK)
     
+    @action(methods=["GET",],
+            detail=False,
+            url_path="type",
+            url_name="type")
+    def type(self, request):
+
+        mandatory = models.TrainingMaterial.objects.filter(Q(type="MANDATORY")).count()
+        optional = models.TrainingMaterial.objects.filter(Q(type="OPTIONAL")).count()
+
+        resp = {
+            "mandatory": mandatory,
+            "optional": optional
+        }
+
+        return Response(resp, status=status.HTTP_200_OK)
+    
     
     @action(methods=["GET",],
             detail=False,
