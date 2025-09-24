@@ -1127,7 +1127,7 @@ class AnalyticsViewSet(viewsets.ViewSet):
             detail=False,
             url_path="type",
             url_name="type")
-    def type(self, request):
+    def type_analytic(self, request):
 
         mandatory = models.TrainingMaterial.objects.filter(Q(type="MANDATORY")).count()
         optional = models.TrainingMaterial.objects.filter(Q(type="OPTIONAL")).count()
