@@ -624,8 +624,9 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             email = payload['email']
 
 
-            # phoneexists = get_user_model().objects.filter(phone_number=phone_number).exists()
-            # emailexists = get_user_model().objects.filter(email=email).exists()
+            email_exists = get_user_model().objects.filter(email=email).exists()
+            if email_exists:
+                return Response({"details": "Email already exists 😒"}, status=status.HTTP_400_BAD_REQUEST)
 
                             
             try:
