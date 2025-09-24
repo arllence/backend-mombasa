@@ -1125,6 +1125,32 @@ class AnalyticsViewSet(viewsets.ViewSet):
     
     @action(methods=["GET",],
             detail=False,
+            url_path="general-1",
+            url_name="general-1")
+    def general_1(self, request):
+   
+        # Get the current date
+        now = timezone.now().date()
+
+        # Calculate the date 4 months from now
+        four_months_from_now = now + timedelta(days=4*30)  # Approximating 4 months as 120 days
+
+        total = models.TrainingMaterial.objects.filter(Q(is_deleted=False)).count()
+        almost = models.TrainingMaterial.objects.filter(Q(is_deleted=False),expiry_date__gte=now, expiry_date__lte=four_months_from_now).count()
+        expired = models.TrainingMaterial.objects.filter(Q(is_deleted=False),expiry_date__lt=now).count()
+        renewed = models.TrainingMaterial.objects.filter(Q(is_deleted=False)).exclude(previous__isnull=False).count()
+
+        resp = {
+            "total": total,
+            "almost": almost,
+            "expired": expired,
+            "renewed": renewed,
+        }
+
+        return Response(resp, status=status.HTTP_200_OK)
+    
+    @action(methods=["GET",],
+            detail=False,
             url_path="type-summary",
             url_name="type-summary")
     def type_analytic(self, request):
