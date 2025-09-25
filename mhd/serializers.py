@@ -325,6 +325,12 @@ class FetchNoteSerializer(serializers.ModelSerializer):
         model = models.Note
         fields = '__all__'
 
+class FetchJobCardNoteSerializer(serializers.ModelSerializer):
+    owner = SlimUsersSerializer()
+    class Meta:
+        model = models.JobCardNote
+        fields = '__all__'
+
 class PlatformAdminSerializer(serializers.Serializer):
     admin = serializers.CharField(max_length=500)
     category = serializers.CharField(max_length=500)
@@ -425,3 +431,12 @@ class MaterialItemSerializer(serializers.ModelSerializer):
 class PatchJobCardSerializer(serializers.Serializer):
     request_id = serializers.CharField(max_length=500)
     status = serializers.CharField(max_length=500)
+
+class UploadFileSerializer(serializers.Serializer):
+    job_card_id = serializers.CharField()
+    file_type = serializers.CharField()
+
+class SlimFetchDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.JobCardDocument
+        fields = '__all__'

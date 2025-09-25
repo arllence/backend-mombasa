@@ -362,3 +362,59 @@ class JobCardStatusChange(models.Model):
 
     class Meta:
         db_table = u'"{}\".\"job_card_status_changes"'.format(settings.MAINTENANCE_HELPDESK_SYSTEM)
+
+class JobCardNote(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="job_card_note_by"
+    )
+    job_card = models.ForeignKey(
+        JobCard, on_delete=models.DO_NOTHING,
+        related_name="note_job_card_instance", db_index=True
+    )
+    note = models.TextField()
+   
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    def __str__(self):
+        return str(self.job_card.job_card_no)
+
+    class Meta:
+        db_table = u'"{}\".\"job_card_notes"'.format(settings.MAINTENANCE_HELPDESK_SYSTEM)
+        indexes = [
+            models.Index(fields=["job_card"]),
+            models.Index(fields=["date_created"]),
+            models.Index(fields=["job_card", "date_created"]),  # composite
+        ]
+
+class JobCardDocument(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    job_card = models.ForeignKey(
+        JobCard, on_delete=models.DO_NOTHING, 
+        related_name="job_card_documents", db_index=True)
+    
+    uploaded_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="job_card_document_uploaded_by"
+    )
+
+    document = models.FileField(upload_to='documents/mhd/job_cards/')
+    file_name = models.CharField(max_length=500)
+    file_type = models.CharField(max_length=255)
+    description = models.TextField(null=True, blank=True)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    def __str__(self):
+        return f"{self.file_name}"
+    
+    class Meta:
+        db_table = u'"{}\".\"job_card_documents"'.format(settings.CENTRALIZED_TRAINING_PLATFORM)
+        indexes = [
+            models.Index(fields=["job_card"]),
+            models.Index(fields=["date_created"]),
+            models.Index(fields=["job_card", "date_created"]),  # composite
+        ]

@@ -3170,12 +3170,14 @@ class JobCardViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['request_id']
                 request_status = payload['status']
+                comment = payload['comments']
 
                 try:
                     requestInstance = models.JobCard.objects.get(id=request_id)
                 except Exception as e:
                     logger.error(e)
                     return Response({"details": "Unknown Job Card"}, status=status.HTTP_400_BAD_REQUEST)
+                
                 
                 is_hod, is_slt, is_ceo, is_cash_office = [False, False, False, False]
                 if "MHD_ADMIN" in roles:
@@ -3238,10 +3240,19 @@ class JobCardViewSet(viewsets.ViewSet):
                     requestInstance.save()
                     models.JobCardStatusChange.objects.create(**raw)
 
+                    if comment:
+                        final_comment = f"[{request_status}] {comment}"
+                        models.JobCardNote.objects.create(
+                            job_card=requestInstance,
+                            note=final_comment,
+                            owner=request.user
+                        )
+                        comment = f"[Comment: {comment}]"
+
                     # send requestor notification email
                     emails = [requestInstance.requested_by.email]
                     subject = f"[MHD] Job Card Status: {requestInstance.job_card_no} ."
-                    message = f"Hello. \nJob card for issue id: {requestInstance.job_card_no}, \nhas been {request_status} by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nMHD-AKHK\n\n"
+                    message = f"Hello. \nJob card for issue id: {requestInstance.job_card_no}, \nhas been {request_status} by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n{comment}\n\nRegards\nMHD-AKHK\n\n"
 
                     try:
                         if emails:
@@ -3404,9 +3415,229 @@ class JobCardViewSet(viewsets.ViewSet):
             except Exception as e:
                 print(e)
                 return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
-                
- 
+            
 
+    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
+            detail=False,
+            url_path="documents",
+            url_name="documents")
+    def documents(self, request):
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = json.loads(request.data['payload'])
+
+            exts = ['pdf']
+            for f in request.FILES.getlist('documents'):
+                original_file_name = f.name
+                ext = original_file_name.split('.')[-1].strip().lower()
+                if ext not in exts:
+                    return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
+            
+           
+            # serialize training payload
+            serializer = serializers.UploadFileSerializer(
+                    data=payload, many=False)
+            if not serializer.is_valid():
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+            job_card_id = payload['job_card_id']
+            file_type = payload['file_type']
+
+            try:
+                targetInstance = models.JobCard.objects.get(id=job_card_id)
+            except Exception as e:
+                return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+            with transaction.atomic():
+                # create contract instance
+
+                for f in request.FILES.getlist('documents'):
+                    try:
+                        original_file_name = f.name.upper()                        
+                        models.Document.objects.create(
+                            document=f,
+                            file_name=original_file_name, 
+                            file_type=file_type, 
+                            job_card=targetInstance, 
+                            uploaded_by=request.user
+                        )
+
+                    except Exception as e:
+                        logger.error(e)
+                        print(e)
+                        return Response({"details": "Error saving files"}, status=status.HTTP_400_BAD_REQUEST)  
+                
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "File uploaded", f"TrainingMaterial Id: {targetInstance.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            job_card_id = request.query_params.get('job_card_id')
+            query = request.query_params.get('q')
+            slim = request.query_params.get('slim')
+            previous = request.query_params.get('previous')
+
+            if request_id:
+                try:
+                    resp = models.JobCardDocument.objects.get(Q(id=request_id))
+
+                    if slim:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            elif job_card_id:
+                try:
+                    resp = models.JobCardDocument.objects.filter(Q(job_card=job_card_id))
+
+                    if slim:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=True, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            elif query:
+                try:
+                    resp = models.JobCardDocument.objects.filter(
+                        Q(file_name__icontains=query) |
+                        Q(file_type__icontains=query) |
+                        Q(job_card__job_card_no__icontains=query) 
+                    )
+
+                    if slim:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=True, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.SlimFetchDocumentSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            else:
+                try:
+
+                    if any(role in ['SUPERUSER','MHD_ADMIN'] for role in roles):
+
+                        resp = models.JobCardDocument.objects.filter(is_deleted=False).order_by('-date_created')
+
+                    else:
+                        resp = models.JobCardDocument.objects.filter(Q(is_deleted=False) & (Q(uploaded_by=request.user)) ).order_by('-date_created')
+
+
+
+                    paginator = PageNumberPagination()
+                    paginator.page_size = 50
+                    result_page = paginator.paginate_queryset(resp, request)
+                    serializer = serializers.SlimFetchDocumentSerializer(
+                        result_page, many=True, context={"user_id":request.user.id})
+                    return paginator.get_paginated_response(serializer.data)
+                
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.JobCardDocument.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)    
+                except Exception as e:
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)         
+ 
+    
+    @action(methods=["POST","GET"],
+            detail=False,
+            url_path="notes",
+            url_name="notes")
+    def notes(self, request):
+
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = request.data
+
+            serializer = serializers.NoteSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                comment = payload.get('comments')
+
+                try:
+                    targetInstance = models.JobCard.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown job card"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "owner": request.user,
+                        "job_card": targetInstance,
+                        "note": comment
+                    }
+                    models.JobCardNote.objects.create(**raw)
+
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.JobCardNote.objects.filter(Q(job_card=request_id))
+
+                    resp = serializers.FetchJobCardNoteSerializer(
+                        resp, many=True, context={"user_id":request.user.id}).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response([], status=status.HTTP_200_OK)
+            
    
 class ReportsViewSet(viewsets.ViewSet):
 
