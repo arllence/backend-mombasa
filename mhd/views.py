@@ -3177,38 +3177,50 @@ class JobCardViewSet(viewsets.ViewSet):
                     logger.error(e)
                     return Response({"details": "Unknown Job Card"}, status=status.HTTP_400_BAD_REQUEST)
                 
+                is_hod, is_slt, is_ceo, is_cash_office = [False, False, False, False]
+                if "MHD_ADMIN" in roles:
+                    adminInstance = models.PlatformAdmin.objects.filter(admin=request.user).first()
+                    is_hod = adminInstance.is_hod
+                    is_slt = adminInstance.is_slt
+
+                if "CEO" in roles:
+                    is_ceo = True
+
+                if "CASH_OFFICE" in roles:
+                    is_cash_office = True
+                
                 if request_status == 'REJECTED':
                     requestInstance.status = "REJECTED"
                     requestInstance.save()
                     status_for = None
 
                 else:
-                    is_hod, is_slt, is_ceo, is_cash_office = [False, False, False, False]
-                    if "MHD_ADMIN" in roles:
-                        adminInstance = models.PlatformAdmin.objects.filter(admin=request.user).first()
-                        is_hod = adminInstance.is_hod
-                        is_slt = adminInstance.is_slt
+                    # is_hod, is_slt, is_ceo, is_cash_office = [False, False, False, False]
+                    # if "MHD_ADMIN" in roles:
+                    #     adminInstance = models.PlatformAdmin.objects.filter(admin=request.user).first()
+                    #     is_hod = adminInstance.is_hod
+                    #     is_slt = adminInstance.is_slt
 
-                        if is_hod:
-                            requestInstance.is_hod_approved = True
-                            requestInstance.status = "HOD APPROVED"
-                            request_status = "HOD APPROVED"
-                            status_for = "HOD"
+                    if is_hod:
+                        requestInstance.is_hod_approved = True
+                        requestInstance.status = "HOD APPROVED"
+                        request_status = "HOD APPROVED"
+                        status_for = "HOD"
 
-                        if is_slt:
-                            requestInstance.is_slt_approved = True
-                            requestInstance.status = "SLT APPROVED"
-                            request_status = "SLT APPROVED"
-                            status_for = "SLT"
+                    if is_slt:
+                        requestInstance.is_slt_approved = True
+                        requestInstance.status = "SLT APPROVED"
+                        request_status = "SLT APPROVED"
+                        status_for = "SLT"
                         
-                    if "CEO" in roles:
+                    if is_ceo:
                         requestInstance.is_ceo_approved = True
                         requestInstance.status = "CEO APPROVED"
                         request_status = "CEO APPROVED"
                         status_for = "CEO"
                         is_ceo = True
 
-                    if "CASH_OFFICE" in roles:
+                    if is_cash_office:
                         requestInstance.is_cash_office_approved = True
                         request_status = "DISBURSED"
                         status_for = "CASH OFFICE"
@@ -3244,26 +3256,27 @@ class JobCardViewSet(viewsets.ViewSet):
                         logger.error(e)
 
                     # send approver notification email
-                    emails = []
-                    if is_hod:
-                        emails = list(models.PlatformAdmin.objects.filter(is_slt=True).values_list('admin__email', flat=True))
-                    if is_slt:
-                        emails =  list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
-                    if is_ceo:
-                        emails =  list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE')).values_list('email', flat=True))
-                        
-                    subject = f"[MHD] Job Card {requestInstance.job_card_no} Pending Approval."
-                    message = f"Hello. \nJob card for issue id: {requestInstance.job_card_no}, \nis pending your approval\nVisit http://172.20.0.42:8009/requests/job-cards\n\nRegards\nMHD-AKHK\n\n"
-                    try:
-                        if emails:
-                            mail = {
-                                "email" : list(set(emails)), 
-                                "subject" : subject,
-                                "message" : message,
-                            }
-                            Sendmail.objects.create(**mail)
-                    except Exception as e:
-                        logger.error(e)
+                    if request_status != "REJECTED":
+                        emails = []
+                        if is_hod:
+                            emails = list(models.PlatformAdmin.objects.filter(is_slt=True).values_list('admin__email', flat=True))
+                        if is_slt:
+                            emails =  list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
+                        if is_ceo:
+                            emails =  list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE')).values_list('email', flat=True))
+                            
+                        subject = f"[MHD] Job Card {requestInstance.job_card_no} Pending Approval."
+                        message = f"Hello. \nJob card for issue id: {requestInstance.job_card_no}, \nis pending your approval\nVisit http://172.20.0.42:8009/requests/job-cards\n\nRegards\nMHD-AKHK\n\n"
+                        try:
+                            if emails:
+                                mail = {
+                                    "email" : list(set(emails)), 
+                                    "subject" : subject,
+                                    "message" : message,
+                                }
+                                Sendmail.objects.create(**mail)
+                        except Exception as e:
+                            logger.error(e)
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -3317,10 +3330,14 @@ class JobCardViewSet(viewsets.ViewSet):
                         if filters:
                             if query == 'approved':
                                 filters = (Q(status='CEO APPROVED'))
-                                # if location:
-                                #     filters &= Q(issue__facility__category=location)
-     
-                            resp = models.JobCard.objects.filter(filters).order_by('-date_created')
+                                resp = models.JobCard.objects.filter(filters).order_by('-date_created')
+
+                            elif query == 'all':
+                                resp = models.JobCard.objects.all().order_by('-date_created')
+
+                            else:
+                                resp = models.JobCard.objects.filter(filters).order_by('-date_created')
+                            
                         else:
                             resp = models.JobCard.objects.none()
 
@@ -3351,6 +3368,8 @@ class JobCardViewSet(viewsets.ViewSet):
                             if location:
                                 filters &= Q(issue__facility__category=location)
                             resp = models.JobCard.objects.filter(filters).order_by('-date_created')
+                        elif query == 'all':
+                            resp = models.JobCard.objects.all().order_by('-date_created')
                         else:
                             resp = models.JobCard.objects.filter( ~Q(status='CEO APPROVED')).order_by('-date_created')
 
