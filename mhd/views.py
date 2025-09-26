@@ -3163,7 +3163,6 @@ class JobCardViewSet(viewsets.ViewSet):
                 return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
             
             payload = request.data
-            return
 
             serializer = serializers.PatchJobCardSerializer(
                 data=payload, many=False)
