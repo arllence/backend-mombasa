@@ -408,7 +408,8 @@ class FetchJobCardSerializer(serializers.ModelSerializer):
 
             # CEO approval logic
             if "CEO" in roles and obj.is_hod_approved and obj.is_slt_approved:
-                return True
+                if not obj.is_ceo_approved:
+                    return True
 
             return False
 
@@ -437,6 +438,7 @@ class UploadFileSerializer(serializers.Serializer):
     file_type = serializers.CharField()
 
 class SlimFetchDocumentSerializer(serializers.ModelSerializer):
+    uploaded_by = SlimUsersSerializer()
     class Meta:
         model = models.JobCardDocument
         fields = '__all__'

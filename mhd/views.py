@@ -3163,6 +3163,7 @@ class JobCardViewSet(viewsets.ViewSet):
                 return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
             
             payload = request.data
+            return
 
             serializer = serializers.PatchJobCardSerializer(
                 data=payload, many=False)
@@ -3429,12 +3430,12 @@ class JobCardViewSet(viewsets.ViewSet):
 
             payload = json.loads(request.data['payload'])
 
-            exts = ['pdf']
+            exts = ['pdf','jpeg','jpg', 'png']
             for f in request.FILES.getlist('documents'):
                 original_file_name = f.name
                 ext = original_file_name.split('.')[-1].strip().lower()
                 if ext not in exts:
-                    return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": f"{original_file_name} not allowed. Only PDFs / Images allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
             
            
             # serialize training payload
@@ -3445,6 +3446,7 @@ class JobCardViewSet(viewsets.ViewSet):
             
             job_card_id = payload['job_card_id']
             file_type = payload['file_type']
+            description = payload.get('description') or None
 
             try:
                 targetInstance = models.JobCard.objects.get(id=job_card_id)
@@ -3457,10 +3459,11 @@ class JobCardViewSet(viewsets.ViewSet):
                 for f in request.FILES.getlist('documents'):
                     try:
                         original_file_name = f.name.upper()                        
-                        models.Document.objects.create(
+                        models.JobCardDocument.objects.create(
                             document=f,
                             file_name=original_file_name, 
                             file_type=file_type, 
+                            description=description, 
                             job_card=targetInstance, 
                             uploaded_by=request.user
                         )
