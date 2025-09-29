@@ -3350,18 +3350,14 @@ class JobCardViewSet(viewsets.ViewSet):
             else:
                 try:
                     resp = []
+                    filters = (Q(is_deleted=False) & ~Q(status='REJECTED'))
+                    if location:
+                        filters &= Q(issue__facility__category=location)
+
                     if "MHD_ADMIN" in roles:
                         admin = models.PlatformAdmin.objects.filter(admin=request.user).first()
                         is_hod = admin.is_hod
                         is_slt = admin.is_slt
-
-                        filters = (Q(is_deleted=False) & ~Q(status='REJECTED'))
-
-                        if location:
-                            filters &= Q(issue__facility__category=location)
-
-                        # if query == 'approved':
-                        #     filters &= Q(status__in=['CEO APPROVED'])
 
                         # Define separate query parts
                         hod_filter = Q(is_hod_approved=False)
