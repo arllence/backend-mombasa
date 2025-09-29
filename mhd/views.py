@@ -3342,8 +3342,8 @@ class JobCardViewSet(viewsets.ViewSet):
                             filters &= hod_filter
                         elif is_slt:
                             filters &= slt_filter
-                        else:
-                            filters = None
+                        # else:
+                        #     filters = None
 
                         # Apply the final filter
                         if filters:
@@ -3364,8 +3364,8 @@ class JobCardViewSet(viewsets.ViewSet):
                         
                         if query == 'approved':
                             filters = (Q(status='CEO APPROVED'))
-                            if location:
-                                filters &= Q(issue__facility__category=location)
+                            # if location:
+                            #     filters &= Q(issue__facility__category=location)
                             resp = models.JobCard.objects.filter(filters).order_by('-date_created')
                         else:
                             resp = models.JobCard.objects.filter(Q(is_hod_approved=True) & Q(is_slt_approved=True) & Q(is_ceo_approved=False) & ~Q(status='REJECTED')).order_by('-date_created')
@@ -3374,8 +3374,8 @@ class JobCardViewSet(viewsets.ViewSet):
                         
                         if query == 'approved':
                             filters = (Q(is_cash_office_approved=True))
-                            if location:
-                                filters &= Q(issue__facility__category=location)
+                            # if location:
+                            #     filters &= Q(issue__facility__category=location)
                             resp = models.JobCard.objects.filter(filters).order_by('-date_created')
                         else:
                             resp = models.JobCard.objects.filter(Q(is_ceo_approved=True) & Q(is_cash_office_approved=False) & ~Q(status='REJECTED')).order_by('-date_created')
@@ -3384,8 +3384,8 @@ class JobCardViewSet(viewsets.ViewSet):
                         
                         if query == 'approved':
                             filters = (Q(status='CEO APPROVED'))
-                            if location:
-                                filters &= Q(issue__facility__category=location)
+                            # if location:
+                            #     filters &= Q(issue__facility__category=location)
                             resp = models.JobCard.objects.filter(filters).order_by('-date_created')
                         elif query == 'all':
                             resp = models.JobCard.objects.all().order_by('-date_created')
