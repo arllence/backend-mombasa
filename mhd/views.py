@@ -71,6 +71,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Job Type"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
@@ -83,6 +84,7 @@ class GenericsViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
                 
 
@@ -102,6 +104,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Equipment Type"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
@@ -114,6 +117,7 @@ class GenericsViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
                 
     @action(methods=["POST", "GET", "PUT"],
@@ -132,6 +136,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown category"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
@@ -144,6 +149,7 @@ class GenericsViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
                 
     @action(methods=["POST", "GET", "PUT"],
@@ -162,6 +168,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
@@ -174,6 +181,7 @@ class GenericsViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=["POST", "GET", "PUT"],
@@ -192,6 +200,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Section"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
@@ -204,6 +213,7 @@ class GenericsViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)     
 
     
@@ -653,6 +663,7 @@ class GenericsViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response([], status=status.HTTP_200_OK)
@@ -726,6 +737,7 @@ class MHSViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Section"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
@@ -738,6 +750,7 @@ class MHSViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
         
         elif request.method == "DELETE":
@@ -752,6 +765,7 @@ class MHSViewSet(viewsets.ViewSet):
                 return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
                 print(e)
+                logger.error(e)
                 return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
                 
     
@@ -814,6 +828,7 @@ class MHSViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Job Type"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
@@ -826,6 +841,7 @@ class MHSViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
         
         elif request.method == "DELETE":
@@ -840,6 +856,7 @@ class MHSViewSet(viewsets.ViewSet):
                 return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
                 print(e)
+                logger.error(e)
                 return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -902,6 +919,7 @@ class MHSViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Equipment Type"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
@@ -914,6 +932,7 @@ class MHSViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
         
         elif request.method == "DELETE":
@@ -928,6 +947,7 @@ class MHSViewSet(viewsets.ViewSet):
                 return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
                 print(e)
+                logger.error(e)
                 return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=["POST", "GET", "PUT", "DELETE"],
@@ -1000,6 +1020,7 @@ class MHSViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Facility"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
@@ -1012,6 +1033,7 @@ class MHSViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
         
         elif request.method == "DELETE":
@@ -1026,6 +1048,7 @@ class MHSViewSet(viewsets.ViewSet):
                 return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
                 print(e)
+                logger.error(e)
                 return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=["POST", "GET", "PUT", "DELETE"],
@@ -1087,6 +1110,7 @@ class MHSViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Category"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
@@ -1102,6 +1126,7 @@ class MHSViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
         
         elif request.method == "DELETE":
@@ -1116,6 +1141,7 @@ class MHSViewSet(viewsets.ViewSet):
                 return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
                 print(e)
+                logger.error(e)
                 return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(methods=["POST", "GET", "PUT", "DELETE"],
@@ -1192,6 +1218,7 @@ class MHSViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
         
         elif request.method == "DELETE":
@@ -1206,6 +1233,7 @@ class MHSViewSet(viewsets.ViewSet):
                 return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
                 print(e)
+                logger.error(e)
                 return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
                  
 
@@ -3021,6 +3049,7 @@ class MHSViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
@@ -3031,6 +3060,7 @@ class MHSViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
                 
         elif request.method == "DELETE":
@@ -3045,6 +3075,7 @@ class MHSViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
@@ -3314,6 +3345,7 @@ class JobCardViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown JobCard"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
@@ -3410,6 +3442,7 @@ class JobCardViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
         
         elif request.method == "DELETE":
@@ -3424,6 +3457,7 @@ class JobCardViewSet(viewsets.ViewSet):
                 return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
                 print(e)
+                logger.error(e)
                 return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
             
 
@@ -3511,6 +3545,7 @@ class JobCardViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
                 
             elif job_card_id:
@@ -3529,6 +3564,7 @@ class JobCardViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
                 
             elif query:
@@ -3551,6 +3587,7 @@ class JobCardViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
                 
             else:
@@ -3646,6 +3683,7 @@ class JobCardViewSet(viewsets.ViewSet):
                 
                 except Exception as e:
                     print(e)
+                    logger.error(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response([], status=status.HTTP_200_OK)
