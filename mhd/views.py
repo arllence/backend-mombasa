@@ -3171,6 +3171,8 @@ class JobCardViewSet(viewsets.ViewSet):
                 request_id = payload['request_id']
                 request_status = payload['status']
                 comment = payload['comments']
+                payments_made_to = payload.get('payments_made_to') or None
+                payments_date = payload.get('payments_date') or None
 
                 try:
                     requestInstance = models.JobCard.objects.get(id=request_id)
@@ -3196,17 +3198,22 @@ class JobCardViewSet(viewsets.ViewSet):
                     requestInstance.save()
                     status_for = None
 
+                if request_status == 'DISBURSED':
+                    requestInstance.payments_made_to = payments_made_to
+                    requestInstance.payments_date = payments_date
+
                 else:
-                    # is_hod, is_slt, is_ceo, is_cash_office = [False, False, False, False]
-                    # if "MHD_ADMIN" in roles:
-                    #     adminInstance = models.PlatformAdmin.objects.filter(admin=request.user).first()
-                    #     is_hod = adminInstance.is_hod
-                    #     is_slt = adminInstance.is_slt
+                    if not (is_cash_office or is_hod) and request_status == 'DISBURSED':
+                        return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
+
 
                     if is_hod:
-                        requestInstance.is_hod_approved = True
-                        requestInstance.status = "HOD APPROVED"
-                        request_status = "HOD APPROVED"
+                        if request_status == 'DISBURSED':
+                            pass
+                        else:
+                            requestInstance.is_hod_approved = True
+                            requestInstance.status = "HOD APPROVED"
+                            request_status = "HOD APPROVED"
                         status_for = "HOD"
 
                     if is_slt:
