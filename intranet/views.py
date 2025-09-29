@@ -318,6 +318,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 category = payload.get('category') or None
                 sub_department = payload.get('sub_department') or None
                 department = payload['department']
+                expiry_date = payload.get('expiry_date') or None
 
                 try:
                     department = SRRSDepartment.objects.get(id=department)
@@ -356,6 +357,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                                 department=department,
                                 sub_department=sub_department,
                                 category=category,
+                                expiry_date=expiry_date,
                                 uploaded_by=request.user
                             )
                         except Exception as e:
@@ -377,6 +379,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['id']
                 name = payload['name']
+                expiry_date = payload.get('expiry_date') or None
 
                 try:
                     document = models.Document.objects.get(id=request_id)
@@ -386,6 +389,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
 
                 with transaction.atomic():
                     document.original_file_name = name
+                    document.expiry_date = expiry_date
                     document.save()
                     
                     return Response("Success", status=status.HTTP_200_OK)
@@ -503,6 +507,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 category = payload.get('category') or None
                 sub_topic = payload.get('sub_topic') or None
                 topic = payload['topic']
+                expiry_date = payload.get('expiry_date') or None
 
                 try:
                     topic = models.Qips.objects.get(id=topic)
@@ -539,6 +544,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                                 topic=topic, 
                                 sub_topic=sub_topic, 
                                 category=category,
+                                expiry_date=expiry_date,
                                 uploaded_by=request.user
                             )
 
@@ -561,6 +567,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 request_id = payload['id']
                 name = payload['name']
+                expiry_date = payload.get('expiry_date') or None
 
                 try:
                     document = models.QipsDocument.objects.get(id=request_id)
@@ -570,6 +577,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
 
                 with transaction.atomic():
                     document.file_name = name
+                    document.expiry_date = expiry_date
                     document.save()
                     
                     return Response("Success", status=status.HTTP_200_OK)
@@ -712,6 +720,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 title = payload.get('title')
                 file_type = payload.get('file_type')
                 is_quick_link = payload.get('is_quick_link') == "YES"
+                expiry_date = payload.get('expiry_date') or None
 
                 tag = shared_fxns.generate_unique_identifier()
 
@@ -729,6 +738,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                             file_name=f.name, 
                             title=title, 
                             tag=tag, 
+                            expiry_date=expiry_date, 
                             is_quick_link=is_quick_link, 
                             uploaded_by=request.user
                         )
@@ -759,6 +769,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                                 file_name=f.name, 
                                 title=title, 
                                 tag=tag, 
+                                expiry_date=expiry_date, 
                                 is_quick_link=is_quick_link, 
                                 uploaded_by=request.user
                             )
@@ -798,6 +809,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 tag = payload.get('tag')
                 file_type = payload.get('file_type')
                 is_quick_link = payload.get('is_quick_link') == "YES"
+                expiry_date = payload.get('expiry_date') or None
 
                 if not is_quick_link:
                     return Response({"details": "Not a quick link"}, status=status.HTTP_400_BAD_REQUEST)
@@ -817,6 +829,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                             file_name=f.name, 
                             title=title, 
                             tag=tag, 
+                            expiry_date=expiry_date, 
                             is_quick_link=is_quick_link, 
                             uploaded_by=request.user
                         )

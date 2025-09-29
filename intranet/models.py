@@ -30,8 +30,10 @@ class Document(models.Model):
     title = models.CharField(max_length=500, null=True, blank=True)
     original_file_name = models.CharField(max_length=500)
     downloads = models.IntegerField(default=0)
+    expiry_date = models.DateField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.title}"
@@ -119,8 +121,10 @@ class QipsDocument(models.Model):
     document = models.FileField(upload_to='documents/intranet/qips')
     file_name = models.CharField(max_length=500)
     downloads = models.IntegerField(default=0)
+    expiry_date = models.DateField(null=True, blank=True)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.file_name}"
@@ -397,9 +401,11 @@ class GeneralDocument(models.Model):
     title = models.CharField(max_length=500)
     file_name = models.CharField(max_length=500)
     is_quick_link = models.BooleanField(default=False)
+    expiry_date = models.DateField(null=True, blank=True)
     downloads = models.IntegerField(default=0)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.title}"
