@@ -3370,8 +3370,6 @@ class JobCardViewSet(viewsets.ViewSet):
                             filters &= hod_filter
                         elif is_slt:
                             filters &= slt_filter
-                        # else:
-                        #     filters = None
 
                         # Apply the final filter
                         if filters:
@@ -3418,7 +3416,6 @@ class JobCardViewSet(viewsets.ViewSet):
                         elif query == 'all':
                             resp = models.JobCard.objects.all().order_by('-date_created')
                         else:
-                            # resp = models.JobCard.objects.filter(~Q(status__in=['CEO APPROVED', 'REJECTED'])).order_by('-date_created')
                             filters &= (~Q(status__in=['CEO APPROVED', 'REJECTED']))
                             resp = models.JobCard.objects.filter(filters).order_by('-date_created')
 
@@ -3429,9 +3426,6 @@ class JobCardViewSet(viewsets.ViewSet):
                     serializer = serializers.FetchJobCardSerializer(
                         result_page, many=True, context={"user_id":request.user.id})
                     return paginator.get_paginated_response(serializer.data)
-
-                    # resp = serializers.FetchJobCardSerializer(resp, many=True).data
-                    # return Response(resp, status=status.HTTP_200_OK)
                     
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
