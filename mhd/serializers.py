@@ -201,7 +201,7 @@ class FetchIssueSerializer(serializers.ModelSerializer):
         user_id = str(self.context["user_id"])
 
         try:
-            request = models.JobCard.objects.get(issue=obj)
+            request = models.JobCard.objects.filter(issue=obj).order_by('-date_created').first()
             serializer = FetchJobCardSerializer(request, many=False, context={"user_id":user_id})
             return serializer.data
         except Exception as e:

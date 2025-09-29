@@ -3079,7 +3079,7 @@ class JobCardViewSet(viewsets.ViewSet):
                 contract_to = payload['contract_to']
                 lpo_no = payload['lpo_no']
                 payments_made_to = payload['payments_made_to']
-                payments_date = payload['payments_date']
+                payments_date = payload['payments_date'] or None
 
                 try:
                     issueInstance = models.Issue.objects.get(id=issue)
@@ -3093,7 +3093,7 @@ class JobCardViewSet(viewsets.ViewSet):
                 with transaction.atomic():
                     raw = {
                         "issue": issueInstance,
-                        "job_card_no": issueInstance.uid,
+                        "job_card_no": shared_fxns.generate_unique_identifier(),
                         "supplier": supplier,
                         "material_cost": material_cost,
                         "labour_cost": labour_cost,
@@ -3198,14 +3198,19 @@ class JobCardViewSet(viewsets.ViewSet):
                     requestInstance.save()
                     status_for = None
 
-                if request_status == 'DISBURSED':
-                    requestInstance.payments_made_to = payments_made_to
-                    requestInstance.payments_date = payments_date
-
                 else:
                     if not (is_cash_office or is_hod) and request_status == 'DISBURSED':
                         return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
 
+                    if request_status == 'DISBURSED':
+                        requestInstance.payments_made_to = payments_made_to
+                        requestInstance.payments_date = payments_date
+                        requestInstance.is_cash_office_approved = True
+
+                        if is_cash_office:
+                            request_status = "DISBURSED"
+                            status_for = "CASH OFFICE"
+                            is_cash_office = True
 
                     if is_hod:
                         if request_status == 'DISBURSED':
@@ -3229,11 +3234,7 @@ class JobCardViewSet(viewsets.ViewSet):
                         status_for = "CEO"
                         is_ceo = True
 
-                    if is_cash_office:
-                        requestInstance.is_cash_office_approved = True
-                        request_status = "DISBURSED"
-                        status_for = "CASH OFFICE"
-                        is_cash_office = True
+                    
 
                 # track status change
                 raw = {
