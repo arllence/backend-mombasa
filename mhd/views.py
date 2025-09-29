@@ -3382,7 +3382,7 @@ class JobCardViewSet(viewsets.ViewSet):
                         elif query == 'all':
                             resp = models.JobCard.objects.all().order_by('-date_created')
                         else:
-                            resp = models.JobCard.objects.filter( ~Q(status='CEO APPROVED')).order_by('-date_created')
+                            resp = models.JobCard.objects.filter(~Q(status__in=['CEO APPROVED', 'REJECTED'])).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
