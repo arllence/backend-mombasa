@@ -3347,7 +3347,7 @@ class JobCardViewSet(viewsets.ViewSet):
                                 resp = models.JobCard.objects.all().order_by('-date_created')
 
                             else:
-                                resp = models.JobCard.objects.filter(filters).order_by('-date_created')
+                                resp = models.JobCard.objects.filter(filters).exclude(status='REJECTED').order_by('-date_created')
                             
                         else:
                             resp = models.JobCard.objects.none()
