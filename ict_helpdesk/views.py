@@ -1306,11 +1306,14 @@ class HelpDeskViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Issue"}, status=status.HTTP_400_BAD_REQUEST)
                 
+                is_completed = True
+
                 with transaction.atomic():
                     issueInstance.status = 'CLOSED'
                     issueInstance.closed_by = request.user
                     issueInstance.date_closed = datetime.datetime.now()
                     if not issueInstance.date_completed:
+                        is_completed = False
                         issueInstance.date_completed = datetime.datetime.now()
                     issueInstance.save()
 
@@ -1334,7 +1337,6 @@ class HelpDeskViewSet(viewsets.ViewSet):
 
 
                     # Notify Platform Admins
-                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['ICT_ADMIN']) & Q(is_slt=False)).values_list('email', flat=True))
                     emails = []
                     subject = f"[ICT HELPDESK] Ticket {issueInstance.uid} Closed "
                     message = f"Hello. \nTicket: {issueInstance.uid} from department: {issueInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nICT-HELPDESK-AKHK\n\n"
@@ -1355,6 +1357,35 @@ class HelpDeskViewSet(viewsets.ViewSet):
                             Sendmail.objects.create(**mail)
                     except Exception as e:
                         logger.error(e)
+
+                    # Notify requestor
+                    if not is_completed:
+                        try:
+                            emails = [issueInstance.email or issueInstance.created_by.email]
+
+                            subject = f"[ICT HELPDESK] Issue {issueInstance.uid}  Completed "
+                            message = f"Hello. \nYour Issue of id: {issueInstance.uid} has been marked as Complete\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nClick below to review it.\n"
+
+                            uri = f"generic/acknowledgement/{str(issueInstance.id)}"
+                            link = "http://172.20.0.42:8011/" + uri
+                            platform = 'Verify Issue'
+
+                            message_template = read_template("general_template.html")
+                            message = message_template.substitute(
+                                CONTENT=message,
+                                LINK=link,
+                                PLATFORM=platform
+                            )
+
+                            mail = {
+                                "email" : list(set(emails)), 
+                                "subject" : subject,
+                                "message" : message,
+                                "is_html": True
+                            }
+                            Sendmail.objects.create(**mail)
+                        except Exception as e:
+                            logger.error(e)
 
                     return Response('success', status=status.HTTP_200_OK)
 

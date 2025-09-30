@@ -5,6 +5,11 @@ from django.db.models import Q
 from acl import models
 from django.core.mail import send_mail, EmailMessage, BadHeaderError
 # exec(open('acl/utils/cron_mailer.py').read())
+import re
+
+def is_valid_email(email):
+    pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+    return re.match(pattern, email) is not None
 
 def get_emails():
     timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
@@ -44,6 +49,10 @@ def main(emails):
         email = target.email
         timestamp = str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))
 
+        try:
+            email = [x for x in email if is_valid_email(x)]
+        except:
+            print(f'(EMAIL VALIDATION)-{timestamp}-An error occurred while validating emails')
 
         if not is_html:
             try:

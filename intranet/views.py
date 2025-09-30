@@ -458,6 +458,28 @@ class DocumentManagerViewSet(viewsets.ViewSet):
         sub_department = request.query_params.get('sub_department')
         title = request.query_params.get('title')
         category = request.query_params.get('category')
+        expires = request.query_params.get('expires')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+
+        date = False
+
+        if date_to and date_from:
+            date = True
+
+        def create_date_range(date_from, date_to):
+            # Convert the string dates to datetime objects
+            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+
+            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+
+            return q_filters
+
+        if date_from or date_to:
+            if not date:
+                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
+            q_filters &= create_date_range(date_from, date_to)
 
         q_filters = Q()
 
@@ -469,6 +491,9 @@ class DocumentManagerViewSet(viewsets.ViewSet):
 
         if category:
             q_filters &= Q(category=category)
+
+        if expires:
+            q_filters &= Q(expires=expires)
 
         if title:
             q_filters &= Q(original_file_name__icontains=title)
@@ -650,6 +675,28 @@ class DocumentManagerViewSet(viewsets.ViewSet):
         sub_topic = request.query_params.get('sub_topic')
         file_name = request.query_params.get('file_name')
         category = request.query_params.get('category')
+        expires = request.query_params.get('expires')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+
+        date = False
+
+        if date_to and date_from:
+            date = True
+
+        def create_date_range(date_from, date_to):
+            # Convert the string dates to datetime objects
+            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+
+            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+
+            return q_filters
+
+        if date_from or date_to:
+            if not date:
+                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
+            q_filters &= create_date_range(date_from, date_to)
 
         q_filters = Q()
 
@@ -661,6 +708,9 @@ class DocumentManagerViewSet(viewsets.ViewSet):
 
         if category:
             q_filters &= Q(category=category)
+
+        if expires:
+            q_filters &= Q(expires=expires)
 
         if file_name:
             q_filters &= Q(file_name__icontains=file_name)
@@ -2454,26 +2504,18 @@ class ModuleViewSet(viewsets.ViewSet):
 
 
 
-
-
-
-
-
-
-
-
 class ReportsViewSet(viewsets.ViewSet):
-    # search_fields = ['id', ]
 
     def get_queryset(self):
         return []
 
     @action(methods=["GET",],
             detail=False,
-            url_path="applications",
-            url_name="applications")
-    def applications(self, request):
+            url_path="general",
+            url_name="general")
+    def general(self, request):
                     
+        type = request.query_params.get('type')
         department = request.query_params.get('department')
         location = request.query_params.get('location')
         ohc = request.query_params.get('ohc')
