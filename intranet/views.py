@@ -463,6 +463,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
         date_to = request.query_params.get('date_to')
 
         date = False
+        q_filters = Q()
 
         if date_to and date_from:
             date = True
@@ -472,7 +473,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
             date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
 
-            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+            q_filters = Q(expiry_date__gte=date_from) & Q(expiry_date__lte=date_to)
 
             return q_filters
 
@@ -481,8 +482,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
             q_filters &= create_date_range(date_from, date_to)
 
-        q_filters = Q()
-
+        
         if department:
             q_filters &= Q(department=department)
 
@@ -493,7 +493,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             q_filters &= Q(category=category)
 
         if expires:
-            q_filters &= Q(expires=expires)
+            q_filters &= Q(expiry_date__isnull=(expires != 'YES'))
 
         if title:
             q_filters &= Q(original_file_name__icontains=title)
@@ -681,6 +681,8 @@ class DocumentManagerViewSet(viewsets.ViewSet):
 
         date = False
 
+        q_filters = Q()
+
         if date_to and date_from:
             date = True
 
@@ -689,16 +691,15 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
             date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
 
-            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+            q_filters = Q(expiry_date__gte=date_from) & Q(expiry_date__lte=date_to)
 
             return q_filters
 
         if date_from or date_to:
             if not date:
-                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"details": "Date From & To Required"}, status=status.HTTP_400_BAD_REQUEST)
             q_filters &= create_date_range(date_from, date_to)
 
-        q_filters = Q()
 
         if topic:
             q_filters &= Q(topic=topic)
@@ -710,7 +711,7 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             q_filters &= Q(category=category)
 
         if expires:
-            q_filters &= Q(expires=expires)
+             q_filters &= Q(expiry_date__isnull=(expires != 'YES'))
 
         if file_name:
             q_filters &= Q(file_name__icontains=file_name)
@@ -925,6 +926,33 @@ class DocumentManagerViewSet(viewsets.ViewSet):
 
             request_id = request.query_params.get('request_id')
             query = request.query_params.get('q')
+            expires = request.query_params.get('expires')
+            date_from = request.query_params.get('date_from')
+            date_to = request.query_params.get('date_to')
+
+            date = False
+
+            q_filters = Q()
+
+            if date_to and date_from:
+                date = True
+
+            def create_date_range(date_from, date_to):
+                # Convert the string dates to datetime objects
+                date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+                date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+
+                q_filters = Q(expiry_date__gte=date_from) & Q(expiry_date__lte=date_to)
+
+                return q_filters
+
+            if date_from or date_to:
+                if not date:
+                    return Response({"details": "Date From & To Required"}, status=status.HTTP_400_BAD_REQUEST)
+                q_filters &= create_date_range(date_from, date_to)
+
+            if expires:
+                q_filters &= Q(expiry_date__isnull=(expires != 'YES'))
 
             if request_id:
                 documents = models.GeneralDocument.objects.get(Q(id=request_id) & Q(is_deleted=False))
@@ -938,6 +966,9 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                             Q(file_name__icontains=query) | 
                             Q(title__icontains=query),
                             is_deleted=False).order_by('title')
+                    elif q_filters:
+                        q_filters &= Q(is_deleted=False)
+                        documents = models.GeneralDocument.objects.filter(q_filters).order_by('title')
                     else:
                         documents = models.GeneralDocument.objects.filter(Q(is_deleted=False)).order_by('title')
                 else:
@@ -945,7 +976,10 @@ class DocumentManagerViewSet(viewsets.ViewSet):
             
 
             paginator = PageNumberPagination()
-            paginator.page_size = 50
+            if q_filters:
+                paginator.page_size = 5000
+            else:
+                paginator.page_size = 50
             result_page = paginator.paginate_queryset(documents, request)
             serializer = serializers.FetchGeneralDocumentSerializer(
                 result_page, many=True, context={"user_id":request.user.id})
