@@ -279,4 +279,11 @@ sentry_sdk.init(
     dsn="https://9e6cd2e89be1031275909b1804877c9f@o4507420221177856.ingest.us.sentry.io/4507420229107712",
     # Enable logs to be sent to Sentry
     enable_logs=True,
+    # Set traces_sample_rate to 1.0 to capture 100%
+    # of transactions for performance monitoring.
+    traces_sample_rate=1.0,
+    # Set profiles_sample_rate to 1.0 to profile 100%
+    # of sampled transactions.
+    # We recommend adjusting this value in production.
+    profiles_sample_rate=1.0,
 )
