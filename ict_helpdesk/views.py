@@ -1729,6 +1729,35 @@ class HelpDeskViewSet(viewsets.ViewSet):
                     except Exception as e:
                         logger.error(e)
 
+                    # Notify requestor
+                    _assignees = [f"{user.first_name} {user.last_name}" for user in assignees]
+                    _assignees = ", ".join(_assignees)
+                    emails = [issueInstance.email or issueInstance.created_by.email]
+                    subject = f"[ICT HELPDESK] Issue {issueInstance.uid}  Assigned "
+                    message = f"Hello. \nYour Issue of id: {issueInstance.uid} has been assigned to: \n {_assignees}  on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nClick below to check progress.\n"
+
+                    uri = f"generic/acknowledgement/{str(issueInstance.id)}"
+                    link = "http://172.20.0.42:8011/" + uri
+                    platform = 'Check Issue'
+
+                    message_template = read_template("general_template.html")
+                    message = message_template.substitute(
+                        CONTENT=message,
+                        LINK=link,
+                        PLATFORM=platform
+                    )
+                    
+                    try:
+                        mail = {
+                            "email" : list(set(emails)), 
+                            "subject" : subject,
+                            "message" : message,
+                            "is_html": True
+                        }
+                        Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Ticket Request Assigned", 
                     f"Assigning Executed UID: {str(issueInstance.id)}")
@@ -2061,7 +2090,7 @@ class HelpDeskViewSet(viewsets.ViewSet):
                 try:
                     issueInstance = models.Issue.objects.get(id=issue_id)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "UnknMMDQuoteown issue"}, 
+                    return Response({"details": "Unknown issue"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
