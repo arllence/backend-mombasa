@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from datetime import date
 import os
+import sentry_sdk
 from pathlib import Path
 from dotenv import load_dotenv
 load_dotenv()
@@ -273,3 +274,9 @@ CRONJOBS = [
 ]
 
 PLATFORM_LINK = 'http://172.20.0.42:8002/'
+
+sentry_sdk.init(
+    dsn="https://9e6cd2e89be1031275909b1804877c9f@o4507420221177856.ingest.us.sentry.io/4507420229107712",
+    # Enable logs to be sent to Sentry
+    enable_logs=True,
+)
