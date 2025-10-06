@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 import string
 import random
 from mhd.models import Issue
@@ -42,3 +43,6 @@ def generate_unique_identifier():
     else:
         return uid
 
+def is_valid_email(email):
+    pattern = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+    return re.match(pattern, email) is not None

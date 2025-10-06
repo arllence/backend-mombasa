@@ -176,23 +176,36 @@ class GenericsViewSet(viewsets.ViewSet):
                 # job_type = payload['job_type'] or None
                 department = payload['department']
                 issue = payload['issue']
-                name = payload['name']
-                email = payload['email']
+                name = payload['name'] or None
+                email = payload['email'] or None
                 category = payload.get('category')
                 facility = payload['facility']
                 subject = payload['subject']
                 telephone = payload.get('telephone')
 
                 uid = shared_fxns.generate_unique_identifier()
+                
 
                 # track user
                 try:
                     track_user.get_client_info(request,'ict_helpdesk', uid)
-                except:
-                    pass
+                except Exception as e:
+                    logger.error(e)
 
                 if not name or not email:
-                    return Response({"details": "Name and Email Required"}, status=status.HTTP_400_BAD_REQUEST)
+                    logger.error("Name and Email Required")
+                    return Response({"details": "Name and Email Required"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                if not shared_fxns.is_valid_email(email):
+                    logger.error(f"Invalid email <{email}>, correct email required")
+                    return Response({"details": "Invalid email, correct email required"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                if not telephone:
+                    logger.error(f"Telephone required")
+                    return Response({"details": "Correct extension or mobile number required"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
 
                 if email:
                     try:
@@ -205,12 +218,6 @@ class GenericsViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                # if issue_type:
-                #     try:
-                #         job_type = models.JobType.objects.get(id=issue_type)
-                #     except Exception as e:
-                #         return Response({"details": "Unknown job type"}, status=status.HTTP_400_BAD_REQUEST)
-                    
                 if category:
                     try:
                         category = models.Category.objects.get(id=category)
@@ -223,6 +230,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     else:
                         facility = models.Facility.objects.filter(name__icontains=facility).first()
                 except Exception as e:
+                    logger.error(e)
                     facility = None
                     # return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
 
