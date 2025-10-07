@@ -390,7 +390,7 @@ class FetchJobCardSerializer(serializers.ModelSerializer):
             roles = get_user_roles(user_id)
 
             # Only certain roles can approve
-            if not any(role in {"CEO", "SUPERUSER", "MHD_ADMIN"} for role in roles):
+            if not any(role in {"CEO", "HOF", "SUPERUSER", "MHD_ADMIN"} for role in roles):
                 return False
 
             # MHD_ADMIN specific logic
@@ -406,10 +406,15 @@ class FetchJobCardSerializer(serializers.ModelSerializer):
                 if approver.is_slt and obj.is_hod_approved and not obj.is_slt_approved:
                     return True
 
-            # CEO approval logic
-            if "CEO" in roles and obj.is_hod_approved and obj.is_slt_approved:
-                if not obj.is_ceo_approved:
+            # # CEO approval logic
+            if ("CEO" in roles or "HOF" in roles) and obj.is_hod_approved and obj.is_slt_approved:
+                if not obj.is_ceo_approved and not obj.is_hof_approved:
                     return True
+                
+            # if "CEO" in roles and obj.is_hod_approved and obj.is_slt_approved:
+            #     if not obj.is_ceo_approved or not obj.is_hof_approved:
+            #         return True
+            
 
             return False
 

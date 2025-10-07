@@ -3142,8 +3142,22 @@ class JobCardViewSet(viewsets.ViewSet):
                         models.MaterialItem.objects.create(job_card=jobCardInstance, **m)
 
                     # send notification email
-                    emails = list(models.PlatformAdmin.objects.filter(Q(category=issueInstance.category) & Q(location=issueInstance.facility.category), is_hod=True).values_list('admin__email', flat=True))
-                    # emails = list(models.PlatformAdmin.objects.filter(Q(category=issueInstance.category), is_hod=True).values_list('admin__email', flat=True))
+                    # emails = list(models.PlatformAdmin.objects.filter(Q(category=issueInstance.category) & Q(location=issueInstance.facility.category), is_hod=True).values_list('admin__email', flat=True))
+                    filters = [
+                        Q(category=issueInstance.category) & Q(location=issueInstance.facility.category),
+                        Q(category=issueInstance.category),
+                        Q()  # fallback to all HODs
+                    ]
+
+                    emails = []
+                    for condition in filters:
+                        emails = list(
+                            models.PlatformAdmin.objects.filter(condition, is_hod=True)
+                            .values_list('admin__email', flat=True)
+                        )
+                        if emails:
+                            break
+
                     subject = f"[MHD] New Job Card Raised: {issueInstance.uid} ."
                     message = f"Hello. \nNew Job card for issue id: {issueInstance.uid}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending approval.\n\nRegards\nMHD-AKHK\n\n"
 
@@ -3188,9 +3202,9 @@ class JobCardViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
         elif request.method == "PATCH":
-            # Approvals hod / slt / ceo
+            # Approvals hod / slt / ceo / hof
 
-            if not any(role in ["HOD","SLT","CEO","SUPERUSER","MHD_ADMIN","CASH_OFFICE"] for role in roles):
+            if not any(role in ["HOD","SLT","CEO","HOF","SUPERUSER","MHD_ADMIN","CASH_OFFICE"] for role in roles):
                 return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
             
             payload = request.data
@@ -3212,11 +3226,14 @@ class JobCardViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Job Card"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 
-                is_hod, is_slt, is_ceo, is_cash_office = [False, False, False, False]
+                is_hod, is_slt, is_ceo, is_hof, is_cash_office = [False, False, False, False, False]
                 if "MHD_ADMIN" in roles:
                     adminInstance = models.PlatformAdmin.objects.filter(admin=request.user).first()
                     is_hod = adminInstance.is_hod
                     is_slt = adminInstance.is_slt
+
+                if "HOF" in roles:
+                    is_hof = True
 
                 if "CEO" in roles:
                     is_ceo = True
@@ -3263,9 +3280,13 @@ class JobCardViewSet(viewsets.ViewSet):
                         requestInstance.status = "CEO APPROVED"
                         request_status = "CEO APPROVED"
                         status_for = "CEO"
-                        is_ceo = True
 
-                    
+                    if is_hof:
+                        requestInstance.is_hof_approved = True
+                        requestInstance.status = "HOF APPROVED"
+                        request_status = "HOF APPROVED"
+                        status_for = "HOF"
+
 
                 # track status change
                 raw = {
@@ -3311,8 +3332,8 @@ class JobCardViewSet(viewsets.ViewSet):
                         if is_hod:
                             emails = list(models.PlatformAdmin.objects.filter(is_slt=True).values_list('admin__email', flat=True))
                         if is_slt:
-                            emails =  list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
-                        if is_ceo:
+                            emails =  list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
+                        if is_ceo or is_hof:
                             emails =  list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE')).values_list('email', flat=True))
                             
                         subject = f"[MHD] Job Card {requestInstance.job_card_no} Pending Approval."
@@ -3374,7 +3395,7 @@ class JobCardViewSet(viewsets.ViewSet):
                         # Apply the final filter
                         if filters:
                             if query == 'approved':
-                                filters = (Q(status='CEO APPROVED'))
+                                filters = (Q(status__in=['CEO APPROVED','HOF APPROVED']))
                                 resp = models.JobCard.objects.filter(filters).order_by('-date_created')
 
                             elif query == 'all':
@@ -3386,15 +3407,15 @@ class JobCardViewSet(viewsets.ViewSet):
                         else:
                             resp = models.JobCard.objects.none()
 
-                    if "CEO" in roles:
+                    if "CEO" in roles or "HOF" in roles:
                         
                         if query == 'approved':
-                            filters = (Q(status='CEO APPROVED'))
+                            filters = (Q(status__in=['CEO APPROVED','HOF APPROVED']))
                             if location:
                                 filters &= Q(issue__facility__category=location)
                             resp = models.JobCard.objects.filter(filters).order_by('-date_created')
                         else:
-                            resp = models.JobCard.objects.filter(Q(is_hod_approved=True) & Q(is_slt_approved=True) & Q(is_ceo_approved=False) & ~Q(status='REJECTED')).order_by('-date_created')
+                            resp = models.JobCard.objects.filter(Q(is_hod_approved=True) & Q(is_slt_approved=True) & ~Q(status='REJECTED')).exclude(Q(is_ceo_approved=True) | Q(is_hof_approved=True)).order_by('-date_created')
 
                     if "CASH_OFFICE" in roles:
                         
@@ -3404,19 +3425,19 @@ class JobCardViewSet(viewsets.ViewSet):
                                 filters &= Q(issue__facility__category=location)
                             resp = models.JobCard.objects.filter(filters).order_by('-date_created')
                         else:
-                            resp = models.JobCard.objects.filter(Q(is_ceo_approved=True) & Q(is_cash_office_approved=False) & ~Q(status='REJECTED')).order_by('-date_created')
+                            resp = models.JobCard.objects.filter((Q(is_ceo_approved=True) | Q(is_hof_approved=True)) & Q(is_cash_office_approved=False) & ~Q(status='REJECTED')).order_by('-date_created')
                         
                     if "SUPERUSER" in roles:
                         
                         if query == 'approved':
-                            filters = (Q(status='CEO APPROVED'))
+                            filters = (Q(status__in=['CEO APPROVED','HOF APPROVED']))
                             if location:
                                 filters &= Q(issue__facility__category=location)
                             resp = models.JobCard.objects.filter(filters).order_by('-date_created')
                         elif query == 'all':
                             resp = models.JobCard.objects.all().order_by('-date_created')
                         else:
-                            filters &= (~Q(status__in=['CEO APPROVED', 'REJECTED']))
+                            filters &= (~Q(status__in=['CEO APPROVED', 'HOF APPROVED', 'REJECTED']))
                             resp = models.JobCard.objects.filter(filters).order_by('-date_created')
 
 
@@ -3628,7 +3649,7 @@ class JobCardViewSet(viewsets.ViewSet):
             url_name="notes")
     def notes(self, request):
 
-        roles = user_util.fetchusergroups(request.user.id) 
+        # roles = user_util.fetchusergroups(request.user.id) 
 
         if request.method == "POST":
 

@@ -309,6 +309,7 @@ class JobCard(models.Model):
     is_hod_approved = models.BooleanField(default=False)
     is_slt_approved = models.BooleanField(default=False)
     is_ceo_approved = models.BooleanField(default=False)
+    is_hof_approved = models.BooleanField(default=False)
     is_cash_office_approved = models.BooleanField(default=False)
 
     payments_made_to = models.CharField(max_length=300, blank=True)
