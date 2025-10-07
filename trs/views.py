@@ -1261,7 +1261,7 @@ class TrsViewSet(viewsets.ViewSet):
                             Sendmail.objects.create(**mail)
 
                     except Exception as e:
-                        logger.error(e)
+                        logger.error(f"{travel_status} : {e}")
 
                         
 
