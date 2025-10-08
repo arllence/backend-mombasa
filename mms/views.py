@@ -55,6 +55,7 @@ class MmsViewSet(viewsets.ViewSet):
                 description = payload['description']
                 subject = payload['subject']
                 department = payload['department']
+                quantity = payload['quantity']
                 content = payload.get('content')
                 qid = shared_fxns.generate_unique_identifier()
 
@@ -95,6 +96,7 @@ class MmsViewSet(viewsets.ViewSet):
                         "uploader": authenticated_user,
                         "subject": subject,
                         "description": description,
+                        "quantity": quantity,
                         "content": content,
                         "qid": qid
                     }  
@@ -142,6 +144,7 @@ class MmsViewSet(viewsets.ViewSet):
                 description = payload['description']
                 subject = payload['subject']
                 department = payload['department']
+                quantity = payload['quantity']
                 content = payload.get('content')
 
                 try:
@@ -186,6 +189,7 @@ class MmsViewSet(viewsets.ViewSet):
                             "uploader": authenticated_user,
                             "subject": subject,
                             "description": description,
+                            "quantity": quantity,
                             "content": content,
                         }  
                     else:
@@ -194,6 +198,7 @@ class MmsViewSet(viewsets.ViewSet):
                             "uploader": authenticated_user,
                             "subject": subject,
                             "description": description,
+                            "quantity": quantity,
                             "content": content,
                         } 
 
@@ -648,6 +653,89 @@ class MmsViewSet(viewsets.ViewSet):
             
             else:
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+            
+    @action(methods=["POST","GET"],
+            detail=False,
+            url_path="notes",
+            url_name="notes")
+    def notes(self, request):
+
+        if request.method == "POST":
+            authenticated_user = request.user
+            payload = request.data
+
+            serializer = serializers.NoteSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                comment = payload.get('comments')
+
+                try:
+                    targetInstance = models.Quote.objects.get(id=request_id)
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown job card"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
+                with transaction.atomic():
+                    raw = {
+                        "owner": request.user,
+                        "quote": targetInstance,
+                        "note": comment
+                    }
+                    models.Note.objects.create(**raw)
+
+                # Send Note Notifications
+                emails = []
+                emails.append(targetInstance.uploader.email)
+                assignees = models.QuoteAssignee.objects.filter(Q(quote=request_id))
+                for assignee in assignees:
+                    emails.append(assignee.assigned.email)
+                try:
+                    emails.remove(request.user.email)
+                except:
+                    pass
+
+                uri = f"quotes/view/{str(targetInstance.id)}"
+                link = "http://172.20.0.42/" + uri 
+
+                subject = f"[PSMDQS] Note Issued for {targetInstance.qid}"
+                message = f"Hello. \nA note has been added for quote of id: {targetInstance.qid} \nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nThe Note:\n {comment}.\n Visit: {link}"
+                
+                try:
+                    mail = {
+                        "email" : list(set(emails)), 
+                        "subject" : subject,
+                        "message" : message
+                    }
+                    if emails:
+                        Sendmail.objects.create(**mail)
+                except Exception as e:
+                    logger.error(e)
+
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            if request_id:
+                try:
+                    resp = models.Note.objects.filter(Q(quote=request_id))
+
+                    resp = serializers.FetchNoteSerializer(
+                        resp, many=True, context={"user_id":request.user.id}).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    logger.error(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response([], status=status.HTTP_200_OK)
 
 class MMQSReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]

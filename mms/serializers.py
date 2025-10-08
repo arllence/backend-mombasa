@@ -1,7 +1,7 @@
 import math
 from urllib import request
 from django.db.models import  Q
-from acl.serializers import UsersSerializer, FetchDepartmentSerializer
+from acl.serializers import SlimUsersSerializer, UsersSerializer, FetchDepartmentSerializer
 from mms import models
 from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
@@ -24,12 +24,14 @@ class QuoteSerializer(serializers.Serializer):
     subject = serializers.CharField(max_length=500)
     description = serializers.CharField(max_length=5000)
     department = serializers.CharField(max_length=500)
+    quantity = serializers.IntegerField()
 
 class PutQuoteSerializer(serializers.Serializer):
     id = serializers.CharField(max_length=500)
     subject = serializers.CharField(max_length=500)
     description = serializers.CharField(max_length=5000)
     department = serializers.CharField(max_length=500)
+    quantity = serializers.IntegerField()
 
 class PatchQuoteSerializer(serializers.Serializer):
     status = serializers.CharField(max_length=500)
@@ -148,4 +150,13 @@ class FetchAssignQuoteSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class NoteSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    comments = serializers.CharField(style={'type': 'textarea'})
 
+
+class FetchNoteSerializer(serializers.ModelSerializer):
+    owner = SlimUsersSerializer()
+    class Meta:
+        model = models.Note
+        fields = '__all__'

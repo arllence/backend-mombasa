@@ -43,6 +43,7 @@ class Quote(models.Model):
     subject = models.CharField(max_length=500)
     qid = models.CharField(max_length=50, null=True, blank=True, unique=True)
     description = models.TextField()
+    quantity = models.IntegerField(null=True, blank=True)
     content = models.JSONField(null=True, blank=True)
     reasons = models.JSONField(null=True, blank=True)
     close_attachments = models.JSONField(null=True, blank=True)
@@ -76,4 +77,26 @@ class QuoteAssignee(models.Model):
 
     class Meta:
         db_table = "quote_assignees"
+
+
+class Note(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    owner = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="qms_note_by"
+    )
+    quote = models.ForeignKey(
+       Quote, on_delete=models.DO_NOTHING, 
+       related_name="quote_note"
+    )
+    note = models.TextField()
+   
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.quote.qid)
+
+    class Meta:
+        db_table = "notes"
 
