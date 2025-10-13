@@ -545,3 +545,19 @@ class SlimFetchModuleLinkSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ModuleLink
         fields = '__all__'
+
+
+# PlatformAdmin
+class PlatformAdminSerializer(serializers.Serializer):
+    admin = serializers.CharField(max_length=500)
+
+class UpdatePlatformAdminSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    admin = serializers.CharField(max_length=500)
+
+class FetchPlatformAdminSerializer(serializers.ModelSerializer):
+    created_by = SlimUsersSerializer()
+    admin = UsersSerializer()
+    class Meta:
+        model = models.PlatformAdmin
+        fields = '__all__'

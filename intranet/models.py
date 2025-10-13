@@ -31,6 +31,7 @@ class Document(models.Model):
     original_file_name = models.CharField(max_length=500)
     downloads = models.IntegerField(default=0)
     expiry_date = models.DateField(null=True, blank=True)
+    is_expired = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
@@ -55,7 +56,7 @@ class Qips(models.Model):
     date_created = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.title}"
+        return f"{self.topic}"
     
     class Meta:
         db_table = u'"{}\".\"qips"'.format(settings.INTRANET)
@@ -122,6 +123,7 @@ class QipsDocument(models.Model):
     file_name = models.CharField(max_length=500)
     downloads = models.IntegerField(default=0)
     expiry_date = models.DateField(null=True, blank=True)
+    is_expired = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
     date_updated = models.DateTimeField(auto_now=True)
@@ -402,6 +404,7 @@ class GeneralDocument(models.Model):
     file_name = models.CharField(max_length=500)
     is_quick_link = models.BooleanField(default=False)
     expiry_date = models.DateField(null=True, blank=True)
+    is_expired = models.BooleanField(default=False)
     downloads = models.IntegerField(default=0)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)
@@ -412,3 +415,53 @@ class GeneralDocument(models.Model):
     
     class Meta:
         db_table = u'"{}\".\"general_documents"'.format(settings.INTRANET)
+
+class PlatformAdmin(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    admin = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="intranet_admin"
+    )
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="intranet_admin_created_by"
+    )
+
+    status = models.CharField(max_length=255, default='ACTIVE')
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.admin.first_name
+    
+    class Meta:
+        db_table = u'"{}\".\"platform_admins"'.format(settings.INTRANET)
+
+class TrackNotification(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    document = models.ForeignKey(
+       Document, on_delete=models.DO_NOTHING, 
+       related_name="document_model",
+       null=True, blank=True
+    )
+    general_document = models.ForeignKey(
+       GeneralDocument, on_delete=models.DO_NOTHING, 
+       related_name="general_document_model",
+       null=True, blank=True
+    )
+    qips_document = models.ForeignKey(
+       QipsDocument, on_delete=models.DO_NOTHING, 
+       related_name="qips_document_model",
+       null=True, blank=True
+    )
+    recipients = models.JSONField()
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return str(self.id)
+    
+    class Meta:
+        db_table = u'"{}\".\"track_notifications"'.format(settings.INTRANET)
