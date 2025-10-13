@@ -271,6 +271,7 @@ CRONJOBS = [
     ('0 16 * * *', 'smr.utils.meals.mark_expired_requests', '>> /opt/logs/cron_meals.log'),
     ('0 8 * * *', 'smr.utils.meals.mark_approaching_expiry', '>> /opt/logs/cron_meals.log'),
     ('0 8 * * *', 'cms.crons.expiry_checker.processContracts', '>> /opt/logs/cron_contracts.log'),
+    ('0 8 * * *', 'intranet.crons.expiry_checker.fetchDocuments', '>> /opt/logs/cron_intranet.log'),
 ]
 
 PLATFORM_LINK = 'http://172.20.0.42:8002/'
