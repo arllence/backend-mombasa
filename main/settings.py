@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     'intranet', 'acl', 'mms', 'trs', 'srrs',
     'asa', 'ams', 'sls', 'dbmanager', 'fms', 'cms',
     'mhd', 'system_directory', 'smr', 'ict_helpdesk', 
-    'ipass', 'invoice_tracking', 'ctp'
+    'ipass', 'invoice_tracking', 'ctp', 'security_helpdesk'
 ]
 
 MIDDLEWARE = [
@@ -129,7 +129,7 @@ ICT_HELPDESK = 'ict_helpdesk'
 IPASS = 'ipass'
 INVOICE_TRACKING = 'invoice_tracking'
 CENTRALIZED_TRAINING_PLATFORM = 'ctp'
-
+SECURITY_HELPDESK = 'security_helpdesk'
 
 
 # Password validation
