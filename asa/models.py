@@ -371,6 +371,8 @@ class  NewRequest(models.Model):
        User, on_delete=models.DO_NOTHING, 
        related_name="requested_by"
     )
+    comment = models.TextField(null=True, blank=True)
+    status = models.CharField(max_length=50, default='PENDING')
     is_approved = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)

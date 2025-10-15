@@ -1,9 +1,6 @@
-import calendar
-from collections import OrderedDict
 import datetime
 import json
 import logging
-import uuid
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
 from django.contrib.auth.hashers import make_password
@@ -884,12 +881,12 @@ class ASAViewSet(viewsets.ViewSet):
 
                     # store roles
                     if roles:
-                        # check if is existing
-                        is_existing = models.RoleAccess.objects.filter(
+                        # check if role is existing
+                        role_is_existing = models.RoleAccess.objects.filter(
                             employee=employeeInstance
                         ).first()
-                        if is_existing:
-                            current_roles = is_existing.roles
+                        if role_is_existing:
+                            current_roles = role_is_existing.roles
                             roles = [
                                 role for role in roles if role not in current_roles
                             ]
@@ -900,22 +897,28 @@ class ASAViewSet(viewsets.ViewSet):
                     # module access
                     if modules:
                         # check if is existing
-                        is_existing = models.ModuleAccess.objects.filter(
+                        module_is_existing = models.ModuleAccess.objects.filter(
                             employee=employeeInstance
                         ).first()
-                        if is_existing:
-                            current_modules = is_existing.modules
+                        if module_is_existing:
+                            current_modules = module_is_existing.modules
                             modules = [
                                 module for module in modules if module not in current_modules
                             ]
 
                             item['modules'] = modules
 
+                    if not item['modules'] and not item['roles']:
+                        del systems[counter]
+
+                    counter += 1
+
                 # store new request
                 raw_request = {
                     "employee": employeeInstance,
                     "request": systems,
-                    "requested_by": request.user
+                    "comment": remarks,
+                    "request_by": request.user
                 }
                 models.NewRequest.objects.create(**raw_request)
 
@@ -972,84 +975,104 @@ class ASAViewSet(viewsets.ViewSet):
             request_status = payload['status']
             
             try:
-                accessInstance = models.Access.objects.get(Q(id=request_id) | Q(employee=request_id))
+                objInstance = models.NewRequest.objects.get(id=request_id)
             except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
                 print(e)
                 return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             
-            if 'HOD' in roles:
-                if request_status == 'APPROVED':
-                    accessInstance.is_hod_approved = True
-                    request_status = 'HOD APPROVED'
-                    accessInstance.status = request_status
-                else:
-                    accessInstance.status = request_status
-
-                status_for = 'HOD'
-
-            elif 'ICT' in roles:
-                if request_status == 'APPROVED':
-                    accessInstance.is_ict_approved = True
-                    request_status = 'ICT AUTHORIZED'
-                    accessInstance.status = request_status
-                    accessInstance.granted_by = authenticated_user
-                    accessInstance.employee.status = 'ACTIVE'
-                else:
-                    accessInstance.status = request_status
-
-                status_for = 'ICT'
-
-            else:
-                return Response({"details": "Permission denied"}, 
-                                status=status.HTTP_400_BAD_REQUEST)
+            employeeInstance = objInstance.employee
             
-            # update instance
-            accessInstance.save()
-            accessInstance.employee.save()
-            
-            # Notify ICT
-            if status_for == 'HOD' and request_status == 'HOD APPROVED':
-                subject = f"New Access Request Received [ASA-AKHK]"
-                message = f"Hello, \n\nA new access request from department: {accessInstance.employee.department.name},\nhas been approved by {authenticated_user.first_name} {authenticated_user.last_name} for HOD on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending your action.\n\nRegards\nASA-AKHK"
-                # get emails
-                emails = list(models.RequestApprover.objects.all().values_list('approver__email', flat=True))
+            systems = objInstance.request
+            for item in systems:
+                system = item['system']
+                modules = item['modules']
+                roles = item['roles']
                 
                 try:
-                    mail = {
-                        "email" : emails, 
-                        "subject" : subject,
-                        "message" : message
-                    }
-                    Sendmail.objects.create(**mail)
+                    systemInstance = models.System.objects.get(id=system)
                 except Exception as e:
-                    logger.error(e)
-                    print("mail error: ", e)
+                    return Response({"details": "Unknown selected system "}, status=status.HTTP_400_BAD_REQUEST)
+                
+                is_existing = models.SystemAccess.objects.filter(
+                        employee=employeeInstance, system=systemInstance
+                    ).exists()
 
-            # Notify requestor
-            emails = [accessInstance.employee.email]
+                if not is_existing:
+                    models.SystemAccess.objects.create(
+                        employee=employeeInstance, system=systemInstance
+                    )
 
-            subject = f"Access Request Progress Update"
-            message = f"Hello, \nYour Access request has been marked as {request_status}\nby {authenticated_user.first_name} {authenticated_user.last_name} for {status_for} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nASA-AKHK"
+                # store roles
+                if roles:
+                    r_raw = {
+                        "employee" : employeeInstance,
+                        "roles" : roles
+                    }
+                    # check if is existing
+                    is_existing = models.RoleAccess.objects.filter(
+                        employee=employeeInstance
+                    ).first()
+                    if is_existing:
+                        current_roles = is_existing.roles
+                        roles += current_roles
+                        is_existing.roles = roles
+                        is_existing.save()
+                    else:
+                        models.RoleAccess.objects.create(
+                            **r_raw
+                        )
 
+                # module access
+                if modules:
+                    m_raw = {
+                        "employee" : employeeInstance,
+                        "modules" : modules
+                    }
+                    # check if is existing
+                    is_existing = models.ModuleAccess.objects.filter(
+                        employee=employeeInstance
+                    ).first()
+                    if is_existing:
+                        current_modules = is_existing.modules
+                        modules += current_modules
+                        is_existing.modules = modules
+                        is_existing.save()
+                    else:
+                        models.ModuleAccess.objects.create(
+                            **m_raw
+                        )
+
+            objInstance.status = request_status
+            objInstance.is_approved = (request_status == 'APPROVED')
+            objInstance.save()
+            
+            # Notify ICT
+            subject = f"[ASA] New Access Request Approved"
+            message = f"Hello, \n\nNew access request has been {request_status.capitalize()} by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nASA-AKHK"
+            # get emails
+            # emails = list(models.RequestApprover.objects.all().values_list('approver__email', flat=True))
+            emails = []
+            emails.append(objInstance.request_by.email)
+            emails.append(employeeInstance.email)
+            
             try:
                 mail = {
                     "email" : emails, 
                     "subject" : subject,
-                    "message" : message,
+                    "message" : message
                 }
                 Sendmail.objects.create(**mail)
             except Exception as e:
                 logger.error(e)
 
-
             # create track status change
             try:
                 raw = {
-                    "access": accessInstance,
+                    "access": models.Access.objects.get(employee=employeeInstance),
                     "status": request_status,
-                    "status_for": status_for,
+                    "status_for": 'ICT',
                     "action_by": authenticated_user
                 }
                 models.StatusChange.objects.create(**raw)
@@ -1075,12 +1098,12 @@ class ASAViewSet(viewsets.ViewSet):
 
             if request_id:
                 try:
-                    resp = models.Employee.objects.get(Q(id=request_id))
+                    resp = models.NewRequest.objects.get(Q(id=request_id))
 
                     if slim:
-                        resp = serializers.SlimFetchEmployeeSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                        resp = serializers.FetchNewRequestSerializer(resp, many=False, context={"user_id":request.user.id}).data
                     else:
-                        resp = serializers.FetchRequestSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                        resp = serializers.FetchNewRequestSerializer(resp, many=False, context={"user_id":request.user.id}).data
 
                     return Response(resp, status=status.HTTP_200_OK)
                 
@@ -1093,12 +1116,12 @@ class ASAViewSet(viewsets.ViewSet):
                 
             elif employee_no:
                 try:
-                    resp = models.Employee.objects.get(Q(employee_no=employee_no))
+                    resp = models.NewRequest.objects.get(Q(employee__employee_no=employee_no))
 
                     if slim:
-                        resp = serializers.SlimFetchEmployeeSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                        resp = serializers.FetchNewRequestSerializer(resp, many=False, context={"user_id":request.user.id}).data
                     else:
-                        resp = serializers.FetchRequestSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                        resp = serializers.FetchNewRequestSerializer(resp, many=False, context={"user_id":request.user.id}).data
 
                     return Response(resp, status=status.HTTP_200_OK)
                 
@@ -1115,44 +1138,37 @@ class ASAViewSet(viewsets.ViewSet):
                     if any(role in ['HOD','SLT'] for role in acl_roles):
 
                         if query == 'pending':
-                            resp = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) | Q(created_by=request.user), agreement_accepted=False, is_deleted=False).order_by('-date_created')
+                            resp = models.NewRequest.objects.filter(Q(employee__department=request.user.srrs_department) | Q(request_by=request.user), status='PENDING', is_deleted=False).order_by('-date_created')
 
                         else:
-                            resp = models.Access.objects.filter(Q(employee__department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).order_by('-date_created')
+                            resp = models.NewRequest.objects.filter(Q(employee__department=request.user.srrs_department) | Q(request_by=request.user), is_deleted=False).order_by('-date_created')
 
-                        resp = [x.employee for x in resp]
+                    elif any(role in ['ICT', 'SUPERUSER'] for role in acl_roles):
+                        resp = models.NewRequest.objects.filter(Q(is_deleted=False)).order_by('-date_created')
 
-                    elif any(role in ['ICT'] for role in acl_roles):
-                        resp = models.Access.objects.filter(Q(is_deleted=False) & (Q(agreement_accepted=True)) ).order_by('-date_created')
-                        resp = [x.employee for x in resp]
-                    elif any(role in ['SUPERUSER'] for role in acl_roles):
-                        resp = models.Access.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
-                        resp = [x.employee for x in resp]
                     else:
                         if query == 'pending':
-                            resp = models.Access.objects.filter(Q(created_by=request.user) | Q(created_for=request.user), agreement_accepted=False, is_deleted=False).order_by('-date_created')
+                            resp = models.NewRequest.objects.filter(Q(request_by=request.user) | Q(employee=request.user), status='PENDING', is_deleted=False).order_by('-date_created')
 
                         else:
-                            resp = models.Access.objects.filter(Q(created_by=request.user) | Q(created_for=request.user), is_deleted=False).order_by('-date_created')
-
-                        resp = [x.employee for x in resp]
+                            resp = models.NewRequest.objects.filter(Q(request_by=request.user) | Q(employee=request.user), is_deleted=False).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
                     result_page = paginator.paginate_queryset(resp, request)
-                    serializer = serializers.FetchRequestSerializer(
+                    serializer = serializers.FetchNewRequestSerializer(
                         result_page, many=True, context={"user_id":request.user.id})
                     return paginator.get_paginated_response(serializer.data)
                 
                 
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 except Exception as e:
                     logger.error(e)
                     print(e)
-                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
         
         elif request.method == "DELETE":
             request_id = request.query_params.get('request_id')

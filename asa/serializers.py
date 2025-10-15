@@ -6,6 +6,7 @@ from asa import models
 from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from asa.utils import shared_fxns
+from django.contrib.auth import get_user_model
 
 
 class GeneralNameSerializer(serializers.Serializer):
@@ -85,6 +86,7 @@ class FetchRequestSerializer(serializers.ModelSerializer):
     role_access = serializers.SerializerMethodField()
     additional_module_access = serializers.SerializerMethodField()
     approvals = serializers.SerializerMethodField()
+    can_accept = serializers.SerializerMethodField()
     
     class Meta:
         model = models.Employee
@@ -232,10 +234,23 @@ class FetchRequestSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return {} 
+        
+    def get_can_accept(self, obj):
+        user_id = str(self.context["user_id"])
+        try:
+            email = obj.email
+            user = get_user_model().objects.get(email=email)
+            if str(user.id) == user_id:
+                return True
+        except:
+            return False
+        
+        return False
+
 
 
 class SlimFetchEmployeeSerializer(serializers.ModelSerializer):
-    department = FetchSRRSDepartmentSerializer()
+    department = SlimFetchSRRSDepartmentSerializer()
     
     class Meta:
         model = models.Employee
@@ -584,3 +599,27 @@ class FetchVerificationSerializer(serializers.ModelSerializer):
 class NewRequestSerializer(serializers.Serializer):
     employee_id = serializers.CharField(max_length=255)
     system_access = serializers.JSONField()
+
+
+class FetchNewRequestSerializer(serializers.ModelSerializer):
+    employee = SlimFetchEmployeeSerializer()
+    request_by = SlimUsersSerializer()
+    request = serializers.SerializerMethodField()
+
+    def get_request(self, obj):
+        serialized_requests = []
+        requests = obj.request
+        try:
+            for request in requests:
+                request['system'] = MicroFetchSystemsSerializer(models.System.objects.get(pk=request['system']), many=False).data
+                request['roles'] = SlimFetchRoleSerializer(models.Roles.objects.filter(pk__in=request['roles']) , many=True).data
+                request['modules'] = SlimFetchModuleSerializer(models.Module.objects.filter(pk__in=request['modules']), many=True).data
+
+                serialized_requests.append(request)
+        except Exception as e:
+            print(e)
+
+        return serialized_requests
+    class Meta:
+        model = models.NewRequest
+        fields = '__all__'
