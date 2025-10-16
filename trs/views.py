@@ -1236,30 +1236,30 @@ class TrsViewSet(viewsets.ViewSet):
                     try:
                         call_to_action = 'View Request'
                         platform = 'Travel Request System'
-                        emails = list(set(emails))
-                        for email in emails:
-                            message_template = read_template("custom_template.html")
-                            uri = f"authentication/auto/{email}/{str(traveler.id)}"
-                            link = "http://172.20.0.42:8000/" + uri
-                            approve = link + '/approve'
-                            reject = link + '/reject'
+                        if emails:
+                            emails = list(set(emails))
+                            for email in emails:
+                                message_template = read_template("custom_template.html")
+                                uri = f"authentication/auto/{email}/{str(traveler.id)}"
+                                link = "http://172.20.0.42:8000/" + uri
+                                approve = link + '/approve'
+                                reject = link + '/reject'
 
-                            msg = message_template.substitute(
-                                CONTENT=message,
-                                LINK=link,
-                                PLATFORM=platform,
-                                APPROVE=approve,
-                                REJECT=reject
-                            )
-                            mail = {
-                                "email" : [email], 
-                                "subject" : subject,
-                                "message" : msg,
-                                "is_html": True
-                            }
+                                msg = message_template.substitute(
+                                    CONTENT=message,
+                                    LINK=link,
+                                    PLATFORM=platform,
+                                    APPROVE=approve,
+                                    REJECT=reject
+                                )
+                                mail = {
+                                    "email" : [email], 
+                                    "subject" : subject,
+                                    "message" : msg,
+                                    "is_html": True
+                                }
 
-                            Sendmail.objects.create(**mail)
-
+                                Sendmail.objects.create(**mail)
                     except Exception as e:
                         logger.error(f"{travel_status} : {e}")
 
