@@ -50,7 +50,7 @@ class AMSViewSet(viewsets.ViewSet):
 
             payload = request.data
 
-            # serialize employee payload
+            # serialize payload
             serializer = serializers.AssetSerializer(
                     data=payload, many=False)
             if not serializer.is_valid():
@@ -64,14 +64,23 @@ class AMSViewSet(viewsets.ViewSet):
             category = payload['category'] or None
             custodian = payload['custodian'] or None
             specific_location = payload['specific_location'] or None
-            properties = payload['properties'] or None
+            properties = payload['properties'] or []
             description = payload['description'] or None
             procurement_date = payload['procurement_date'] or None
+
+            if not properties:
+                return Response({"details": "Asset properties not added"}, status=status.HTTP_400_BAD_REQUEST)
 
             if asset_no:
                 exists = models.Asset.objects.filter(Q(asset_no=asset_no)).exists()
                 if exists:
                     return Response({"details": "Asset already added"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            serial_no = shared_fxns.get_serial_number(properties)
+            if serial_no:
+                exists = models.Asset.objects.filter(Q(serial_no=serial_no)).exists()
+                if exists:
+                    return Response({"details": "Serial No already exists"}, status=status.HTTP_400_BAD_REQUEST)
             
             try:
                 department = SRRSDepartment.objects.get(id=department)
@@ -87,7 +96,7 @@ class AMSViewSet(viewsets.ViewSet):
             with transaction.atomic():
                 raw_obj = {
                     "asset_no": asset_no,
-                    "serial_no": shared_fxns.get_serial_number(properties),
+                    "serial_no": serial_no,
                     "facility": facility,
                     "department": department,
                     "status": asset_status,
@@ -113,11 +122,12 @@ class AMSViewSet(viewsets.ViewSet):
         elif request.method == "PUT":
             payload = request.data
 
-            # serialize employee payload
+            # serialize payload
             serializer = serializers.UpdateAssetSerializer(
                     data=payload, many=False)
             if not serializer.is_valid():
-                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"details": serializer.errors}, 
+                                status=status.HTTP_400_BAD_REQUEST)
             
             request_id = payload['request_id'].strip()
             asset_no = payload['asset_no'].strip() if payload['asset_no'] else None
@@ -128,9 +138,13 @@ class AMSViewSet(viewsets.ViewSet):
             category = payload['category'] or None
             custodian = payload['custodian'] or None
             specific_location = payload['specific_location'] or None
-            properties = payload['properties'] or None
+            properties = payload['properties'] or []
             description = payload['description'] or None
             procurement_date = payload['procurement_date'] or None
+
+            if not properties:
+                return Response({"details": "Asset properties not added"}, 
+                                status=status.HTTP_400_BAD_REQUEST)
             
             try:
                 asset = models.Asset.objects.get(id=request_id)
