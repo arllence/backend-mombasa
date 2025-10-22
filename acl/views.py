@@ -117,6 +117,8 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
         payload = request.data
         email = request.data.get('user_id')
 
+        return Response({"details": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
+
         if email is None:
             return Response({"details": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
 
