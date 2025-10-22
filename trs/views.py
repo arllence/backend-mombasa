@@ -363,7 +363,8 @@ class TrsViewSet(viewsets.ViewSet):
                         emails = list(set(managers_emails))
                         for email in emails:
                             message_template = read_template("custom_template.html")
-                            uri = f"authentication/auto/{email}/{str(tripInstance.traveler.id)}"
+                            # uri = f"authentication/auto/{email}/{str(tripInstance.traveler.id)}"
+                            uri = f"requests/view/{str(tripInstance.traveler.id)}"
                             link = "http://172.20.0.42:8000/" + uri
                             approve = link + '/approve'
                             reject = link + '/reject'
@@ -1240,7 +1241,8 @@ class TrsViewSet(viewsets.ViewSet):
                             emails = list(set(emails))
                             for email in emails:
                                 message_template = read_template("custom_template.html")
-                                uri = f"authentication/auto/{email}/{str(traveler.id)}"
+                                # uri = f"authentication/auto/{email}/{str(traveler.id)}"
+                                uri = f"requests/view/{str(traveler.id)}"
                                 link = "http://172.20.0.42:8000/" + uri
                                 approve = link + '/approve'
                                 reject = link + '/reject'
