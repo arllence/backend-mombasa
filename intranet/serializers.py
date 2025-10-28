@@ -259,6 +259,47 @@ class FullFetchDepartmentSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return []
         
+# privileges
+class SlimFetchPrivilegeSubDepartmentCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.PrivilegeSubDepartmentCategory
+        fields = '__all__'
+class SubSlimFetchPrivilegeSubDepartmentSerializer(serializers.ModelSerializer):
+    categories = serializers.SerializerMethodField()
+
+    def get_categories(self, obj):
+        try:
+            request = models.PrivilegeSubDepartmentCategory.objects.filter(sub_department=obj,is_deleted=False)
+            serializer = SlimFetchPrivilegeSubDepartmentCategorySerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+    class Meta:
+        model = models.PrivilegeSubDepartment
+        fields = '__all__'
+
+class FullFetchPrivilegesDepartmentSerializer(serializers.ModelSerializer):
+    sub_departments = serializers.SerializerMethodField()
+    class Meta:
+        model = models.SRRSDepartment
+        fields = '__all__'
+
+    def get_sub_departments(self, obj):
+        try:
+            request = models.PrivilegeSubDepartment.objects.filter(department=obj,is_deleted=False)
+            serializer = SubSlimFetchPrivilegeSubDepartmentSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []
+        
 
 # survey
 class SurveySerializer(serializers.Serializer):

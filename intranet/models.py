@@ -465,3 +465,112 @@ class TrackNotification(models.Model):
     
     class Meta:
         db_table = u'"{}\".\"track_notifications"'.format(settings.INTRANET)
+
+
+class PrivilegeSubDepartment(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    department = models.ForeignKey(
+       SRRSDepartment, on_delete=models.DO_NOTHING, 
+       related_name="privilege_srrs_main_department"
+    )
+
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="privilege_sub_department_created_by"
+    )
+
+    name = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name}"
+    
+    class Meta:
+        db_table = u'"{}\".\"privilege_sub_departments"'.format(settings.INTRANET)
+
+
+class PrivilegeSubDepartmentCategory(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    sub_department = models.ForeignKey(
+       PrivilegeSubDepartment, on_delete=models.DO_NOTHING, 
+       related_name="privilege_sub_department"
+    )
+
+    created_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="privilege_category_created_by"
+    )
+
+    name = models.CharField(max_length=500)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name}"
+    
+    class Meta:
+        db_table = u'"{}\".\"privilege_sub_department_categories"'.format(settings.INTRANET)
+
+
+class PrivilegeDocument(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    department = models.ForeignKey(
+        SRRSDepartment, on_delete=models.DO_NOTHING, 
+        related_name='intranet_privilege_document_department')
+    
+    sub_department = models.ForeignKey(
+        PrivilegeSubDepartment, on_delete=models.DO_NOTHING, 
+        related_name='intranet_privilege_document_sub_department',
+        null=True, blank=True)
+    
+    category = models.ForeignKey(
+        PrivilegeSubDepartmentCategory, on_delete=models.DO_NOTHING, 
+        related_name='intranet_privilege_document_category',
+        null=True, blank=True)
+    
+    uploaded_by = models.ForeignKey(
+       User, on_delete=models.DO_NOTHING, 
+       related_name="privilege_document_uploaded_by"
+    )
+
+    document = models.FileField(upload_to='documents/intranet/privileges')
+    title = models.CharField(max_length=500, null=True, blank=True)
+    original_file_name = models.CharField(max_length=500)
+    downloads = models.IntegerField(default=0)
+    expiry_date = models.DateField(null=True, blank=True)
+    is_expired = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title}"
+    
+    class Meta:
+        db_table = u'"{}\".\"privilege_documents"'.format(settings.INTRANET)
+
+
+class AccessCode(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    user = models.ForeignKey(
+        User, on_delete=models.DO_NOTHING, 
+        related_name='privileged_user')
+    
+    code = models.CharField(max_length=5)
+    is_expired = models.BooleanField(default=False)
+    is_deleted = models.BooleanField(default=False)
+    date_created = models.DateTimeField(auto_now_add=True)
+    date_updated = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.code}"
+    
+    class Meta:
+        db_table = u'"{}\".\"access_codes"'.format(settings.INTRANET)

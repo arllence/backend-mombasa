@@ -1,2 +1,3 @@
 ROLES:
     - ICT
+    - INTRANET_ADMIN
