@@ -1909,7 +1909,7 @@ class DepartmentsViewSet(viewsets.ViewSet):
             if serializer.is_valid():
                 department_id = payload['department_id']
                 sub_departments = payload['sub_departments']
-                is_privileges = payload.get('is_privileges') or False
+                # is_privileges = payload.get('is_privileges') or False
 
                 try:
                     departmentInstance = models.SRRSDepartment.objects.get(id=department_id)
@@ -1921,7 +1921,7 @@ class DepartmentsViewSet(viewsets.ViewSet):
                         models.SubDepartment.objects.create(
                             name=sub_department['name'],
                             department=departmentInstance,
-                            is_privileges= True if sub_department['is_privileges'] == 'true' else False,
+                            # is_privileges= True if sub_department['is_privileges'] == 'true' else False,
                             created_by=request.user
                         )
                     
