@@ -192,7 +192,7 @@ class CoreViewSet(viewsets.ViewSet):
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
-            department_id = request.query_params.get('department')
+            department_id = request.query_params.get('department_id')
             type = request.query_params.get('type')
             category = request.query_params.get('category')
             query = request.query_params.get('q')
@@ -245,6 +245,7 @@ class CoreViewSet(viewsets.ViewSet):
                 try:
 
                     if any(role in ['SUPERUSER','CTP_ADMIN', 'HR'] for role in roles):
+                        print(filters)
 
                         if filters:
                             resp = models.TrainingMaterial.objects.filter(filters).order_by('-date_created')
