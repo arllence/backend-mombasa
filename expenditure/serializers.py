@@ -17,19 +17,21 @@ class UpdateGeneralNameSerializer(serializers.Serializer):
 class CreateExpenditureSerializer(serializers.Serializer):
     reference_no = serializers.CharField()
     description = serializers.CharField()
-    invoice_number = serializers.DateField()
-    amount_kes = serializers.DateField()
+    invoice_number = serializers.CharField()
+    amount_kes = serializers.CharField()
     department = serializers.CharField()
 
 class UpdateContractSerializer(serializers.Serializer):
     request_id = serializers.CharField()
     reference_no = serializers.CharField()
     description = serializers.CharField()
-    invoice_number = serializers.DateField()
-    amount_kes = serializers.DateField()
+    invoice_number = serializers.CharField()
+    amount_kes = serializers.CharField()
     department = serializers.CharField()
 
 class SlimFetchExpenditureSerializer(serializers.ModelSerializer):
+    department = SlimFetchSRRSDepartmentSerializer()
+    requested_by = SlimUsersSerializer()
     class Meta:
         model = models.ExpenditureRequest
         fields = '__all__'
@@ -40,8 +42,10 @@ class SlimFetchDocumentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class FetchExpenditureSerializer(serializers.ModelSerializer):
-    department = FetchSRRSDepartmentSerializer()
+    department = SlimFetchSRRSDepartmentSerializer()
     documents = serializers.SerializerMethodField()
+    can_approve = serializers.SerializerMethodField()
+    approvals = serializers.SerializerMethodField()
     requested_by = SlimUsersSerializer()
     
     class Meta:
@@ -58,7 +62,57 @@ class FetchExpenditureSerializer(serializers.ModelSerializer):
         except Exception as e:
             print(e)
             # logger.error(e)
-            return []         
+            return []       
+
+    def get_can_approve(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            roles = get_user_roles(user_id)
+
+            # Only certain roles can approve
+            if not any(role in {"CEO", "HOF", "SUPERUSER", "HOD", "FINANCE_MANAGER"} for role in roles):
+                return False
+
+            # HOD specific logic
+            if "HOD" in roles:
+                if not obj.is_hod_approved:
+                    return True
+                
+            # FM specific logic
+            if "FINANCE_MANAGER" in roles:
+                if obj.is_hod_approved and not obj.is_finance_manager_approved:
+                    return True
+                
+            # HOF specific logic
+            if "HOF" in roles:
+                if obj.is_finance_manager_approved and not obj.is_hof_approved:
+                    return True
+
+            # CEO approval logic
+            if "CEO" in roles and obj.is_finance_manager_approved and obj.is_hof_approved:
+                if not obj.is_ceo_approved:
+                    return True
+
+            return False
+
+        except KeyError:
+            print("Missing user_id in context.")
+        except Exception as e:
+            print(f"Error in get_can_approve: {e}")
+
+        return False  
+    
+    def get_approvals(self, obj):
+        try:
+            request = models.StatusChange.objects.filter(expenditure=obj).order_by('date_created')
+            serializer = FetchStatusChangeSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
         
 class UploadFileSerializer(serializers.Serializer):
     request_id = serializers.CharField()
@@ -84,7 +138,13 @@ class NoteSerializer(serializers.Serializer):
 
 
 class FetchNoteSerializer(serializers.ModelSerializer):
-    owner = SlimUsersSerializer()
+    created_by = SlimUsersSerializer()
     class Meta:
         model = models.Note
+        fields = '__all__'
+
+class FetchStatusChangeSerializer(serializers.ModelSerializer):
+    action_by = SlimUsersSerializer()
+    class Meta:
+        model = models.StatusChange
         fields = '__all__'

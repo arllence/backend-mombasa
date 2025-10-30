@@ -25,6 +25,17 @@ class ExpenditureRequest(models.Model):
         related_name='requisition_by',
         db_index=True
     )
+
+    is_hod_approved = models.BooleanField(default=False)
+    is_finance_manager_approved = models.BooleanField(default=False)
+    is_ceo_approved = models.BooleanField(default=False)
+    is_hof_approved = models.BooleanField(default=False)
+    is_cash_office_approved = models.BooleanField(default=False)
+
+    payments_made_to = models.CharField(max_length=300, blank=True)
+    payments_date = models.DateField(null=True, blank=True)
+
+    is_deleted = models.BooleanField(default=False, db_index=True)
     date_created = models.DateTimeField(auto_now_add=True, db_index=True)
     date_updated = models.DateTimeField(auto_now=True)
 
@@ -37,6 +48,7 @@ class ExpenditureRequest(models.Model):
             models.Index(fields=['department', 'status']),
             models.Index(fields=['requested_by', 'date_created']),
             models.Index(fields=['invoice_number']),
+            models.Index(fields=['is_deleted']),
         ]
         # Optional: if you often query combinations of these fields
         index_together = [
@@ -99,8 +111,7 @@ class StatusChange(models.Model):
     status = models.CharField(max_length=255)
     action_by = models.ForeignKey(
        User, on_delete=models.DO_NOTHING, 
-       related_name="expenditure_action_by",
-       null=True, blank=True
+       related_name="expenditure_action_by"
     )
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)

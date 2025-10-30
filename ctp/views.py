@@ -508,14 +508,14 @@ class CoreViewSet(viewsets.ViewSet):
                             return Response({"details": "HOD role not understood"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         if filters:
-                            filters |= (Q(training__department=dept) | Q(created_by=request.user))
+                            filters |= (Q(training__department=dept) | Q(assigned_by=request.user))
                             resp = models.TrainingAssignment.objects.filter(
                                     filters
                                 ).order_by('-date_created')
                         else:
                             try:
                                 resp = models.TrainingAssignment.objects.filter(
-                                Q(training__department=dept) | Q(created_by=request.user),
+                                Q(training__department=dept) | Q(assigned_by=request.user),
                                 is_deleted=False).order_by('-date_created')
                             except:
                                 resp = []                        

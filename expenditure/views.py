@@ -47,8 +47,8 @@ class CoreViewSet(viewsets.ViewSet):
     
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
-            url_path="expenditure",
-            url_name="expenditure")
+            url_path="core",
+            url_name="core")
     def expenditure(self, request):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
@@ -94,7 +94,7 @@ class CoreViewSet(viewsets.ViewSet):
                     "invoice_number" : invoice_number,
                     "amount_kes" : amount_kes,
                     "department" : department,
-                    "created_by": request.user
+                    "requested_by": request.user
                 }
                 newInstance = models.ExpenditureRequest.objects.create(**raw)
 
@@ -112,6 +112,14 @@ class CoreViewSet(viewsets.ViewSet):
                         logger.error(e)
                         print(e)
                         return Response({"details": "Error saving files"}, status=status.HTTP_400_BAD_REQUEST)  
+                    
+                # track status change
+                raw = {
+                    "expenditure": newInstance,
+                    "status": "REQUESTED",
+                    "action_by": request.user
+                }
+                models.StatusChange.objects.create(**raw)
                 
 
             user_util.log_account_activity(
@@ -171,7 +179,7 @@ class CoreViewSet(viewsets.ViewSet):
                         models.Document.objects.create(
                             document=f,
                             file_name=original_file_name, 
-                            contract=expenditureInstance, 
+                            expenditure=expenditureInstance, 
                             uploaded_by=request.user
                         )
 
@@ -187,9 +195,146 @@ class CoreViewSet(viewsets.ViewSet):
 
   
         elif request.method == "PATCH":
-            payload = request.data
+            # Approvals hod / finance_manager / ceo / hof
+
+            if not any(role in ["HOD","FINANCE_MANAGER","CEO","HOF","SUPERUSER", "CASH_OFFICE"] for role in roles):
+                return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
             
-            return Response('success', status=status.HTTP_200_OK)
+            payload = request.data
+
+            serializer = serializers.PatchJobCardSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                request_status = payload['status']
+                comment = payload['comments']
+                payments_made_to = payload.get('payments_made_to') or None
+                payments_date = payload.get('payments_date') or None
+
+                try:
+                    requestInstance = models.ExpenditureRequest.objects.get(id=request_id)
+                except Exception as e:
+                    logger.error(e)
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+                is_hod, is_finance_manager, is_ceo, is_hof, is_cash_office = [False, False, False, False, False]
+                if "HOD" in roles:
+                    is_hod = Hods.objects.filter(hod=request.user, department=requestInstance.department).exists()
+
+                if "FINANCE_MANGER" in roles:
+                    is_finance_manager = True
+
+                if "HOF" in roles:
+                    is_hof = True
+
+                if "CEO" in roles:
+                    is_ceo = True
+
+                if "CASH_OFFICE" in roles:
+                    is_cash_office = True
+                
+                if request_status == 'REJECTED':
+                    requestInstance.status = "REJECTED"
+                    requestInstance.save()
+
+                else:
+                    if not is_cash_office and request_status == 'DISBURSED':
+                        return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    if request_status == 'DISBURSED':
+                        requestInstance.payments_made_to = payments_made_to
+                        requestInstance.payments_date = payments_date
+                        requestInstance.is_cash_office_approved = True
+                        request_status = "DISBURSED"
+
+                    if is_hod:
+                        requestInstance.is_hod_approved = True
+                        requestInstance.status = "HOD APPROVED"
+                        request_status = "HOD APPROVED"
+
+                    if is_finance_manager:
+                        requestInstance.is_finance_manager_approved = True
+                        requestInstance.status = "FINANCE APPROVED"
+                        request_status = "FINANCE APPROVED"
+
+                    if is_hof:
+                        requestInstance.is_hof_approved = True
+                        requestInstance.status = "HOF APPROVED"
+                        request_status = "HOF APPROVED"
+                        
+                    if is_ceo:
+                        requestInstance.is_ceo_approved = True
+                        requestInstance.status = "CEO APPROVED"
+                        request_status = "CEO APPROVED"                    
+
+
+                # track status change
+                raw = {
+                    "expenditure": requestInstance,
+                    "status": request_status,
+                    "action_by": request.user
+                }
+
+                with transaction.atomic():
+                    requestInstance.save()
+                    models.StatusChange.objects.create(**raw)
+
+                    if comment:
+                        final_comment = f"[{request_status}] {comment}"
+                        models.Note.objects.create(
+                            expenditure=requestInstance,
+                            note=final_comment,
+                            created_by=request.user
+                        )
+                        comment = f"[Comment: {comment}]"
+
+                    # send requestor notification email
+                    emails = [requestInstance.requested_by.email]
+                    if is_ceo:
+                        emails_x = list(get_user_model().objects.filter(Q(groups__name__in=['CASH_OFFICE','HOF','FINANCE_MANAGER'])).values_list('email', flat=True))
+                        emails += emails_x
+                    subject = f"[EXPENDITURE] Request Status: {requestInstance.reference_no} ."
+                    message = f"Hello. \nExpenditure approval for: {requestInstance.reference_no}, \nhas been {request_status} by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n{comment}\n\nRegards\nEAS-AKHK\n--Auto-generated--\n"
+
+                    try:
+                        if emails:
+                            mail = {
+                                "email" : list(set(emails)), 
+                                "subject" : subject,
+                                "message" : message,
+                            }                            
+                            Sendmail.objects.create(**mail)
+                    except Exception as e:
+                        logger.error(e)
+
+                    # send approver notification email
+                    if request_status != "REJECTED":
+                        emails = []
+                        if is_hod:
+                            emails =  list(get_user_model().objects.filter(Q(groups__name='FINANCE_MANAGER')).values_list('email', flat=True))
+                        if is_finance_manager:
+                            emails =  list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
+                        if is_hof:
+                            emails =  list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
+                            
+                        subject = f"[EXPENDITURE] Request {requestInstance.reference_no} Pending Approval."
+                        message = f"Hello. \nExpenditure request: {requestInstance.reference_no}, \nis pending your approval\nVisit http://172.20.0.42:8017/requests/view/{request_id}\n\nRegards\nEAS-AKHK\n--Auto-generated--\n"
+                        try:
+                            if emails:
+                                mail = {
+                                    "email" : list(set(emails)), 
+                                    "subject" : subject,
+                                    "message" : message,
+                                }
+                                Sendmail.objects.create(**mail)
+                        except Exception as e:
+                            logger.error(e)
+
+                    return Response("Success", status=status.HTTP_200_OK)
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
         elif request.method == "GET":
             request_id = request.query_params.get('request_id')
@@ -294,7 +439,7 @@ class CoreViewSet(viewsets.ViewSet):
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
                     result_page = paginator.paginate_queryset(resp, request)
-                    serializer = serializers.FetchExpenditureSerializer(
+                    serializer = serializers.SlimFetchExpenditureSerializer(
                         result_page, many=True, context={"user_id":request.user.id})
                     return paginator.get_paginated_response(serializer.data)
                 
@@ -588,12 +733,10 @@ class CoreViewSet(viewsets.ViewSet):
     def notes(self, request):
 
         authenticated_user = request.user
-        roles = user_util.fetchusergroups(request.user.id) 
 
         if request.method == "POST":
 
             payload = request.data
-            roles = user_util.fetchusergroups(request.user.id) 
 
             serializer = serializers.NoteSerializer(
                     data=payload, many=False)
@@ -603,56 +746,38 @@ class CoreViewSet(viewsets.ViewSet):
                 comment = payload.get('comments')
 
                 try:
-                    issueInstance = models.Issue.objects.get(id=request_id)
+                    targetInstance = models.ExpenditureRequest.objects.get(id=request_id)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown issue"}, 
+                    return Response({"details": "Unknown request"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
                     raw = {
-                        "owner": request.user,
-                        "issue": issueInstance,
+                        "created_by": request.user,
+                        "expenditure": targetInstance,
                         "note": comment
                     }
                     models.Note.objects.create(**raw)
 
                 # Send Note Notifications
-                emails = []
-                assignees = models.Assignees.objects.filter(Q(issue=issueInstance))
-                for assignee in assignees:
-                    emails.append(assignee.assignee.email)
-                    if assignee.assigned_by:
-                        emails.append(assignee.assigned_by.email)
-                if issueInstance.assigned_to:
-                    emails.append(issueInstance.assigned_to.email)
-                if issueInstance.created_by:
-                    emails.append(issueInstance.created_by.email)
-                else:
-                    emails.append(issueInstance.email)
+                emails = list(models.StatusChange.objects.filter(Q(expenditure=targetInstance)).values_list('action_by__email', flat=True))
+
                 try:
                     emails.remove(request.user.email)
                 except:
                     pass
-                subject = f"[MHD] Note Issued for {issueInstance.uid}"
-                message = f"Hello. \nA note has been added for Issue of id: {issueInstance.uid} \nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nThe Note:\n {comment}.\n"
 
-                uri = f"requests/view/{str(issueInstance.id)}"
-                link = "http://172.20.0.42:8009/" + uri
-                platform = 'View Issue'
+                uri = f"requests/view/{str(targetInstance.id)}"
+                link = "http://172.20.0.42:8017/" + uri
 
-                message_template = read_template("general_template.html")
-                message = message_template.substitute(
-                    CONTENT=message,
-                    LINK=link,
-                    PLATFORM=platform
-                )
-                
+                subject = f"[EXPENDITURE] Note Issued for {targetInstance.reference_no}"
+                message = f"Hello. \nA note has been added for expenditure: {targetInstance.reference_no} \nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nThe Note:\n {comment}.\n\nVisit:{link}"
+
                 try:
                     mail = {
                         "email" : list(set(emails)), 
                         "subject" : subject,
-                        "message" : message,
-                        "is_html": True
+                        "message" : message
                     }
                     Sendmail.objects.create(**mail)
                 except Exception as e:
@@ -668,7 +793,7 @@ class CoreViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             if request_id:
                 try:
-                    resp = models.Note.objects.filter(Q(issue=request_id))
+                    resp = models.Note.objects.filter(Q(expenditure=request_id))
 
                     resp = serializers.FetchNoteSerializer(
                         resp, many=True, context={"user_id":request.user.id}).data
