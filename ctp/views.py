@@ -597,6 +597,7 @@ class CoreViewSet(viewsets.ViewSet):
                 targetInstance.certificate = f
                 targetInstance.is_completed = True
                 targetInstance.date_completed =  date.today()
+                targetInstance.completion_date =  date.today()
                 targetInstance.save()
      
             user_util.log_account_activity(
