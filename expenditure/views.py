@@ -465,7 +465,7 @@ class CoreViewSet(viewsets.ViewSet):
                         if query == 'approved':
                             resp = models.ExpenditureRequest.objects.filter(is_cash_office_approved=True, is_deleted=False).order_by('-date_created')
                         else:
-                            resp = models.ExpenditureRequest.objects.filter(Q(status='CEO APPROVED') | Q(requested_by=request.user),is_deleted=False).order_by('-date_created')
+                            resp = models.ExpenditureRequest.objects.filter((Q(status='CEO APPROVED') & Q(is_cash_office_approved=False)) | Q(requested_by=request.user),is_deleted=False).order_by('-date_created')
 
                     else:
                         if query == 'approved':
