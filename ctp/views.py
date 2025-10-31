@@ -156,7 +156,7 @@ class CoreViewSet(viewsets.ViewSet):
                     "type" : type,
                     "category" : category,
                     "external_url" : external_link,
-                    "exam_url" : exam_link,
+                    "exam_link" : exam_link,
                     "description" : description,
                     "department" : department,
                 }
