@@ -57,6 +57,10 @@ class CoreViewSet(viewsets.ViewSet):
 
             payload = json.loads(request.data['payload'])
 
+            if not request.FILES.getlist('documents'):
+                return Response({"details": f"Supporting Documents must be attached"}, status=status.HTTP_400_BAD_REQUEST)
+            
+
             exts = ['pdf']
             for f in request.FILES.getlist('documents'):
                 original_file_name = f.name
@@ -187,6 +191,14 @@ class CoreViewSet(viewsets.ViewSet):
                         logger.error(e)
                         print(e)
                         return Response({"details": "Error saving files"}, status=status.HTTP_400_BAD_REQUEST)  
+                    
+                # track status change
+                raw = {
+                    "expenditure": expenditureInstance,
+                    "status": "EDITED",
+                    "action_by": request.user
+                }
+                models.StatusChange.objects.create(**raw)
 
             user_util.log_account_activity(
                 authenticated_user, authenticated_user, "Expenditure updated", f"Expenditure Id: {expenditureInstance.id}")
@@ -431,9 +443,9 @@ class CoreViewSet(viewsets.ViewSet):
 
                     else:
                         if query == 'approved':
-                            resp = models.ExpenditureRequest.objects.filter(status='CEO APPROVED', created_by=request.user, is_deleted=False).order_by('-date_created')
+                            resp = models.ExpenditureRequest.objects.filter(status='CEO APPROVED', requested_by=request.user, is_deleted=False).order_by('-date_created')
                         else:
-                            resp = models.ExpenditureRequest.objects.filter(Q(is_deleted=False) & (Q(created_by=request.user)) ).order_by('-date_created')
+                            resp = models.ExpenditureRequest.objects.filter(Q(is_deleted=False) & (Q(requested_by=request.user)) ).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
@@ -484,9 +496,8 @@ class CoreViewSet(viewsets.ViewSet):
                 ext = original_file_name.split('.')[-1].strip().lower()
                 if ext not in exts:
                     return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
-            
            
-            # serialize contract payload
+            # serialize payload
             serializer = serializers.UploadFileSerializer(
                     data=payload, many=False)
             if not serializer.is_valid():
@@ -779,7 +790,8 @@ class CoreViewSet(viewsets.ViewSet):
                         "subject" : subject,
                         "message" : message
                     }
-                    Sendmail.objects.create(**mail)
+                    if emails:
+                        Sendmail.objects.create(**mail)
                 except Exception as e:
                     logger.error(e)
 

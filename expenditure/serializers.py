@@ -46,6 +46,7 @@ class FetchExpenditureSerializer(serializers.ModelSerializer):
     documents = serializers.SerializerMethodField()
     can_approve = serializers.SerializerMethodField()
     approvals = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
     requested_by = SlimUsersSerializer()
     
     class Meta:
@@ -113,7 +114,17 @@ class FetchExpenditureSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return {} 
-        
+    
+    def get_can_edit(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            if str(obj.requested_by.id) == user_id and obj.status == 'REQUESTED':
+                return True
+            return False
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False   
 class UploadFileSerializer(serializers.Serializer):
     request_id = serializers.CharField()
     file_type = serializers.CharField()
