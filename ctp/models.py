@@ -20,6 +20,7 @@ class TrainingMaterial(models.Model):
     category = models.CharField(max_length=255, default='GENERAL', null=True, blank=True, db_index=True)
     description = models.TextField(blank=True)
     external_url = models.URLField(null=True, blank=True)
+    exam_link = models.URLField(null=True, blank=True)
     date_created = models.DateTimeField(auto_now_add=True)
     is_deleted = models.BooleanField(default=False)
 

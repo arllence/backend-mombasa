@@ -70,6 +70,7 @@ class CoreViewSet(viewsets.ViewSet):
             title = payload['title']
             type = payload['type']
             external_link = payload['external_link']
+            exam_link = payload['exam_link']
             description = payload['description']
             department = payload['department']
             category = payload['category']
@@ -89,6 +90,7 @@ class CoreViewSet(viewsets.ViewSet):
                     "type" : type,
                     "category" : category,
                     "external_url" : external_link,
+                    "exam_link" : exam_link,
                     "description" : description,
                     "department" : department,
                     "created_by": request.user
@@ -130,6 +132,7 @@ class CoreViewSet(viewsets.ViewSet):
             title = payload['title']
             type = payload['type']
             external_link = payload['external_link']
+            exam_link = payload['exam_link']
             description = payload['description']
             department = payload['department']
             category = payload['category']
@@ -153,6 +156,7 @@ class CoreViewSet(viewsets.ViewSet):
                     "type" : type,
                     "category" : category,
                     "external_url" : external_link,
+                    "exam_url" : exam_link,
                     "description" : description,
                     "department" : department,
                 }
