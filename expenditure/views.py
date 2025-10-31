@@ -124,6 +124,26 @@ class CoreViewSet(viewsets.ViewSet):
                     "action_by": request.user
                 }
                 models.StatusChange.objects.create(**raw)
+
+                # Send Note Notifications
+                emails = list(Hods.objects.filter(hod=request.user, department=requestInstance.department).values_list('hod__email', flat=True))
+
+                uri = f"requests/view/{str(newInstance.id)}"
+                link = "http://172.20.0.42:8017/" + uri
+
+                subject = f"[EXPENDITURE] Request Raised for {newInstance.reference_no}"
+                message = f"Hello. \nAn expenditure request has been raised\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nTo approve visit: {link}\n\nRegards\nEAS-AKHK"
+
+                try:
+                    mail = {
+                        "email" : list(set(emails)), 
+                        "subject" : subject,
+                        "message" : message
+                    }
+                    if emails:
+                        Sendmail.objects.create(**mail)
+                except Exception as e:
+                    logger.error(e)
                 
 
             user_util.log_account_activity(
@@ -136,7 +156,7 @@ class CoreViewSet(viewsets.ViewSet):
             payload = json.loads(request.data['payload'])
            
             # serialize contract payload
-            serializer = serializers.UpdateContractSerializer(
+            serializer = serializers.UpdateExpenditureSerializer(
                     data=payload, many=False)
             if not serializer.is_valid():
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
@@ -214,7 +234,7 @@ class CoreViewSet(viewsets.ViewSet):
             
             payload = request.data
 
-            serializer = serializers.PatchJobCardSerializer(
+            serializer = serializers.PatchExpenditureSerializer(
                 data=payload, many=False)
             
             if serializer.is_valid():
@@ -235,7 +255,7 @@ class CoreViewSet(viewsets.ViewSet):
                 if "HOD" in roles:
                     is_hod = Hods.objects.filter(hod=request.user, department=requestInstance.department).exists()
 
-                if "FINANCE_MANGER" in roles:
+                if "FINANCE_MANAGER" in roles:
                     is_finance_manager = True
 
                 if "HOF" in roles:
@@ -421,25 +441,31 @@ class CoreViewSet(viewsets.ViewSet):
                         if query == 'approved':
                             resp = models.ExpenditureRequest.objects.filter(status='CEO APPROVED', is_deleted=False).order_by('-date_created')
                         else:
-                            resp = models.ExpenditureRequest.objects.filter(status='HOD APPROVED', is_deleted=False).order_by('-date_created')
+                            resp = models.ExpenditureRequest.objects.filter(Q(status='HOD APPROVED') | Q(requested_by=request.user), is_deleted=False).order_by('-date_created')
 
                     elif any(role in ['HOF'] for role in roles):
                         if query == 'approved':
                             resp = models.ExpenditureRequest.objects.filter(status='CEO APPROVED',is_deleted=False).order_by('-date_created')
                         else:
-                            resp = models.ExpenditureRequest.objects.filter(status='FINANCE APPROVED',is_deleted=False).order_by('-date_created')
+                            resp = models.ExpenditureRequest.objects.filter(Q(status='FINANCE APPROVED') | Q(requested_by=request.user),is_deleted=False).order_by('-date_created')
 
                     elif any(role in ['CEO'] for role in roles):
                         if query == 'approved':
                             resp = models.ExpenditureRequest.objects.filter(status='CEO APPROVED', is_deleted=False).order_by('-date_created')
                         else:
-                            resp = models.ExpenditureRequest.objects.filter(status='HOF APPROVED', is_deleted=False).order_by('-date_created')
+                            resp = models.ExpenditureRequest.objects.filter(Q(status='HOF APPROVED') | Q(requested_by=request.user), is_deleted=False).order_by('-date_created')
 
                     elif any(role in ['SUPERUSER'] for role in roles):
                         if query == 'approved':
                             resp = models.ExpenditureRequest.objects.filter(status='CEO APPROVED', is_deleted=False).order_by('-date_created')
                         else:
                             resp = models.ExpenditureRequest.objects.filter(is_deleted=False).order_by('-date_created')
+
+                    elif any(role in ['CASH_OFFICE'] for role in roles):
+                        if query == 'approved':
+                            resp = models.ExpenditureRequest.objects.filter(is_cash_office_approved=True, is_deleted=False).order_by('-date_created')
+                        else:
+                            resp = models.ExpenditureRequest.objects.filter(Q(status='CEO APPROVED') | Q(requested_by=request.user),is_deleted=False).order_by('-date_created')
 
                     else:
                         if query == 'approved':
@@ -782,7 +808,7 @@ class CoreViewSet(viewsets.ViewSet):
                 link = "http://172.20.0.42:8017/" + uri
 
                 subject = f"[EXPENDITURE] Note Issued for {targetInstance.reference_no}"
-                message = f"Hello. \nA note has been added for expenditure: {targetInstance.reference_no} \nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nThe Note:\n {comment}.\n\nVisit:{link}"
+                message = f"Hello. \nA note has been added for expenditure: {targetInstance.reference_no} \nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nThe Note:\n {comment}.\n\nVisit: {link}"
 
                 try:
                     mail = {

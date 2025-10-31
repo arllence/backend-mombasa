@@ -21,14 +21,16 @@ class CreateExpenditureSerializer(serializers.Serializer):
     amount_kes = serializers.CharField()
     department = serializers.CharField()
 
-class UpdateContractSerializer(serializers.Serializer):
+class UpdateExpenditureSerializer(serializers.Serializer):
     request_id = serializers.CharField()
     reference_no = serializers.CharField()
     description = serializers.CharField()
     invoice_number = serializers.CharField()
     amount_kes = serializers.CharField()
     department = serializers.CharField()
-
+class PatchExpenditureSerializer(serializers.Serializer):
+    request_id = serializers.CharField(max_length=500)
+    status = serializers.CharField(max_length=500)
 class SlimFetchExpenditureSerializer(serializers.ModelSerializer):
     department = SlimFetchSRRSDepartmentSerializer()
     requested_by = SlimUsersSerializer()
@@ -71,7 +73,7 @@ class FetchExpenditureSerializer(serializers.ModelSerializer):
             roles = get_user_roles(user_id)
 
             # Only certain roles can approve
-            if not any(role in {"CEO", "HOF", "SUPERUSER", "HOD", "FINANCE_MANAGER"} for role in roles):
+            if not any(role in {"CEO", "HOF", "SUPERUSER", "HOD", "FINANCE_MANAGER", "CASH_OFFICE"} for role in roles):
                 return False
 
             # HOD specific logic
@@ -92,6 +94,10 @@ class FetchExpenditureSerializer(serializers.ModelSerializer):
             # CEO approval logic
             if "CEO" in roles and obj.is_finance_manager_approved and obj.is_hof_approved:
                 if not obj.is_ceo_approved:
+                    return True
+                
+            if "CASH_OFFICE" in roles:
+                if obj.is_ceo_approved and not obj.is_cash_office_approved:
                     return True
 
             return False
