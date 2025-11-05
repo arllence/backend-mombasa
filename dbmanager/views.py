@@ -26,6 +26,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import Group
 from rest_framework.exceptions import NotFound, ParseError
+from dateutil import parser
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -194,10 +195,15 @@ class DbManagerViewSet(viewsets.ViewSet):
             
             def get_system(name):
                 try:
-                    system = models.System.objects.get(name=name.upper())
+                    system = models.System.objects.filter(name__icontains=name.upper()).first()
                 except Exception as e:
                     system = None
                 return system
+            
+            def parser_date(date_str):
+                parsed = parser.parse(date_str)
+                formatted = parsed.strftime("%Y-%m-%d")
+                return formatted
             
             f = request.FILES.getlist('documents')[0]
             if f.name.endswith('.csv'):
@@ -211,7 +217,7 @@ class DbManagerViewSet(viewsets.ViewSet):
                         status=row[1].strip().upper(),
                         size=row[2].strip(),
                         unit=row[3].strip().upper(),
-                        date=row[4].strip(),
+                        date=parser_date(row[4].strip()),
                         action_by=request.user
                     ) 
                     for row in csv_data
@@ -398,7 +404,7 @@ class DbManagerViewSet(viewsets.ViewSet):
             
             def get_system(name):
                 try:
-                    system = models.System.objects.get(name__icontains=name.upper())
+                    system = models.System.objects.filter(name__icontains=name.upper()).first()
                 except Exception as e:
                     system = None
                     raise ParseError({"details": f"Unknown system: {name}"})
@@ -406,11 +412,16 @@ class DbManagerViewSet(viewsets.ViewSet):
             
             def get_location(name):
                 try:
-                    location = models.RemoteLocations.objects.get(name__icontains=name.upper())
+                    location = models.RemoteLocations.objects.filter(name__icontains=name.upper()).first()
                 except Exception as e:
                     location = None
                     raise ParseError({"details": f"Unknown remote location: {name}"})
                 return location
+            
+            def parser_date(date_str):
+                parsed = parser.parse(date_str)
+                formatted = parsed.strftime("%Y-%m-%d")
+                return formatted
             
             f = request.FILES.getlist('documents')[0]
             if f.name.endswith('.csv'):
@@ -424,7 +435,7 @@ class DbManagerViewSet(viewsets.ViewSet):
                         status=row[1].strip().upper(),
                         size=row[2].strip(),
                         unit=row[3].strip().upper(),
-                        date=row[4].strip(),
+                        date=parser_date(row[4].strip()),
                         remote_location=get_location(row[5].strip()),
                         action_by=request.user
                     ) 
