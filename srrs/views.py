@@ -1249,7 +1249,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     recipients.append(recruit.created_by.email)
                     recipients.append(recruit.department.slt.email)
                     subject = f"Candidate hired [SRRS-AKHK]"
-                    message = f"Hello. \n\nThe position: {recruit.position_title},\nhas been filled. Candidate name: {name},\nas updated by{authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
+                    message = f"Hello. \n\nThe position: {recruit.position_title},has been filled.\n Candidate name: {name},\nas updated by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n\nRegards\nSRRS-AKHK"
 
                     exempted_emails = shared_fxns.exempted_emails()
                     recipients = [email for email in recipients if email not in exempted_emails]
