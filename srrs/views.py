@@ -1260,7 +1260,7 @@ class SrrsViewSet(viewsets.ViewSet):
                             "subject" : subject,
                             "message" : message,
                         }
-                        Sendmail.objects.create(**mail)
+                        # Sendmail.objects.create(**mail)
                     except Exception as e:
                         logger.error(e)
 
