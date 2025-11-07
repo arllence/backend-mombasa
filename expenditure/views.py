@@ -26,6 +26,7 @@ from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth.models import Group
 from acl.models import Hods
+from django.db.models.functions import TruncMonth
 
 from rest_framework.pagination import PageNumberPagination
 
@@ -911,6 +912,7 @@ class AnalyticsViewSet(viewsets.ViewSet):
             url_path="general",
             url_name="general")
     def general(self, request):
+        return Response('resp', status=status.HTTP_200_OK)
    
         # Get the current date
         now = timezone.now().date()
@@ -931,3 +933,133 @@ class AnalyticsViewSet(viewsets.ViewSet):
         }
 
         return Response(resp, status=status.HTTP_200_OK)
+    
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="department-expenditure-summary",
+            url_name="department-expenditure-summary")
+    def department_expenditure_summary(self,request):
+        data = (
+            models.ExpenditureRequest.objects
+            .filter(is_deleted=False)
+            .values('department__name')
+            .annotate(total=Sum('amount_kes'))
+            .order_by('-total')
+        )
+        labels = [d['department__name'] for d in data]
+        totals = [float(d['total']) for d in data]
+        resp = {
+            'labels': labels,
+            'data': totals
+        }
+
+        return Response(resp, status=status.HTTP_200_OK)
+    
+    @action(methods=["GET",],
+            detail=False,
+            url_path="monthly-expenditure-trend",
+            url_name="monthly-expenditure-trend")
+    def monthly_expenditure_trend(self,request):
+        data = (
+            models.ExpenditureRequest.objects
+            .filter(is_deleted=False)
+            .annotate(month=TruncMonth('date_created'))
+            .values('month')
+            .annotate(total=Sum('amount_kes'))
+            .order_by('month')
+        )
+
+        labels = [d['month'].strftime('%b %Y') for d in data]  # e.g., "Jan 2025"
+        totals = [float(d['total']) for d in data]
+
+        resp = {
+            'labels': labels,
+            'data': totals
+        }
+        return Response(resp, status=status.HTTP_200_OK)
+    
+    
+    @action(methods=["GET",],
+            detail=False,
+            url_path="department-monthly-trend",
+            url_name="department-monthly-trend")
+    def department_monthly_trend(self,request):
+        # Aggregate total expenditure by department per month
+        data = (
+            models.ExpenditureRequest.objects
+            .filter(is_deleted=False)
+            .annotate(month=TruncMonth('date_created'))
+            .values('department__name', 'month')
+            .annotate(total=Sum('amount_kes'))
+            .order_by('month', 'department__name')
+        )
+
+        # Get sorted unique months for consistent chart X-axis
+        months = sorted({d['month'] for d in data})
+        month_labels = [m.strftime('%b %Y') for m in months]
+
+        # Build department → monthly totals dictionary
+        departments = {}
+        for entry in data:
+            dept = entry['department__name']
+            month = entry['month']
+            total = float(entry['total'])
+            if dept not in departments:
+                departments[dept] = {m: 0 for m in months}  # default 0 if no spending that month
+            departments[dept][month] = total
+
+        # Transform into Chart.js format
+        datasets = []
+        color_palette = [
+            '#42A5F5', '#66BB6A', '#FFA726', '#AB47BC', '#EC407A',
+            '#26C6DA', '#FF7043', '#8D6E63', '#29B6F6', '#9CCC65'
+        ]
+
+        for i, (dept, month_totals) in enumerate(departments.items()):
+            datasets.append({
+                'label': dept,
+                'data': [month_totals[m] for m in months],
+                'borderColor': color_palette[i % len(color_palette)],
+                'backgroundColor': color_palette[i % len(color_palette)] + '33',
+                'fill': False,
+                'tension': 0.3
+            })
+
+        resp = {
+            'labels': month_labels,
+            'datasets': datasets
+        }
+        return Response(resp, status=status.HTTP_200_OK)
+    
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="expenditure-by-status",
+            url_name="expenditure-by-status")
+    def expenditure_by_status(self,request):
+        # Aggregate total expenditure by status
+        data = (
+            models.ExpenditureRequest.objects
+            .filter(is_deleted=False)
+            .values('status')
+            .annotate(total=Sum('amount_kes'))
+            .order_by('status')
+        )
+
+        labels = [d['status'] for d in data]
+        totals = [float(d['total']) for d in data]
+
+        # Some nice chart colors
+        colors = [
+            '#42A5F5', '#66BB6A', '#FFA726', '#EF5350', '#AB47BC',
+            '#26C6DA', '#FF7043', '#9CCC65', '#8D6E63'
+        ]
+
+        resp = {
+            'labels': labels,
+            'data': totals,
+            'colors': colors[:len(labels)]
+        }
+        return Response(resp, status=status.HTTP_200_OK)
+    
