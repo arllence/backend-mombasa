@@ -852,42 +852,52 @@ class ReportsViewSet(viewsets.ViewSet):
 
     @action(methods=["GET",],
             detail=False,
-            url_path="contracts",
-            url_name="contracts")
-    def contracts(self, request):
+            url_path="general",
+            url_name="general")
+    def general(self, request):
                     
         department = request.query_params.get('department')
-        commencement_date = request.query_params.get('date_from')
-        expiry_date = request.query_params.get('date_to')
+        r_status = request.query_params.get('status')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        date = False
+
+        if date_to and date_from:
+            date = True
+
+        def create_date_range(date_from,date_to):
+            # Convert the string dates to datetime objects
+            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+
+            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+
+            return q_filters
 
         q_filters = Q()
+
+        if date_from or date_to:
+            if not date:
+                return Response({"details": "Date From & To Required 😏"}, status=status.HTTP_400_BAD_REQUEST)
+            q_filters &= create_date_range(date_from,date_to)
 
         if department:
             q_filters &= Q(department=department)
 
-        if commencement_date:
-            commencement_date = datetime.datetime.strptime(commencement_date, '%Y-%m-%d')
-            q_filters &= Q(commencement_date=commencement_date)
-
-        if expiry_date:
-            expiry_date = datetime.datetime.strptime(expiry_date, '%Y-%m-%d')
-            q_filters &= Q(expiry_date=expiry_date)
+        if r_status:
+            q_filters &= Q(status=r_status)
 
         if q_filters:
-            resp = models.Contract.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+            resp = models.ExpenditureRequest.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
         else:
-            roles = user_util.fetchusergroups(request.user.id)  
+            resp = models.ExpenditureRequest.objects.filter(Q(is_deleted=False)).order_by('-date_created')
 
-            if "MMD" in roles or "SUPERUSER" in roles:
-                resp = models.Contract.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
-                
-            else:
-                resp = models.Contract.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('-date_created')[:50]
-
-
-        resp = serializers.FetchContractSerializer(resp, many=True, context={"user_id":request.user.id}).data
-
-        return Response(resp, status=status.HTTP_200_OK)
+        paginator = PageNumberPagination()
+        paginator.page_size = max(len(resp), 1) if q_filters else 50
+        result_page = paginator.paginate_queryset(resp, request)
+        serializer = serializers.SlimFetchExpenditureSerializer(
+            result_page, many=True, context={"user_id":request.user.id})
+        return paginator.get_paginated_response(serializer.data)
     
         
 class AnalyticsViewSet(viewsets.ViewSet):
