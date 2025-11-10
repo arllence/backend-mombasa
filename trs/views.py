@@ -119,11 +119,12 @@ class TrsViewSet(viewsets.ViewSet):
                         send_to = 'HOD'
 
                 if requesting_for == 'OTHERS':
-                    employees = list(payload.get('employees'))
+                    employees = payload.get('employees')
 
                     if not employees:
                         return Response({"details": "Target Employees Required !"}, status=status.HTTP_400_BAD_REQUEST)
                     
+                    employees = list(employees)
                     no_of_travelers = len(employees)
                     
                     is_individual = False
