@@ -210,7 +210,9 @@ class DbManagerViewSet(viewsets.ViewSet):
                     return datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
                 except ValueError:
                     # If it fails, try another format (DD/MM/YYYY)
-                    return datetime.datetime.strptime(date_str, "%d/%m/%Y").date()
+                    # return datetime.datetime.strptime(date_str, "%d/%m/%Y").date()
+                    # If it fails, try another format (MM/DD/YYYY)
+                    return datetime.datetime.strptime(date_str, "%m/%d/%Y").date()
             
             f = request.FILES.getlist('documents')[0]
             if f.name.endswith('.csv'):
@@ -436,7 +438,9 @@ class DbManagerViewSet(viewsets.ViewSet):
                     return datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
                 except ValueError:
                     # If it fails, try another format (DD/MM/YYYY)
-                    return datetime.datetime.strptime(date_str, "%d/%m/%Y").date()
+                    # return datetime.datetime.strptime(date_str, "%d/%m/%Y").date()
+                    # If it fails, try another format (MM/DD/YYYY)
+                    return datetime.datetime.strptime(date_str, "%m/%d/%Y").date()
             
             f = request.FILES.getlist('documents')[0]
             if f.name.endswith('.csv'):
