@@ -200,10 +200,17 @@ class DbManagerViewSet(viewsets.ViewSet):
                     system = None
                 return system
             
-            def parser_date(date_str):
-                parsed = parser.parse(date_str)
-                formatted = parsed.strftime("%Y-%m-%d")
-                return formatted
+            # def parser_date(date_str):
+            #     parsed = parser.parse(date_str)
+            #     formatted = parsed.strftime("%Y-%m-%d")
+            #     return formatted
+            def parse_date(date_str):
+                try:
+                    # Try Django format first (YYYY-MM-DD)
+                    return datetime.strptime(date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    # If it fails, try another format (DD/MM/YYYY)
+                    return datetime.strptime(date_str, "%d/%m/%Y").date()
             
             f = request.FILES.getlist('documents')[0]
             if f.name.endswith('.csv'):
@@ -217,7 +224,7 @@ class DbManagerViewSet(viewsets.ViewSet):
                         status=row[1].strip().upper(),
                         size=row[2].strip(),
                         unit=row[3].strip().upper(),
-                        date=parser_date(row[4].strip()),
+                        date=parse_date(row[4].strip()),
                         action_by=request.user
                     ) 
                     for row in csv_data
@@ -418,10 +425,18 @@ class DbManagerViewSet(viewsets.ViewSet):
                     raise ParseError({"details": f"Unknown remote location: {name}"})
                 return location
             
-            def parser_date(date_str):
-                parsed = parser.parse(date_str)
-                formatted = parsed.strftime("%Y-%m-%d")
-                return formatted
+            # def parser_date(date_str):
+            #     parsed = parser.parse(date_str)
+            #     formatted = parsed.strftime("%Y-%m-%d")
+            #     return formatted
+            
+            def parse_date(date_str):
+                try:
+                    # Try Django format first (YYYY-MM-DD)
+                    return datetime.strptime(date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    # If it fails, try another format (DD/MM/YYYY)
+                    return datetime.strptime(date_str, "%d/%m/%Y").date()
             
             f = request.FILES.getlist('documents')[0]
             if f.name.endswith('.csv'):
@@ -435,7 +450,7 @@ class DbManagerViewSet(viewsets.ViewSet):
                         status=row[1].strip().upper(),
                         size=row[2].strip(),
                         unit=row[3].strip().upper(),
-                        date=parser_date(row[4].strip()),
+                        date=parse_date(row[4].strip()),
                         remote_location=get_location(row[5].strip()),
                         action_by=request.user
                     ) 
