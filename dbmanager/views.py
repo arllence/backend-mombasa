@@ -207,10 +207,10 @@ class DbManagerViewSet(viewsets.ViewSet):
             def parse_date(date_str):
                 try:
                     # Try Django format first (YYYY-MM-DD)
-                    return datetime.strptime(date_str, "%Y-%m-%d").date()
+                    return datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
                 except ValueError:
                     # If it fails, try another format (DD/MM/YYYY)
-                    return datetime.strptime(date_str, "%d/%m/%Y").date()
+                    return datetime.datetime.strptime(date_str, "%d/%m/%Y").date()
             
             f = request.FILES.getlist('documents')[0]
             if f.name.endswith('.csv'):
@@ -433,10 +433,10 @@ class DbManagerViewSet(viewsets.ViewSet):
             def parse_date(date_str):
                 try:
                     # Try Django format first (YYYY-MM-DD)
-                    return datetime.strptime(date_str, "%Y-%m-%d").date()
+                    return datetime.datetime.strptime(date_str, "%Y-%m-%d").date()
                 except ValueError:
                     # If it fails, try another format (DD/MM/YYYY)
-                    return datetime.strptime(date_str, "%d/%m/%Y").date()
+                    return datetime.datetime.strptime(date_str, "%d/%m/%Y").date()
             
             f = request.FILES.getlist('documents')[0]
             if f.name.endswith('.csv'):
