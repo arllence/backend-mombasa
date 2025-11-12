@@ -127,7 +127,7 @@ class CoreViewSet(viewsets.ViewSet):
                 models.StatusChange.objects.create(**raw)
 
                 # Send Note Notifications
-                emails = list(Hods.objects.filter(hod=request.user, department=department).values_list('hod__email', flat=True))
+                emails = list(Hods.objects.filter(department=department).values_list('hod__email', flat=True))
 
                 uri = f"requests/view/{str(newInstance.id)}"
                 link = "http://172.20.0.42:8017/" + uri
@@ -193,11 +193,11 @@ class CoreViewSet(viewsets.ViewSet):
                 models.ExpenditureRequest.objects.filter(id=request_id).update(**raw)
 
                 for f in request.FILES.getlist('documents'):
-                    exts = ['pdf']
+                    exts = ['pdf','png','jpeg','jpg']
                     original_file_name = f.name
                     ext = original_file_name.split('.')[-1].strip().lower()
                     if ext not in exts:
-                        return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
+                        return Response({"details": f"{original_file_name} not allowed. Only PDFs / Images allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
                     
                     try:
                         original_file_name = f.name.upper()                        
