@@ -62,12 +62,12 @@ class CoreViewSet(viewsets.ViewSet):
                 return Response({"details": f"Supporting Documents must be attached"}, status=status.HTTP_400_BAD_REQUEST)
             
 
-            exts = ['pdf']
+            exts = ['pdf','png','jpeg','jpg']
             for f in request.FILES.getlist('documents'):
                 original_file_name = f.name
                 ext = original_file_name.split('.')[-1].strip().lower()
                 if ext not in exts:
-                    return Response({"details": f"{original_file_name} not allowed. Only PDFs allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": f"{original_file_name} not allowed. Only PDFs & Images allowed for upload"}, status=status.HTTP_400_BAD_REQUEST)
             
 
             uid = shared_fxns.generate_unique_identifier()
@@ -127,7 +127,7 @@ class CoreViewSet(viewsets.ViewSet):
                 models.StatusChange.objects.create(**raw)
 
                 # Send Note Notifications
-                emails = list(Hods.objects.filter(hod=request.user, department=requestInstance.department).values_list('hod__email', flat=True))
+                emails = list(Hods.objects.filter(hod=request.user, department=department).values_list('hod__email', flat=True))
 
                 uri = f"requests/view/{str(newInstance.id)}"
                 link = "http://172.20.0.42:8017/" + uri
