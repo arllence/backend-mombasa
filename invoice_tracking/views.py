@@ -197,6 +197,7 @@ class CoreViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             facility = request.query_params.get('facility')
             weigh_bill_no = request.query_params.get('weigh_bill_no')
+            r_status = request.query_params.get('status')
             query = request.query_params.get('q')
 
             is_admin = False
@@ -242,28 +243,39 @@ class CoreViewSet(viewsets.ViewSet):
                         else:
                             if is_admin:
                                 resp = models.Tracking.objects.filter(
+                                    Q(uid__icontains=query) |
                                     Q(weigh_bill_no__icontains=query) |
                                     Q(courier__icontains=query) |
                                     Q(collector__icontains=query)).order_by('-date_created')
                             else:
                                 resp = models.Tracking.objects.filter(
+                                    Q(uid__icontains=query) |
                                     Q(weigh_bill_no__icontains=query) |
                                     Q(courier__icontains=query) |
                                     Q(collector__icontains=query), created_by=request.user).order_by('-date_created')
                             
                     else:
+                        filters = Q()
+                        if facility:
+                            filters &= Q(facility=facility)
+
+                        if r_status:
+                            filters &= Q(status=r_status)
+
                         if is_admin:
-                            if facility:
+                            if filters:
                                 resp = models.Tracking.objects.filter(
-                                Q(facility=facility)).order_by('-date_created')
+                                filters).order_by('-date_created')
                             else:
                                 resp = models.Tracking.objects.all().order_by('-date_created')
+                            
                         else:
-                            if facility:
+                            filters &= Q(created_by=request.user)
+                            if filters:
                                 resp = models.Tracking.objects.filter(
-                                Q(facility=facility) & Q(created_by=request.user)).order_by('-date_created')
+                                filters).order_by('-date_created')
                             else:
-                                resp = models.Tracking.objects.filter(Q(created_by=request.user)).order_by('-date_created')
+                                resp = models.Tracking.objects.filter(filters).order_by('-date_created')
                     
 
                     paginator = PageNumberPagination()
@@ -441,6 +453,7 @@ class CoreViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             invoice_no = request.query_params.get('invoice_no')
             facility = request.query_params.get('facility')
+            r_status = request.query_params.get('status')
             query = request.query_params.get('q')
 
             is_admin = False
@@ -487,28 +500,38 @@ class CoreViewSet(viewsets.ViewSet):
                         else:
                             if is_admin:
                                 resp = models.Cancellation.objects.filter(
+                                    Q(uid__icontains=query) |
                                     Q(invoice_no__icontains=query) |
                                     Q(action__icontains=query) |
                                     Q(reason__icontains=query)).order_by('-date_created')
                             else:
                                 resp = models.Cancellation.objects.filter(
+                                    Q(uid__icontains=query) |
                                     Q(invoice_no__icontains=query) |
                                     Q(action__icontains=query) |
                                     Q(reason__icontains=query), created_by=request.user).order_by('-date_created')
                     else:
+                        filters = Q()
+                        if facility:
+                            filters &= Q(facility=facility)
+
+                        if r_status:
+                            filters &= Q(status=r_status)
+
                         if is_admin:
-                            if facility:
+                            if filters:
                                 resp = models.Cancellation.objects.filter(
-                                Q(facility=facility)).order_by('-date_created')
+                                filters).order_by('-date_created')
                             else:
                                 resp = models.Cancellation.objects.all().order_by('-date_created')
                         else:
-                            if facility:
+                            filters &= (Q(created_by=request.user))
+                            if filters:
                                 resp = models.Cancellation.objects.filter(
-                                Q(facility=facility) & Q(created_by=request.user)).order_by('-date_created')
+                                filters).order_by('-date_created')
                             else:
                                 resp = models.Cancellation.objects.filter(
-                                    Q(created_by=request.user)).order_by('-date_created')
+                                    filters).order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
