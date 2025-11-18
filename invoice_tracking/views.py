@@ -309,6 +309,311 @@ class CoreViewSet(viewsets.ViewSet):
 
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
+            url_path="central-archive",
+            url_name="central-archive")
+    def central_archive(self, request):
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+
+        if request.method == "POST":
+
+            payload = json.loads(request.data['payload'])
+
+            serializer = serializers.CentralArchiveSerializer(
+                    data=payload, many=False)
+            
+            if serializer.is_valid():
+                facility = payload['facility']
+                invoice_no = payload['invoice_no']
+                approval_type = payload['approval_type']
+                corporate = payload['corporate']
+                patient_names = payload['patient_names']
+                date_of_service = payload['date_of_service']
+
+                try:
+                    facility = Facility.objects.get(id=facility)
+                except Exception as e:
+                    return Response({"details": "Unknown Facility"}, status=status.HTTP_400_BAD_REQUEST)
+
+                exts = ['pdf','png','jpeg','jpg']
+                for f in request.FILES.getlist('documents'):
+                    original_file_name = f.name
+                    ext = original_file_name.split('.')[-1].strip().lower()
+                    if ext not in exts:
+                        return Response({"details": f"{original_file_name} not allowed. Only PDFs & Images allowed for upload"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                
+                with transaction.atomic():
+                    raw = {
+                        "created_by": authenticated_user,
+                        "facility": facility,
+                        "invoice_no": invoice_no,
+                        "approval_type": approval_type,
+                        "corporate": corporate,
+                        "patient_names": patient_names,
+                        "date_of_service": date_of_service,
+                        "uid" : shared_fxns.generate_unique_identifier()
+                    } 
+
+                    itemInstance = models.CentralArchive.objects.create(
+                        **raw
+                    )
+
+                    for f in request.FILES.getlist('documents'):
+                        try:
+                            original_file_name = f.name.upper()                        
+                            models.Document.objects.create(
+                                document=f,
+                                file_name=original_file_name, 
+                                archive=itemInstance, 
+                                uploaded_by=request.user
+                            )
+
+                        except Exception as e:
+                            logger.error(e)
+                            print(e)
+                            return Response({"details": "Error saving files"}, status=status.HTTP_400_BAD_REQUEST)  
+                        
+
+                    # track status change
+                    raw = {
+                        "central_archive": itemInstance,
+                        "status": "UPLOADED",
+                        "action_by": authenticated_user
+                    }
+
+                    models.CentralArchiveStatusChange.objects.create(**raw)
+
+                    
+                    # Notify selected send to
+                    
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == "PUT":
+            payload = request.data
+
+            serializer = serializers.UpdateCentralArchiveSerializer(
+                data=payload, many=False)
+            
+            if serializer.is_valid():
+                request_id = payload['request_id']
+                facility = payload['facility']
+                invoice_no = payload['invoice_no']
+                approval_type = payload['approval_type']
+                corporate = payload['corporate']
+                patient_names = payload['patient_names']
+                date_of_service = payload['date_of_service']
+
+                try:
+                    itemInstance = models.CentralArchive.objects.get(id=request_id)
+                except Exception as e:
+                    return Response({"details": "Unknown record"}, status=status.HTTP_400_BAD_REQUEST)
+
+                try:
+                    facility = Facility.objects.get(id=facility)
+                except Exception as e:
+                    return Response({"details": "Unknown Facility"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+                with transaction.atomic():
+                    raw = {
+                        "facility": facility,
+                        "invoice_no": invoice_no,
+                        "approval_type": approval_type,
+                        "corporate": corporate,
+                        "patient_names": patient_names,
+                        "date_of_service": date_of_service,
+                    } 
+
+                    models.CentralArchive.objects.filter(Q(id=request_id)).update(
+                        **raw
+                    )
+
+                    for f in request.FILES.getlist('documents'):
+                        exts = ['pdf','png','jpeg','jpg']
+                        original_file_name = f.name
+                        ext = original_file_name.split('.')[-1].strip().lower()
+                        if ext not in exts:
+                            return Response({"details": f"{original_file_name} not allowed. Only PDFs / Images allowed for upload!"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        try:
+                            original_file_name = f.name.upper()                        
+                            models.Document.objects.create(
+                                document=f,
+                                file_name=original_file_name, 
+                                archive=itemInstance, 
+                                uploaded_by=request.user
+                            )
+
+                        except Exception as e:
+                            logger.error(e)
+                            print(e)
+                            return Response({"details": "Error saving files"}, status=status.HTTP_400_BAD_REQUEST)  
+                        
+
+                    # track status change
+                    raw = {
+                        "central_archive": itemInstance,
+                        "status": "EDITED",
+                        "action_by": authenticated_user
+                    }
+
+                    models.CentralArchiveStatusChange.objects.create(**raw)
+
+                return Response('success', status=status.HTTP_200_OK)
+            
+            else:
+                return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            
+        elif request.method == "PATCH":
+            # Verifying parcel
+            payload = request.data
+            for key, value in payload.items():
+                if not value:
+                    return Response({"details": "All fields required"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            request_id = payload.get('request_id')
+
+            try:
+                itemInstance = models.CentralArchive.objects.get(id=request_id)
+            except Exception as e:
+                return Response({"details": "Unknown record"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                itemInstance.status = 'VERIFIED'
+                itemInstance.save()
+
+                # track status change
+                raw = {
+                    "central_archive": itemInstance,
+                    "status": "VERIFIED",
+                    "action_by": authenticated_user
+                }
+
+                models.CentralArchiveStatusChange.objects.create(**raw)
+                
+                return Response('200', status=status.HTTP_200_OK)  
+
+
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            invoice_no = request.query_params.get('invoice_no')
+            facility = request.query_params.get('facility')
+            r_status = request.query_params.get('status')
+            query = request.query_params.get('q')
+
+            is_admin = False
+            if 'PSD_ADMIN' in roles or 'SUPERUSER' in roles:
+                is_admin = True
+
+            if request_id:
+                try:
+                    resp = models.CentralArchive.objects.get(id=request_id)
+                    resp = serializers.FetchCentralArchiveSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    logger.error(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            elif invoice_no:
+                try:
+                    resp = models.CentralArchive.objects.filter(Q(invoice_no=invoice_no))
+                    resp = serializers.FetchCentralArchiveSerializer(resp, many=True, context={"user_id":request.user.id}).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    logger.error(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            else:
+                try:
+                    if query:
+                        if query == 'pending':
+                            resp = models.CentralArchive.objects.filter(
+                                Q(status='UPLOADED')).order_by('-date_created')
+                            
+                        elif query == 'received':
+                            resp = models.CentralArchive.objects.filter(
+                                Q(status='VERIFIED')).order_by('-date_created')
+                            
+                        else:
+                            if is_admin:
+                                resp = models.CentralArchive.objects.filter(
+                                    Q(uid__icontains=query) |
+                                    Q(invoice_no__icontains=query) |
+                                    Q(action__icontains=query) |
+                                    Q(reason__icontains=query)).order_by('-date_created')
+                            else:
+                                resp = models.CentralArchive.objects.filter(
+                                    Q(uid__icontains=query) |
+                                    Q(invoice_no__icontains=query) |
+                                    Q(action__icontains=query) |
+                                    Q(reason__icontains=query), created_by=request.user).order_by('-date_created')
+                    else:
+                        filters = Q()
+                        if facility:
+                            filters &= Q(facility=facility)
+
+                        if r_status:
+                            filters &= Q(status=r_status)
+
+                        if is_admin:
+                            if filters:
+                                resp = models.CentralArchive.objects.filter(
+                                filters).order_by('-date_created')
+                            else:
+                                resp = models.CentralArchive.objects.all().order_by('-date_created')
+                        else:
+                            filters &= (Q(created_by=request.user))
+                            if filters:
+                                resp = models.CentralArchive.objects.filter(
+                                filters).order_by('-date_created')
+                            else:
+                                resp = models.CentralArchive.objects.filter(
+                                    filters).order_by('-date_created')
+
+
+                    paginator = PageNumberPagination()
+                    paginator.page_size = 50
+                    result_page = paginator.paginate_queryset(resp, request)
+                    serializer = serializers.FetchCentralArchiveSerializer(
+                        result_page, many=True, context={"user_id":request.user.id})
+                    return paginator.get_paginated_response(serializer.data)
+                
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.Cancellation.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)     
+                except Exception as e:
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST) 
+
+
+    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
+            detail=False,
             url_path="cancellation",
             url_name="cancellation")
     def cancellation(self, request):
@@ -561,7 +866,7 @@ class CoreViewSet(viewsets.ViewSet):
                     return Response('200', status=status.HTTP_200_OK)     
                 except Exception as e:
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST) 
-                
+                   
 
     @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,

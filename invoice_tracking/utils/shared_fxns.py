@@ -31,13 +31,13 @@ def find_date_difference(start_date,end_date,period):
 
 
 def generate_unique_identifier():
-    from invoice_tracking.models import Tracking, Cancellation
+    from invoice_tracking.models import Tracking, Cancellation, CentralArchive
     characters = string.ascii_uppercase + string.digits
     while True:
         uid = ''.join(random.choices(characters, k=6))
         
         # Check for existence in both models with a single query using Q
-        if not (Tracking.objects.filter(uid=uid).exists() or Cancellation.objects.filter(uid=uid).exists()):
+        if not (Tracking.objects.filter(uid=uid).exists() or Cancellation.objects.filter(uid=uid).exists() or CentralArchive.objects.filter(uid=uid).exists()):
             return uid
         
 

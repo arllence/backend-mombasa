@@ -145,8 +145,8 @@ class FetchCancellationSerializer(serializers.ModelSerializer):
 
     def get_status(self, obj):
         try:
-            request = models.CancellationStatusChange.objects.filter(tracked=obj)
-            serializer = FetchStatusChangeSerializer(request, many=True)
+            request = models.CancellationStatusChange.objects.filter(cancelled=obj)
+            serializer = FetchCancelledStatusChangeSerializer(request, many=True)
             return serializer.data
         except (ValidationError, ObjectDoesNotExist):
             return {}
@@ -210,7 +210,11 @@ class FetchCancelledStatusChangeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.CancellationStatusChange
         fields = '__all__'    
-
+class FetchCentralArchiveStatusChangeSerializer(serializers.ModelSerializer):
+    action_by = UsersSerializer()
+    class Meta:
+        model = models.CentralArchiveStatusChange
+        fields = '__all__' 
 class PlatformAdminSerializer(serializers.Serializer):
     admin = serializers.CharField(max_length=500)
 
@@ -225,3 +229,86 @@ class FetchPlatformAdminSerializer(serializers.ModelSerializer):
         model = models.PlatformAdmin
         fields = '__all__'
 
+class CentralArchiveSerializer(serializers.Serializer):
+    facility = serializers.CharField()
+    invoice_no = serializers.CharField()
+    approval_type = serializers.CharField()
+    corporate = serializers.CharField()
+    patient_names = serializers.CharField()
+    date_of_service = serializers.CharField()
+
+class UpdateCentralArchiveSerializer(serializers.Serializer):
+    request_id = serializers.CharField()
+    facility = serializers.CharField()
+    invoice_no = serializers.CharField()
+    approval_type = serializers.CharField()
+    corporate = serializers.CharField()
+    patient_names = serializers.CharField()
+    date_of_service = serializers.CharField()
+
+class FetchCentralArchiveSerializer(serializers.ModelSerializer):
+    facility = FetchFacilitySerializer()
+    created_by = UsersSerializer()
+    is_creator = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
+    can_approve = serializers.SerializerMethodField()
+    # approved_by = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = models.CentralArchive
+        fields = '__all__'
+
+    def get_status(self, obj):
+        try:
+            request = models.CentralArchiveStatusChange.objects.filter(central_archive=obj)
+            serializer = FetchCentralArchiveStatusChangeSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return {}
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return {} 
+           
+    def get_is_creator(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            if str(obj.created_by.id) == user_id:
+                return True
+            return False
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False
+        
+    def get_can_edit(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            if str(obj.created_by.id) == user_id and obj.status == 'UPLOADED':
+                return True
+            return False
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False
+        
+    def get_can_approve(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            is_approver = models.PlatformAdmin.objects.filter(
+                Q(admin=user_id) & Q(is_approver=True)).exists()
+
+            return is_approver
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False
+        
+    # def get_approved_by(self, obj):
+    #     try:
+    #         record = models.CancellationStatusChange.objects.get(cancelled=obj,status='APPROVED')
+    #         serializer = FetchCancelledStatusChangeSerializer(record, many=False)
+    #         return serializer.data
+    #     except Exception as e:
+    #         print(e)
+    #         return {}
