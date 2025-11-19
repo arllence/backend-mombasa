@@ -551,14 +551,16 @@ class CoreViewSet(viewsets.ViewSet):
                                 resp = models.CentralArchive.objects.filter(
                                     Q(uid__icontains=query) |
                                     Q(invoice_no__icontains=query) |
-                                    Q(action__icontains=query) |
-                                    Q(reason__icontains=query)).order_by('-date_created')
+                                    Q(corporate__icontains=query) |
+                                    Q(patient_names__icontains=query) |
+                                    Q(approval_type__icontains=query)).order_by('-date_created')
                             else:
                                 resp = models.CentralArchive.objects.filter(
                                     Q(uid__icontains=query) |
                                     Q(invoice_no__icontains=query) |
-                                    Q(action__icontains=query) |
-                                    Q(reason__icontains=query), created_by=request.user).order_by('-date_created')
+                                    Q(corporate__icontains=query) |
+                                    Q(patient_names__icontains=query) |
+                                    Q(approval_type__icontains=query), created_by=request.user).order_by('-date_created')
                     else:
                         filters = Q()
                         if facility:

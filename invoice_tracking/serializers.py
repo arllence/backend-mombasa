@@ -211,7 +211,7 @@ class FetchCancelledStatusChangeSerializer(serializers.ModelSerializer):
         model = models.CancellationStatusChange
         fields = '__all__'    
 class FetchCentralArchiveStatusChangeSerializer(serializers.ModelSerializer):
-    action_by = UsersSerializer()
+    action_by = SlimUsersSerializer()
     class Meta:
         model = models.CentralArchiveStatusChange
         fields = '__all__' 
@@ -248,17 +248,18 @@ class UpdateCentralArchiveSerializer(serializers.Serializer):
 
 class FetchCentralArchiveSerializer(serializers.ModelSerializer):
     facility = FetchFacilitySerializer()
-    created_by = UsersSerializer()
+    created_by = SlimUsersSerializer()
     is_creator = serializers.SerializerMethodField()
     can_edit = serializers.SerializerMethodField()
-    can_approve = serializers.SerializerMethodField()
-    # approved_by = serializers.SerializerMethodField()
+    can_verify = serializers.SerializerMethodField()
+    documents = serializers.SerializerMethodField()
+    statuses = serializers.SerializerMethodField()
     
     class Meta:
         model = models.CentralArchive
         fields = '__all__'
 
-    def get_status(self, obj):
+    def get_statuses(self, obj):
         try:
             request = models.CentralArchiveStatusChange.objects.filter(central_archive=obj)
             serializer = FetchCentralArchiveStatusChangeSerializer(request, many=True)
@@ -292,17 +293,29 @@ class FetchCentralArchiveSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return False
         
-    def get_can_approve(self, obj):
+    def get_can_verify(self, obj):
         try:
             user_id = str(self.context["user_id"])
             is_approver = models.PlatformAdmin.objects.filter(
-                Q(admin=user_id) & Q(is_approver=True)).exists()
+                Q(admin=user_id) & (Q(is_approver=True) | Q(is_receiver=True))).exists()
 
             return is_approver
         except Exception as e:
             print(e)
             # logger.error(e)
             return False
+        
+    def get_documents(self, obj):
+        try:
+            request = models.Document.objects.filter(archive=obj, is_deleted=False)
+            serializer = SlimFetchDocumentSerializer(request, many=True)
+            return serializer.data
+        except (ValidationError, ObjectDoesNotExist):
+            return []
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return []   
         
     # def get_approved_by(self, obj):
     #     try:
@@ -312,3 +325,9 @@ class FetchCentralArchiveSerializer(serializers.ModelSerializer):
     #     except Exception as e:
     #         print(e)
     #         return {}
+
+
+class SlimFetchDocumentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Document
+        fields = '__all__'
