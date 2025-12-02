@@ -335,7 +335,7 @@ class CoreViewSet(viewsets.ViewSet):
                 except Exception as e:
                     return Response({"details": "Unknown Facility"}, status=status.HTTP_400_BAD_REQUEST)
 
-                exts = ['pdf','png','jpeg','jpg']
+                exts = ['pdf','png','jpeg','jpg','msg']
                 for f in request.FILES.getlist('documents'):
                     original_file_name = f.name
                     ext = original_file_name.split('.')[-1].strip().lower()
@@ -433,7 +433,7 @@ class CoreViewSet(viewsets.ViewSet):
                     )
 
                     for f in request.FILES.getlist('documents'):
-                        exts = ['pdf','png','jpeg','jpg']
+                        exts = ['pdf','png','jpeg','jpg','msg']
                         original_file_name = f.name
                         ext = original_file_name.split('.')[-1].strip().lower()
                         if ext not in exts:
