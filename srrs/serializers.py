@@ -81,7 +81,7 @@ class FetchRecruitSerializer(serializers.ModelSerializer):
                 is_hod = Hods.objects.filter(hod=user_id, department=obj.department).exists()
                 if is_hod:
                     approve = True
-
+ 
             if "SLT" in  roles:
                 preferred_slt = obj.preferred_slt or ''
                 if preferred_slt:
