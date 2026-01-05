@@ -4,6 +4,7 @@ from acl.utils.user_util import fetchusergroups as get_user_roles
 from srrs import models
 from rest_framework import serializers
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
+from acl.models import Hods
 
 
 class GeneralNameSerializer(serializers.Serializer):
@@ -75,6 +76,11 @@ class FetchRecruitSerializer(serializers.ModelSerializer):
             roles = get_user_roles(user_id)
 
             approve = False
+
+            if "HOD" in roles and obj.status == 'REQUESTED':
+                is_hod = Hods.objects.filter(hod=user_id, department=obj.department).exists()
+                if is_hod:
+                    approve = True
 
             if "SLT" in  roles:
                 preferred_slt = obj.preferred_slt or ''
