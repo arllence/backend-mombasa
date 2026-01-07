@@ -2,7 +2,7 @@ from datetime import datetime
 import re
 import string
 import random
-from mhd.models import Issue
+from ict_helpdesk.models import Issue
 
 def find_date_difference(start_date,end_date,period):
     try:
