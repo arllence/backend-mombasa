@@ -202,9 +202,17 @@ class GenericsViewSet(viewsets.ViewSet):
                     return Response({"details": "Invalid email, correct email required"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
                 
+                if "akhskenya" not in email.lower():
+                    return Response({"details": "Only work email allowed"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                
                 if not telephone:
                     logger.error(f"Telephone required")
-                    return Response({"details": "Correct extension or mobile number required"}, 
+                    return Response({"details": "Correct office extension number required"}, 
+                                    status=status.HTTP_400_BAD_REQUEST)
+                else:
+                    if len(str(telephone)) > 6:
+                        return Response({"details": "Only office extension number allowed"}, 
                                     status=status.HTTP_400_BAD_REQUEST)
 
                 if email:
