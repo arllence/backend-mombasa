@@ -1454,7 +1454,7 @@ class QuickLinksViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
 
@@ -1665,7 +1665,7 @@ class QipsViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
 
@@ -1767,7 +1767,7 @@ class QipsViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
 
@@ -1870,7 +1870,7 @@ class QipsViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
 
@@ -1982,7 +1982,7 @@ class DepartmentsViewSet(viewsets.ViewSet):
             
         elif request.method == "DELETE":
             roles = user_util.fetchusergroups(request.user.id) 
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
@@ -2085,7 +2085,7 @@ class DepartmentsViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
@@ -2195,7 +2195,7 @@ class PrivilegesViewSet(viewsets.ViewSet):
             
         elif request.method == "DELETE":
             roles = user_util.fetchusergroups(request.user.id) 
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
@@ -2298,7 +2298,7 @@ class PrivilegesViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
@@ -2399,7 +2399,7 @@ class SurveyViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
@@ -2501,7 +2501,7 @@ class SurveyViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
@@ -2604,7 +2604,7 @@ class SurveyViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
@@ -2747,7 +2747,7 @@ class SurveyViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
@@ -2849,7 +2849,7 @@ class ModuleViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
 
@@ -2951,7 +2951,7 @@ class ModuleViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
 
@@ -3054,7 +3054,7 @@ class ModuleViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
 
@@ -3197,7 +3197,7 @@ class ModuleViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles:
+            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
                 return Response({"details": "Permission Denied"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
 
