@@ -22,6 +22,15 @@ class SuperSlimFetchRecruitSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Recruit
         fields = '__all__'
+
+class SlimFetchReportingRecruitSerializer(serializers.ModelSerializer):
+    department = SlimFetchSRRSDepartmentSerializer()
+    sub_department = FetchSubDepartmentSerializer()
+    ohc = FetchOHCSerializer()
+    created_by = SlimUsersSerializer()
+    class Meta:
+        model = models.Recruit
+        fields = '__all__'
 class FetchRecruitSerializer(serializers.ModelSerializer):
     created_by = UsersSerializer()
     closed_by = UsersSerializer()

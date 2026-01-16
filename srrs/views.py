@@ -1998,7 +1998,10 @@ class SRRSReportsViewSet(viewsets.ViewSet):
             q_filters &= create_date_range(date_from,date_to)
             
         if r_status:
-            q_filters &= Q(status=r_status)
+            if r_status == 'PENDING':
+                q_filters &= ~Q(status__in=['HIRED','REJECTED','INCOMPLETE','DECLINED'])
+            else:
+                q_filters &= Q(status=r_status)
 
         if ohc:
             q_filters &= Q(ohc=ohc)
@@ -2023,7 +2026,7 @@ class SRRSReportsViewSet(viewsets.ViewSet):
             else:
                 resp = models.Recruit.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
 
-        resp = serializers.FetchRecruitSerializer(resp, many=True, context={"user_id":request.user.id}).data
+        resp = serializers.SlimFetchReportingRecruitSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
         
