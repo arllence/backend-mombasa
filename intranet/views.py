@@ -143,7 +143,14 @@ class GenericsViewSet(viewsets.ViewSet):
     @action(methods=["GET"], detail=False, url_path="privileges-departments",url_name="privileges-departments")
     def privileges_departments(self, request):
 
-        resp = models.SRRSDepartment.objects.all().order_by('name')
+        department_ids = (
+            models.PrivilegeDocument.objects
+            .all()
+            .values_list('department_id', flat=True)
+            .distinct()
+        )
+
+        resp = models.SRRSDepartment.objects.filter(id__in=department_ids).order_by('name')
         serializer = serializers.FullFetchPrivilegesDepartmentSerializer(
             resp, many=True, context={"user_id":request.user.id})
         
