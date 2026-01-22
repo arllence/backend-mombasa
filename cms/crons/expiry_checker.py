@@ -1,4 +1,4 @@
-from acl.models import Sendmail
+from acl.models import Hods, Sendmail
 from cms.models import Contract, PlatformAdmin, TrackNotification
 from django.db.models import  Q
 from datetime import datetime, date, timezone
@@ -22,25 +22,31 @@ def SetSendMail(emails, subject, message):
     Sendmail.objects.create(**mail)
 
 def sendExpiredEmail(contract):
-    emails = list(PlatformAdmin.objects.all().values_list('admin__email', flat=True))
-    emails.append(contract.created_by.email)
-    subject = f"[CMS] Contract {contract.uid} Expired"
-    message = f"Hello. \nContract of id: {contract.uid} is passed it's expiry date \n which is {str(contract.expiry_date.strftime('%m/%d/%Y'))}.\n\nRegards,\nCMS"
+    try:
+        emails = list(PlatformAdmin.objects.all().values_list('admin__email', flat=True)) + list(Hods.objects.filter(department=contract.department).values_list('hod__email', flat=True))
+        emails.append(contract.created_by.email)
+        subject = f"[CMS] Contract {contract.uid} Expired"
+        message = f"Hello. \nContract of id: {contract.uid} is passed it's expiry date \n which is {str(contract.expiry_date.strftime('%m/%d/%Y'))}.\n\nRegards,\nCMS"
 
-    SetSendMail(emails, subject, message)  
+        SetSendMail(list(set(emails)), subject, message)  
 
-    print(f"[{str(datetime.now(timezone.utc))}] : Expiry Email Sent")
+        print(f"[{str(datetime.now(timezone.utc))}] : Expiry Email Sent")
+    except Exception as e:
+        print(e)
 
 def sendReminderEmail(contract, days):
-    emails = list(PlatformAdmin.objects.all().values_list('admin__email', flat=True))
-    emails.append(contract.created_by.email)
-    subject = f"[CMS] Contract {contract.uid} Soon Expiring"
-    message = f"Hello. \nContract of id: {contract.uid} is expiring in {str(days)} days \n which is on {str(contract.expiry_date.strftime('%m/%d/%Y'))}.\n\nRegards,\nCMS"
+    try:
+        emails = list(PlatformAdmin.objects.all().values_list('admin__email', flat=True)) + list(Hods.objects.filter(department=contract.department).values_list('hod__email', flat=True))
+        emails.append(contract.created_by.email)
+        subject = f"[CMS] Contract {contract.uid} Soon Expiring"
+        message = f"Hello. \nContract of id: {contract.uid} is expiring in {str(days)} days \n which is on {str(contract.expiry_date.strftime('%m/%d/%Y'))}.\n\nRegards,\nCMS"
 
-    SetSendMail(emails, subject, message)  
-    KeepEmailTrack(contract, emails)
+        SetSendMail(list(set(emails)), subject, message)  
+        KeepEmailTrack(contract, emails)
 
-    print(f"[{str(datetime.now(timezone.utc))}] : Reminder Email Sent")
+        print(f"[{str(datetime.now(timezone.utc))}] : Reminder Email Sent")
+    except Exception as e:
+        print(e)
 
 def processContracts():
     now = datetime.now(timezone.utc)
