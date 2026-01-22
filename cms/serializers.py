@@ -40,7 +40,7 @@ class SlimFetchDocumentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class FetchContractSerializer(serializers.ModelSerializer):
-    department = FetchSRRSDepartmentSerializer()
+    department = SlimFetchSRRSDepartmentSerializer()
     documents = serializers.SerializerMethodField()
     previous = serializers.SerializerMethodField()
     created_by = SlimUsersSerializer()

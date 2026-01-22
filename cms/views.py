@@ -18,7 +18,7 @@ from cms import models
 from cms import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
-from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
+from acl.models import Hods, Slt, User, Sendmail, SRRSDepartment, SubDepartment, OHC
 from cms.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
@@ -203,7 +203,17 @@ class CoreViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             previous = request.query_params.get('previous')
             query = request.query_params.get('q')
+            r_status = request.query_params.get('status')
             slim = request.query_params.get('slim')
+
+            q_filters = Q(is_deleted=False)
+
+            if r_status:
+                if r_status == 'ACTIVE':
+                    q_filters &= Q(is_expired=False)
+
+                if r_status == 'EXPIRED':
+                    q_filters &= Q(is_expired=True)
 
             if request_id:
                 try:
@@ -243,22 +253,26 @@ class CoreViewSet(viewsets.ViewSet):
                 
             elif query:
                 try:
+                    if not any(role in ['HOD', 'SLT','CEO','CMS_ADMIN','MMD','SUPERUSER'] for role in roles):
+                        return Response([], status=status.HTTP_200_OK)
+
+                    if any(role in ['HOD', 'SLT'] for role in roles):
+                        department_ids = department_ids = list(Hods.objects.filter(hod=request.user).values_list('department_id', flat=True).distinct()) + list(SRRSDepartment.objects.filter(slt=request.user).values_list('id', flat=True).distinct())
+                        q_filters &= (Q(department__in=department_ids) | Q(created_by=request.user))
+
                     resp = models.Contract.objects.filter(
-                        Q(title__icontains=query) |
+                        (Q(title__icontains=query) |
                         Q(uid__icontains=query) |
-                        Q(department__name__icontains=query)
+                        Q(department__name__icontains=query)) & q_filters
                     )
 
-                    if slim:
-                        resp = serializers.SlimFetchContractSerializer(resp, many=True, context={"user_id":request.user.id}).data
-                    else:
-                        resp = serializers.SlimFetchContractSerializer(resp, many=True, context={"user_id":request.user.id}).data
+                    # if slim:
+                    #     resp = serializers.SlimFetchContractSerializer(resp, many=True, context={"user_id":request.user.id}).data
+                    # else:
+                    #     resp = serializers.SlimFetchContractSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
-                    return Response(resp, status=status.HTTP_200_OK)
-                
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
-                
+                    # return Response(resp, status=status.HTTP_200_OK)
+                 
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
@@ -266,37 +280,36 @@ class CoreViewSet(viewsets.ViewSet):
                 
             else:
                 try:
+                    if any(role in ['SUPERUSER','CMS_ADMIN','CEO'] for role in roles):
 
-                    if any(role in ['SUPERUSER','CMS_ADMIN'] for role in roles):
+                        resp = models.Contract.objects.filter(q_filters, is_deleted=False).order_by('-date_created')
 
-                        resp = models.Contract.objects.filter(is_deleted=False).order_by('-date_created')
-
-                    elif any(role in ['HOD'] for role in roles):
-
+                    elif any(role in ['SLT'] for role in roles):
+                        department_ids = list(SRRSDepartment.objects.filter(slt=request.user).values_list('id', flat=True).distinct())
                         resp = models.Contract.objects.filter(
-                            Q(department=request.user) | Q(created_by=request.user),
+                             q_filters & (Q(department__in=department_ids) | Q(created_by=request.user)),
                             is_deleted=False).order_by('-date_created')
 
+                    elif any(role in ['HOD'] for role in roles):
+                        department_ids = list(Hods.objects.filter(hod=request.user).values_list('department_id', flat=True).distinct())
+                        resp = models.Contract.objects.filter(
+                            q_filters & (Q(department__in=department_ids) | Q(created_by=request.user)),
+                            is_deleted=False).order_by('-date_created')
+                        
                     else:
-                        resp = models.Contract.objects.filter(Q(is_deleted=False) & (Q(created_by=request.user)) ).order_by('-date_created')
+                        resp = models.Contract.objects.filter( q_filters, is_deleted=False, created_by=request.user ).order_by('-date_created')
 
-
-
-                    paginator = PageNumberPagination()
-                    paginator.page_size = 50
-                    result_page = paginator.paginate_queryset(resp, request)
-                    serializer = serializers.FetchContractSerializer(
-                        result_page, many=True, context={"user_id":request.user.id})
-                    return paginator.get_paginated_response(serializer.data)
-                
-                
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)
-                
                 except Exception as e:
                     logger.error(e)
                     print(e)
                     return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            serializer = serializers.FetchContractSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            return paginator.get_paginated_response(serializer.data)
         
         elif request.method == "DELETE":
             request_id = request.query_params.get('request_id')
@@ -617,12 +630,21 @@ class ReportsViewSet(viewsets.ViewSet):
             url_path="contracts",
             url_name="contracts")
     def contracts(self, request):
+        roles = user_util.fetchusergroups(request.user.id)  
                     
+        r_status = request.query_params.get('status')
         department = request.query_params.get('department')
         commencement_date = request.query_params.get('date_from')
         expiry_date = request.query_params.get('date_to')
 
         q_filters = Q()
+
+        if r_status:
+            if r_status == 'ACTIVE':
+                q_filters &= Q(is_expired=False)
+
+            if r_status == 'EXPIRED':
+                q_filters &= Q(is_expired=True)
 
         if department:
             q_filters &= Q(department=department)
@@ -636,15 +658,23 @@ class ReportsViewSet(viewsets.ViewSet):
             q_filters &= Q(expiry_date=expiry_date)
 
         if q_filters:
-            resp = models.Contract.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
-        else:
-            roles = user_util.fetchusergroups(request.user.id)  
+            if any(role in ['SUPERUSER','CMS_ADMIN','CEO','MMD'] for role in roles):
+                resp = models.Contract.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
 
-            if "MMD" in roles or "SUPERUSER" in roles:
+            elif any(role in ['SLT'] for role in roles):
+                department_ids = list(SRRSDepartment.objects.filter(slt=request.user).values_list('id', flat=True).distinct())
+                resp = models.Contract.objects.filter(q_filters & Q(department__in=department_ids) | Q(created_by=request.user), is_deleted=False).order_by('-date_created')
+
+            elif any(role in ['HOD'] for role in roles):
+                department_ids = list(Hods.objects.filter(hod=request.user).values_list('department_id', flat=True).distinct())
+                resp = models.Contract.objects.filter(q_filters & Q(department__in=department_ids) | Q(created_by=request.user), is_deleted=False).order_by('-date_created')
+        else:
+        
+            if any(role in ['SUPERUSER','CMS_ADMIN','CEO','MMD'] for role in roles):
                 resp = models.Contract.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
                 
             else:
-                resp = models.Contract.objects.filter(Q(is_deleted=False)& Q(created_by=request.user)).order_by('-date_created')[:50]
+                resp = models.Contract.objects.filter(Q(is_deleted=False) & Q(created_by=request.user)).order_by('-date_created')[:50]
 
 
         resp = serializers.FetchContractSerializer(resp, many=True, context={"user_id":request.user.id}).data
