@@ -558,7 +558,7 @@ class FmsViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     emails = list(models.StatusChange.objects.filter(Q(status='ASSIGNED') | Q(status='REASSIGNED'),incident=incidentInstance ).values_list('action_by__email', flat=True))
-                    emails.append('bobkings.otieno@akhskenya.org')
+                    # emails.append('bobkings.otieno@akhskenya.org') # test email
                     # emails = list(get_user_model().objects.filter(Q(groups__name__in=['FMS_ADMIN'])).values_list('email', flat=True))
                     subject = f"Incident {incidentInstance.uid} Closed [FMS-AKHK]"
                     message = f"Hello. \nIncident: {incidentInstance.uid} from department: {incidentInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nFMS-AKHK"
