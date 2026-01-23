@@ -46,6 +46,10 @@ class CoreViewSet(viewsets.ViewSet):
     def training_materials(self, request):
         authenticated_user = request.user
         roles = user_util.fetchusergroups(request.user.id) 
+        
+        if request.method != "GET":
+            if not any(role in ['HOD', 'HR', 'SUPERUSER'] for role in roles):
+                return Response({"details": "Permission denied"}, status=status.HTTP_400_BAD_REQUEST)
 
         if request.method == "POST":
 
