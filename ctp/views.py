@@ -1056,7 +1056,7 @@ class ReportsViewSet(viewsets.ViewSet):
             return Response({"details": "Department required"}, status=status.HTTP_400_BAD_REQUEST)
 
 
-        filters = Q()
+        filters = Q(is_deleted=False)
 
         if department_id:
             filters &= Q(user__srrs_department=department_id)
