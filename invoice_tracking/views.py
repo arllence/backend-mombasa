@@ -1105,6 +1105,59 @@ class ReportsViewSet(viewsets.ViewSet):
         resp = serializers.FetchCancellationSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
+    
+
+    @action(methods=["GET",],
+            detail=False,
+            url_path="central-archive",
+            url_name="central-archive")
+    def central_archive(self, request):
+                    
+        facility = request.query_params.get('facility')
+        date_from = request.query_params.get('date_from')
+        date_to = request.query_params.get('date_to')
+        type = request.query_params.get('type')
+        x_status = request.query_params.get('status')
+        date = False
+
+        if date_to and date_from:
+            date = True
+
+        def create_date_range(date_from,date_to):
+            # Convert the string dates to datetime objects
+            date_from = datetime.datetime.strptime(date_from, '%Y-%m-%d')
+            date_to = datetime.datetime.strptime(date_to, '%Y-%m-%d')
+
+            q_filters = Q(date_created__gte=date_from) & Q(date_created__lte=date_to)
+
+            return q_filters
+        
+        q_filters = Q()
+
+        if facility:
+            q_filters &= (Q(facility=facility))
+
+        if date_from or date_to:
+            if not date:
+                return Response({"details": "Date From & To Required !"}, status=status.HTTP_400_BAD_REQUEST)
+            q_filters &= create_date_range(date_from,date_to)
+            
+        if x_status:
+            q_filters &= Q(status=x_status)
+
+        if type:
+            q_filters &= Q(approval_type=type)
+
+
+        if q_filters:
+            resp = models.CentralArchive.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
+        else:
+            resp = models.CentralArchive.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
+
+        resp = serializers.FetchCentralArchiveSerializer(resp, many=True, context={"user_id":request.user.id}).data
+
+        return Response(resp, status=status.HTTP_200_OK)
+        
         
   
 
