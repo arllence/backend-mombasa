@@ -253,7 +253,6 @@ class CoreViewSet(viewsets.ViewSet):
                 try:
 
                     if any(role in ['SUPERUSER','CTP_ADMIN', 'HR'] for role in roles):
-                        print(filters)
 
                         if filters:
                             resp = models.TrainingMaterial.objects.filter(filters).order_by('-date_created')
@@ -998,6 +997,759 @@ class CoreViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
                    
+
+class TestViewSet(viewsets.ViewSet):
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        return []
+    
+    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
+            detail=False,
+            url_path="tests",
+            url_name="tests")
+    def test(self, request):
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+        
+        if request.method != "GET":
+            if not any(role in ['HOD', 'HR', 'SUPERUSER'] for role in roles):
+                return Response({"details": "Permission denied"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == "POST":
+
+            payload = request.data
+           
+            training = payload.get('training') or None
+            pass_mark = payload.get('pass_mark') or None 
+            duration_minutes = payload.get('duration_minutes') or None 
+            
+            if not training or not pass_mark:
+                return Response({"details": "Training and Pass Mark required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            if models.Test.objects.filter(training=training).exists():
+                return Response({"details": "Test already created"}, status=status.HTTP_400_BAD_REQUEST)
+                 
+            try:
+                training = models.TrainingMaterial.objects.get(id=training)
+            except Exception as e:
+                return Response({"details": "Unknown training"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    
+            with transaction.atomic():
+                # create instance
+                raw = {
+                    "training" : training,
+                    "pass_mark" : pass_mark,
+                    "duration_minutes" : duration_minutes,
+                    "created_by": request.user
+                }
+                createdInstance = models.Test.objects.create(**raw)
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Test created", f"Test Id: {createdInstance.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+            
+
+        elif request.method == "PUT":
+            payload = request.data
+                    
+            request_id = payload.get('request_id') or None
+            training = payload.get('training') or None
+            pass_mark = payload.get('pass_mark') or None 
+            duration_minutes = payload.get('duration_minutes') or None 
+
+            if not training or not pass_mark or not request_id:
+                return Response({"details": "Training and Pass Mark required"}, status=status.HTTP_400_BAD_REQUEST)
+                 
+            try:
+                targetInstance = models.Test.objects.get(id=request_id)
+            except Exception as e:
+                return Response({"details": "Unknown test"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                training = models.TrainingMaterial.objects.get(id=training)
+            except Exception as e:
+                return Response({"details": "Unknown training"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    
+            with transaction.atomic():
+                # create contract instance
+                raw = {
+                    "training" : training,
+                    "pass_mark" : pass_mark,
+                    "duration_minutes" : duration_minutes,
+                    "created_by": request.user
+                }
+                models.Test.objects.filter(id=request_id).update(**raw)
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Test updated", f"Test Id: {targetInstance.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+
+  
+        elif request.method == "PATCH":
+            payload = request.data
+            
+            return Response('success', status=status.HTTP_200_OK)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            department_id = request.query_params.get('department_id')
+            training_id = request.query_params.get('training_id')
+            slim = request.query_params.get('slim')
+            resp = []
+
+            filters = Q(is_deleted=False)
+
+            if department_id:
+                filters &= Q(training__department=department_id)
+
+            if request_id:
+                try:
+                    resp = models.Test.objects.get(id=request_id)
+
+                    if slim:
+                        resp = serializers.TrainerTestSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.TrainerTestSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            if training_id:
+                try:
+                    resp = models.Test.objects.get(training=training_id)
+
+                    if slim:
+                        resp = serializers.TrainerTestSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.TrainerTestSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({}, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            else:
+                try:
+
+                    if any(role in ['SUPERUSER', 'HR'] for role in roles):
+
+                        if filters:
+                            resp = models.Test.objects.filter(filters).order_by('-date_created')
+                        else:
+                            resp = models.Test.objects.all().order_by('-date_created')
+
+                    elif any(role in ['HOD'] for role in roles):
+                        try:
+                            dept = (Hods.objects.get(hod=request.user)).department
+                        except:
+                            return Response({"details": "HOD role not understood"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        if filters:
+                            filters |= (Q(created_by=request.user) | Q(training__department=dept) )
+                            resp = models.Test.objects.filter(filters).order_by('-date_created')
+                        else:
+                            resp = models.Test.objects.filter(
+                                Q(training__department=dept) | 
+                                Q(created_by=request.user), is_deleted=False).order_by('-date_created')                   
+
+                    else:
+                        filters &= (Q(created_by=request.user) | 
+                                    Q(training__department=request.user.srrs_department) )
+                        
+                        resp = models.Test.objects.filter(filters).order_by('-date_created')
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            serializer = serializers.TrainerTestSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            return paginator.get_paginated_response(serializer.data)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.Test.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)    
+                except Exception as e:
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST) 
+
+
+    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
+            detail=False,
+            url_path="questions",
+            url_name="questions")
+    def questions(self, request):
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+        
+        if request.method != "GET":
+            if not any(role in ['HOD', 'HR', 'SUPERUSER'] for role in roles):
+                return Response({"details": "Permission denied"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == "POST":
+
+            payload = request.data
+           
+            test = payload.get('test') or None
+            text = payload.get('text') or None 
+            marks = payload.get('marks') or None 
+            options = payload.get('options') or None 
+            
+
+            if not test or not text or not marks:
+                return Response({"details": "Test, Question and Marks required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not options or len(options) == 0:
+                return Response({"details": "Options / Choices required"}, status=status.HTTP_400_BAD_REQUEST)
+
+                 
+            try:
+                test = models.Test.objects.get(id=test)
+            except Exception as e:
+                return Response({"details": "Unknown test"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    
+            with transaction.atomic():
+                # create instance
+                raw = {
+                    "test" : test,
+                    "text" : text,
+                    "marks" : marks,
+                    "created_by": request.user
+                }
+                createdInstance = models.Question.objects.create(**raw)
+
+                for option in options:
+                    models.Option.objects.create(
+                        question=createdInstance,
+                        text=option['text'],
+                        is_correct=option['is_correct']
+                    )
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Question created", f"Question Id: {createdInstance.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+            
+
+        elif request.method == "PUT":
+            payload = request.data
+                    
+            request_id = payload.get('request_id') or None
+            test = payload.get('test') or None
+            text = payload.get('text') or None 
+            marks = payload.get('marks') or None 
+            options = payload.get('options') or None 
+            
+
+            if not test or not text or not marks or not request_id:
+                return Response({"details": "Test, Question and Marks required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if not options or len(options) == 0:
+                return Response({"details": "Options / Choices required"}, status=status.HTTP_400_BAD_REQUEST)
+                 
+            try:
+                targetInstance = models.Question.objects.get(id=request_id)
+            except Exception as e:
+                return Response({"details": "Unknown question"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                test = models.Test.objects.get(id=test)
+            except Exception as e:
+                return Response({"details": "Unknown test"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    
+            with transaction.atomic():
+                # create contract instance
+                raw = {
+                    "test" : test,
+                    "text" : text,
+                    "marks" : marks,
+                    "created_by": request.user
+                }
+                # updates question
+                models.Question.objects.filter(id=request_id).update(**raw)
+                # deletes existing options
+                models.Option.objects.filter(question=request_id).delete()
+                # creates new options
+                for option in options:
+                    models.Option.objects.create(
+                        question=targetInstance,
+                        text=option['text'],
+                        is_correct=option['is_correct']
+                    )
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Question updated", f"Question Id: {targetInstance.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+
+  
+        elif request.method == "PATCH":
+            payload = request.data
+            
+            return Response('success', status=status.HTTP_200_OK)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            test_id = request.query_params.get('test_id')
+            slim = request.query_params.get('slim')
+            resp = []
+
+            filters = Q(is_deleted=False)
+
+            if test_id:
+                filters &= Q(test=test_id)
+
+            if request_id:
+                try:
+                    resp = models.Question.objects.get(id=request_id)
+
+                    if slim:
+                        resp = serializers.LearnerQuestionSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.LearnerQuestionSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request!"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            else:
+                try:
+
+                    if any(role in ['SUPERUSER', 'HR'] for role in roles):
+
+                        if filters:
+                            resp = models.Question.objects.filter(filters).order_by('-created_at')
+                        else:
+                            resp = models.Question.objects.all().order_by('-created_at')
+
+                    elif any(role in ['HOD'] for role in roles):
+                        try:
+                            dept = (Hods.objects.get(hod=request.user)).department
+                        except:
+                            return Response({"details": "HOD role not understood"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        if filters:
+                            filters |= (Q(created_by=request.user) | Q(test__training__department=dept) )
+                            resp = models.Question.objects.filter(filters).order_by('-created_at')
+                        else:
+                            resp = models.Question.objects.filter(
+                                Q(test__training__department=dept) | 
+                                Q(created_by=request.user), is_deleted=False).order_by('-created_at')                   
+
+                    else:
+                        filters &= (Q(created_by=request.user) | 
+                                    Q(test__training__department=request.user.srrs_department) )
+                        
+                        resp = models.Question.objects.filter(filters).order_by('-created_at')
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            serializer = serializers.LearnerQuestionSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            return paginator.get_paginated_response(serializer.data)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    raw = {"is_deleted" : True}
+                    models.Question.objects.filter(Q(id=request_id)).update(**raw)
+                    return Response('200', status=status.HTTP_200_OK)    
+                except Exception as e:
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+
+    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
+            detail=False,
+            url_path="options",
+            url_name="options")
+    def options(self, request):
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+        
+        if request.method != "GET":
+            if not any(role in ['HOD', 'HR', 'SUPERUSER'] for role in roles):
+                return Response({"details": "Permission denied"}, status=status.HTTP_400_BAD_REQUEST)
+
+        if request.method == "POST":
+
+            payload = request.data
+           
+            question = payload.get('question') or None
+            text = payload.get('text') or None 
+            is_correct = payload.get('marks') or None 
+
+            if not question or not text or not is_correct:
+                return Response({"details": "Option, Question and Correctness required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            is_correct = is_correct.strip().upper() == 'YES'
+                 
+            try:
+                question = models.Question.objects.get(id=question)
+            except Exception as e:
+                return Response({"details": "Unknown question"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    
+            with transaction.atomic():
+                # create instance
+                raw = {
+                    "question" : question,
+                    "text" : text,
+                    "is_correct" : is_correct
+                }
+                createdInstance = models.Question.objects.create(**raw)
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Option created", f"Option Id: {createdInstance.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+            
+
+        elif request.method == "PUT":
+            payload = request.data
+                    
+            request_id = payload.get('request_id') or None
+            question = payload.get('question') or None
+            text = payload.get('text') or None 
+            is_correct = payload.get('marks') or None 
+
+            if not question or not text or not is_correct:
+                return Response({"details": "Option, Question and Correctness required"}, status=status.HTTP_400_BAD_REQUEST)
+                 
+            try:
+                targetInstance = models.Option.objects.get(id=request_id)
+            except Exception as e:
+                return Response({"details": "Unknown option"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                question = models.Question.objects.get(id=question)
+            except Exception as e:
+                return Response({"details": "Unknown question"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    
+            with transaction.atomic():
+                # create contract instance
+                raw = {
+                    "question" : question,
+                    "text" : text,
+                    "is_correct" : is_correct
+                }
+                models.Option.objects.filter(id=request_id).update(**raw)
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Option updated", f"Option Id: {targetInstance.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+
+  
+        elif request.method == "PATCH":
+            payload = request.data
+            
+            return Response('success', status=status.HTTP_200_OK)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            question_id = request.query_params.get('question_id')
+            slim = request.query_params.get('slim')
+            resp = []
+
+            filters = Q()
+
+            if question_id:
+                filters &= Q(test=question_id)
+
+            if request_id:
+                try:
+                    resp = models.Option.objects.get(id=request_id)
+
+                    if slim:
+                        resp = serializers.LearnerOptionSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.LearnerOptionSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            else:
+                try:
+
+                    if any(role in ['SUPERUSER', 'HR'] for role in roles):
+
+                        if filters:
+                            resp = models.Option.objects.filter(filters).order_by('-date_created')
+                        else:
+                            resp = models.Option.objects.all().order_by('-date_created')
+
+                    elif any(role in ['HOD'] for role in roles):
+                        try:
+                            dept = (Hods.objects.get(hod=request.user)).department
+                        except:
+                            return Response({"details": "HOD role not understood"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                        if filters:
+                            filters |= (Q(question__test__training__department=dept) )
+                            resp = models.Option.objects.filter(filters).order_by('-date_created')
+                        else:
+                            resp = models.Option.objects.filter(
+                                Q(test__training__department=dept) | 
+                                Q(created_by=request.user)).order_by('-date_created')                   
+
+                    else:
+                        filters &= (Q(question__test__training__department=request.user.srrs_department) )
+                        
+                        resp = models.Option.objects.filter(filters).order_by('-date_created')
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            serializer = serializers.LearnerOptionSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            return paginator.get_paginated_response(serializer.data)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                try:
+                    models.Option.objects.filter(Q(id=request_id)).delete()
+                    return Response('200', status=status.HTTP_200_OK)    
+                except Exception as e:
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST) 
+                
+
+    @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
+            detail=False,
+            url_path="attempts",
+            url_name="attempts")
+    def attempts(self, request):
+        authenticated_user = request.user
+        roles = user_util.fetchusergroups(request.user.id) 
+        
+        if request.method == "POST":
+
+            payload = request.data
+           
+            test = payload.get('test') or None
+
+            if not test:
+                return Response({"details": "Test required"}, status=status.HTTP_400_BAD_REQUEST)
+                 
+            try:
+                test = models.Test.objects.get(id=test)
+            except Exception as e:
+                return Response({"details": "Unknown test"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    
+            with transaction.atomic():
+                # create instance
+                raw = {
+                    "test" : test,
+                    "learner" : request.user
+                }
+                createdInstance = models.Attempt.objects.create(**raw)
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Attempt created", f"Attempt Id: {createdInstance.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+            
+
+        elif request.method == "PUT":
+            """
+                handle attempt submission
+            """
+            payload = request.data
+                    
+            request_id = payload.get('request_id') or None
+
+            if not request_id:
+                return Response({"details": "Attempt id required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                attempt = models.Attempt.objects.get(id=request_id)
+            except Exception as e:
+                return Response({"details": "Unknown attempt"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            if attempt.completed_at:
+                return Response(
+                    {"detail": "Already submitted"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            from .utils import grade_attempt  # clean separation
+            grade_attempt(attempt)
+
+            attempt.completed_at = timezone.now()
+            attempt.save()
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Attempt closed", f"Attempt Id: {attempt.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+
+  
+        elif request.method == "PATCH":
+            payload = request.data
+            
+            return Response('success', status=status.HTTP_200_OK)
+            
+        elif request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            test_id = request.query_params.get('test_id')
+            slim = request.query_params.get('slim')
+            resp = []
+
+            filters = Q()
+
+            if test_id:
+                filters &= Q(test=test_id)
+
+            if request_id:
+                try:
+                    resp = models.Attempt.objects.get(id=request_id)
+
+                    if slim:
+                        resp = serializers.AttemptResultSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    else:
+                        resp = serializers.AttemptResultSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+            elif test_id:
+                resp = models.Attempt.objects.filter(test=test_id).order_by('-date_created')
+                
+            else:
+                pass            
+                
+            
+            paginator = PageNumberPagination()
+            paginator.page_size = 50
+            result_page = paginator.paginate_queryset(resp, request)
+            serializer = serializers.AttemptResultSerializer(
+                result_page, many=True, context={"user_id":request.user.id})
+            return paginator.get_paginated_response(serializer.data)
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id')
+            if not request_id:
+                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            with transaction.atomic():
+                return Response('200', status=status.HTTP_200_OK) 
+            
+    
+    @action(methods=["POST"],
+            detail=False,
+            url_path="answers",
+            url_name="answers")
+    def answers(self, request):
+        authenticated_user = request.user
+        
+        if request.method == "POST":
+
+            payload = request.data
+           
+            attempt = payload.get('attempt') or None
+            question = payload.get('question') or None
+            selected_option = payload.get('selected_option') or None
+
+            if not attempt or not question or not selected_option:
+                return Response({"details": "Attempt, Question, Selected Option required"}, status=status.HTTP_400_BAD_REQUEST)
+                 
+            try:
+                test = models.Answer.objects.get(id=test)
+            except Exception as e:
+                return Response({"details": "Unknown test"}, status=status.HTTP_400_BAD_REQUEST)
+
+                    
+            with transaction.atomic():
+                # create instance
+                obj, created = models.Answer.objects.update_or_create(
+                attempt=attempt,
+                question=question,
+                defaults={
+                    "attempt": "attempt",
+                    "question": "question",
+                    "selected_option": "selected_option",
+                }
+            )
+
+            user_util.log_account_activity(
+                authenticated_user, authenticated_user, "Answer created / updated", f"Answer Id: {obj.id}")
+            
+            return Response('success', status=status.HTTP_200_OK)
+            
+
 
 class ReportsViewSet(viewsets.ViewSet):
     # search_fields = ['id', ]

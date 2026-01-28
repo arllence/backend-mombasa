@@ -120,3 +120,157 @@ class FetchPlatformAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.PlatformAdmin
         fields = '__all__'
+
+
+
+
+
+# TEST FUNC
+
+# Option (Trainer View)
+class TrainerOptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Option
+        fields = ["id", "text", "is_correct"]
+
+# Question (Trainer)
+class TrainerQuestionSerializer(serializers.ModelSerializer):
+    options = TrainerOptionSerializer(many=True)
+
+    class Meta:
+        model = models.Question
+        fields = ["id", "text", "marks", "options"]
+
+    def create(self, validated_data):
+        options_data = validated_data.pop("options")
+        question = models.Question.objects.create(**validated_data)
+
+        correct_count = 0
+        for option in options_data:
+            if option.get("is_correct"):
+                correct_count += 1
+            models.Option.objects.create(question=question, **option)
+
+        if correct_count != 1:
+            raise serializers.ValidationError(
+                "Each question must have exactly one correct option."
+            )
+
+        return question
+    
+# Test (Trainer)
+class TrainerTestSerializer(serializers.ModelSerializer):
+    questions = TrainerQuestionSerializer(many=True, read_only=True)
+    class Meta:
+        model = models.Test
+        fields = [
+            "id",
+            "training",
+            "pass_mark",
+            "duration_minutes",
+            "is_active",
+            "questions",
+            "created_at",
+        ]
+        read_only_fields = ["created_at"]
+
+    # def create(self, validated_data):
+    #     return models.Test.objects.create(
+    #         trainer=self.context["request"].user,
+    #         **validated_data
+    #     )
+
+# 3️⃣ Learner Serializers (Test Taking)
+# Option (Learner – NO is_correct)
+class LearnerOptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Option
+        fields = ["id", "text"]
+
+# Question (Learner)
+class LearnerQuestionSerializer(serializers.ModelSerializer):
+    options = LearnerOptionSerializer(many=True)
+
+    class Meta:
+        model = models.Question
+        fields = ["id", "text", "marks", "options"]
+
+# Test Start Serializer
+class TestStartSerializer(serializers.ModelSerializer):
+    questions = LearnerQuestionSerializer(many=True)
+
+    class Meta:
+        model = models.Test
+        fields = ["id", "title", "duration_minutes", "questions"]
+
+# 4️⃣ Attempt & Answer Serializers
+# Answer Submission
+class AnswerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Answer
+        fields = ["question", "selected_option"]
+
+    def validate(self, data):
+        question = data["question"]
+        option = data["selected_option"]
+
+        if option.question_id != question.id:
+            raise serializers.ValidationError(
+                "Option does not belong to this question."
+            )
+        return data
+
+    def create(self, validated_data):
+        attempt = self.context["attempt"]
+        return models.Answer.objects.update_or_create(
+            attempt=attempt,
+            question=validated_data["question"],
+            defaults={
+                "selected_option": validated_data["selected_option"]
+            }
+        )[0]
+    
+# Attempt Result Serializer
+class AttemptResultSerializer(serializers.ModelSerializer):
+    test_title = serializers.CharField(source="test.title", read_only=True)
+
+    class Meta:
+        model = models.Attempt
+        fields = [
+            "id",
+            "test_title",
+            "score",
+            "percentage",
+            "passed",
+            "completed_at",
+        ]
+
+# 5️⃣ Certificate Serializers 🎓
+# Certificate List (Learner)
+class CertificateSerializer(serializers.ModelSerializer):
+    test_title = serializers.CharField(
+        source="attempt.test.title", read_only=True
+    )
+
+    class Meta:
+        model = models.Certificate
+        fields = [
+            "id",
+            "certificate_number",
+            "test_title",
+            "issued_at",
+            "pdf",
+        ]
+
+# Certificate Verification (Public)
+class CertificateVerifySerializer(serializers.ModelSerializer):
+    learner = serializers.CharField(
+        source="attempt.learner.email", read_only=True
+    )
+    test = serializers.CharField(
+        source="attempt.test.title", read_only=True
+    )
+
+    class Meta:
+        model = models.Certificate
+        fields = ["certificate_number", "learner", "test", "issued_at"]
