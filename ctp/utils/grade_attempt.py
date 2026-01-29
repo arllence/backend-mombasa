@@ -1,16 +1,22 @@
 import uuid
 from django.db import transaction
 from django.utils import timezone
-from django.conf import settings
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from pathlib import Path
 
-from .models import Attempt, Certificate
+from reportlab.lib.pagesizes import A4, landscape
+from reportlab.pdfgen import canvas
+from reportlab.lib.colors import HexColor
+from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
+from django.utils import timezone
+from pathlib import Path
+from django.conf import settings
+
+from acl.models import Hods
+from ctp.models import Attempt, Certificate
 
 
 @transaction.atomic
-def grade_attempt(attempt: Attempt) -> Attempt:
+def grade_processor(attempt: Attempt) -> Attempt:
     """
     Grades an attempt, calculates score & percentage,
     and generates a certificate if passed.
@@ -62,13 +68,24 @@ def generate_certificate(attempt: Attempt) -> Certificate:
     file_name = f"{cert_number}.pdf"
     file_path = certificates_dir / file_name
 
-    _build_certificate_pdf(
+    def get_hod(attempt):
+        hod = Hods.objects.filter(department=attempt.test.training.department).first()
+        if hod:
+            return f"{hod.hod.first_name} {hod.hod.last_name}"
+        return ""
+    build_certificate_pdf(
         file_path=file_path,
-        learner_name=attempt.learner.email,
-        test_title=attempt.test.title,
-        score=attempt.percentage,
-        cert_number=cert_number,
+        learner_name=f"{attempt.learner.first_name} {attempt.learner.last_name}",
+        course_title=attempt.test.training.title,
+        certificate_code=cert_number,
+        org_name="Aga Khan Hospital, Kisumu",
+        hod_name=get_hod(attempt),
+        hod_department=attempt.test.training.department.name,
+        logo_path=settings.BASE_DIR / "ctp/assets/logo.png",
+        # signature_path=settings.BASE_DIR / "assets/signature.png",
+        issue_date=attempt.completed_at.date(),
     )
+
 
     certificate = Certificate.objects.create(
         attempt=attempt,
@@ -81,65 +98,122 @@ def generate_certificate(attempt: Attempt) -> Certificate:
 def generate_certificate_number() -> str:
     return f"CERT-{uuid.uuid4().hex[:10].upper()}"
 
-def _build_certificate_pdf(
+
+def build_certificate_pdf(
     file_path,
     learner_name,
-    test_title,
-    score,
-    cert_number,
-):
-    c = canvas.Canvas(str(file_path), pagesize=A4)
-    width, height = A4
+    course_title,
+    certificate_code,
+    org_name,
+    hod_name,
+    hod_department,
+    logo_path,
+    signature_path=None,
+    issue_date=None, ):
+    issue_date = issue_date or timezone.now().date()
 
-    # Title
-    c.setFont("Helvetica-Bold", 28)
-    c.drawCentredString(width / 2, height - 150, "Certificate of Completion")
+    c = canvas.Canvas(str(file_path), pagesize=landscape(A4))
+    width, height = landscape(A4)
 
-    # Body
-    c.setFont("Helvetica", 14)
+    red = HexColor("#d32f2f")
+
+    # ------------------------------------------------
+    # Outer red border
+    # ------------------------------------------------
+    margin = 15 * mm
+    c.setStrokeColor(red)
+    c.setLineWidth(2)
+    c.rect(margin, margin, width - 2 * margin, height - 2 * margin)
+
+    # ------------------------------------------------
+    # Header
+    # ------------------------------------------------
+    if logo_path and Path(logo_path).exists():
+        logo_width = 25 * mm
+        c.drawImage(
+            ImageReader(logo_path),
+            width / 2 - logo_width / 2,
+            height - 45 * mm,
+            width=logo_width,
+            preserveAspectRatio=True,
+            mask="auto"
+        )
+
+    c.setFont("Helvetica", 11)
+    c.drawCentredString(width / 2, height - 55 * mm, org_name)
+
+    # Date & Certificate code
+    c.setFont("Helvetica-Oblique", 10)
+    c.drawString(
+        margin + 5 * mm,
+        height - 30 * mm,
+        f"Date of Completion: {issue_date.strftime('%d %B %Y')}"
+    )
+
+    c.drawRightString(
+        width - margin - 5 * mm,
+        height - 30 * mm,
+        f"Certificate Code: {certificate_code}"
+    )
+
+    # ------------------------------------------------
+    # Main Title
+    # ------------------------------------------------
+    c.setFont("Helvetica-Bold", 26)
+    c.drawCentredString(width / 2, height - 80 * mm, "Certificate of Completion")
+
+    c.setFont("Helvetica-Oblique", 13)
     c.drawCentredString(
         width / 2,
-        height - 220,
-        "This certifies that"
+        height - 95 * mm,
+        "For successfully completing the following eLearning Module:"
     )
+
+    # ------------------------------------------------
+    # Course title with red lines
+    # ------------------------------------------------
+    y_course = height - 115 * mm
+
+    top_offset = 25
+    bottom_offset = 19
+
+    c.line(width / 2 - 80 * mm, y_course + top_offset,
+        width / 2 + 80 * mm, y_course + top_offset)
 
     c.setFont("Helvetica-Bold", 20)
-    c.drawCentredString(
-        width / 2,
-        height - 260,
-        learner_name
-    )
+    c.drawCentredString(width / 2, y_course, course_title)
 
-    c.setFont("Helvetica", 14)
-    c.drawCentredString(
-        width / 2,
-        height - 310,
-        f"has successfully passed the test"
-    )
+    c.line(width / 2 - 80 * mm, y_course - bottom_offset,
+        width / 2 + 80 * mm, y_course - bottom_offset)
 
-    c.setFont("Helvetica-Bold", 18)
-    c.drawCentredString(
-        width / 2,
-        height - 350,
-        test_title
-    )
+    # ------------------------------------------------
+    # Presented to
+    # ------------------------------------------------
+    c.setFont("Helvetica-Oblique", 14)
+    c.drawCentredString(width / 2, height - 135 * mm, "Presented to:")
 
-    # Score
-    c.setFont("Helvetica", 12)
-    c.drawCentredString(
-        width / 2,
-        height - 410,
-        f"Final Score: {score}%"
-    )
+    c.setFont("Helvetica-Bold", 22)
+    c.drawCentredString(width / 2, height - 150 * mm, learner_name)
 
-    # Footer
-    c.setFont("Helvetica", 10)
-    c.drawString(50, 80, f"Certificate No: {cert_number}")
-    c.drawRightString(
-        width - 50,
-        80,
-        f"Issued on: {timezone.now().date()}"
-    )
+    # ------------------------------------------------
+    # Signature & Authority
+    # ------------------------------------------------
+    if signature_path and Path(signature_path).exists():
+        c.drawImage(
+            ImageReader(signature_path),
+            width / 2 - 25 * mm,
+            45 * mm,
+            width=50 * mm,
+            height=20 * mm,
+            mask="auto"
+        )
+
+    c.setStrokeColor(red)
+    c.line(width / 2 - 40 * mm, 40 * mm, width / 2 + 40 * mm, 40 * mm)
+
+    c.setFont("Helvetica-Oblique", 12)
+    c.drawCentredString(width / 2, 32 * mm, hod_name)
+    c.drawCentredString(width / 2, 25 * mm, hod_department)
 
     c.showPage()
     c.save()

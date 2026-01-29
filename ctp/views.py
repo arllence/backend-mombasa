@@ -263,7 +263,7 @@ class CoreViewSet(viewsets.ViewSet):
                         try:
                             dept = (Hods.objects.get(hod=request.user)).department
                         except:
-                            return Response({"details": "HOD role not understood"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         if filters:
                             filters |= (Q(created_by=request.user) | Q(department=dept) )
@@ -513,7 +513,7 @@ class CoreViewSet(viewsets.ViewSet):
                         try:
                             dept = (Hods.objects.get(hod=request.user)).department
                         except:
-                            return Response({"details": "HOD role not understood"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         if filters:
                             filters |= (Q(training__department=dept) | Q(assigned_by=request.user))
@@ -1157,7 +1157,7 @@ class TestViewSet(viewsets.ViewSet):
                         try:
                             dept = (Hods.objects.get(hod=request.user)).department
                         except:
-                            return Response({"details": "HOD role not understood"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         if filters:
                             filters |= (Q(created_by=request.user) | Q(training__department=dept) )
@@ -1202,6 +1202,32 @@ class TestViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST) 
 
 
+    @action(methods=["GET",],
+            detail=False,
+            url_path="take-test",
+            url_name="take-test")
+    def take_test(self, request):
+        if request.method == "GET":
+            request_id = request.query_params.get('request_id')
+
+            if not request_id:
+                return Response({"details": "Incomplete request"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                resp = models.Test.objects.get(id=request_id)
+
+                resp = serializers.TestStartSerializer(resp, many=False, context={"user_id":request.user.id}).data
+
+                return Response(resp, status=status.HTTP_200_OK)
+            
+            except (ValidationError, ObjectDoesNotExist):
+                return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            except Exception as e:
+                print(e)
+                return Response({"details": "Cannot complete request "}, status=status.HTTP_400_BAD_REQUEST)
+
+    
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
             url_path="questions",
@@ -1361,7 +1387,7 @@ class TestViewSet(viewsets.ViewSet):
                         try:
                             dept = (Hods.objects.get(hod=request.user)).department
                         except:
-                            return Response({"details": "HOD role not understood"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         if filters:
                             filters |= (Q(created_by=request.user) | Q(test__training__department=dept) )
@@ -1537,7 +1563,7 @@ class TestViewSet(viewsets.ViewSet):
                         try:
                             dept = (Hods.objects.get(hod=request.user)).department
                         except:
-                            return Response({"details": "HOD role not understood"}, status=status.HTTP_400_BAD_REQUEST)
+                            return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         if filters:
                             filters |= (Q(question__test__training__department=dept) )
@@ -1609,10 +1635,11 @@ class TestViewSet(viewsets.ViewSet):
                     "test" : test,
                     "learner" : request.user
                 }
-                createdInstance = models.Attempt.objects.create(**raw)
+                if not models.Attempt.objects.filter(test=test,learner=request.user).exists():
+                    createdInstance = models.Attempt.objects.create(**raw)
 
-            user_util.log_account_activity(
-                authenticated_user, authenticated_user, "Attempt created", f"Attempt Id: {createdInstance.id}")
+                    user_util.log_account_activity(
+                        authenticated_user, authenticated_user, "Attempt created", f"Attempt Id: {createdInstance.id}")
             
             return Response('success', status=status.HTTP_200_OK)
             
@@ -1623,13 +1650,13 @@ class TestViewSet(viewsets.ViewSet):
             """
             payload = request.data
                     
-            request_id = payload.get('request_id') or None
+            attempt_id = payload.get('attempt_id') or None
 
-            if not request_id:
+            if not attempt_id:
                 return Response({"details": "Attempt id required"}, status=status.HTTP_400_BAD_REQUEST)
             
             try:
-                attempt = models.Attempt.objects.get(id=request_id)
+                attempt = models.Attempt.objects.get(id=attempt_id)
             except Exception as e:
                 return Response({"details": "Unknown attempt"}, status=status.HTTP_400_BAD_REQUEST)
             
@@ -1640,10 +1667,24 @@ class TestViewSet(viewsets.ViewSet):
                 )
             
             from .utils import grade_attempt  # clean separation
-            grade_attempt(attempt)
+            grade_attempt.grade_processor(attempt)
 
             attempt.completed_at = timezone.now()
             attempt.save()
+
+            try:
+                assignmentInstance = models.TrainingAssignment.objects.get(training=attempt.test.training,user=request.user)
+            except Exception as e:
+                return Response({"details": "No assignment"}, status=status.HTTP_400_BAD_REQUEST)
+                    
+            certificate = models.Certificate.objects.get(
+                attempt=attempt
+            )
+            assignmentInstance.certificate = certificate.pdf
+            assignmentInstance.is_completed = True
+            assignmentInstance.date_completed =  date.today()
+            assignmentInstance.completion_date =  date.today()
+            assignmentInstance.save()
 
             user_util.log_account_activity(
                 authenticated_user, authenticated_user, "Attempt closed", f"Attempt Id: {attempt.id}")
@@ -1660,12 +1701,8 @@ class TestViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             test_id = request.query_params.get('test_id')
             slim = request.query_params.get('slim')
+            action = request.query_params.get('action')
             resp = []
-
-            filters = Q()
-
-            if test_id:
-                filters &= Q(test=test_id)
 
             if request_id:
                 try:
@@ -1686,10 +1723,15 @@ class TestViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
                 
             elif test_id:
-                resp = models.Attempt.objects.filter(test=test_id).order_by('-date_created')
-                
-            else:
-                pass            
+                if action == 'learner':
+                    resp = models.Attempt.objects.get(test=test_id, learner=request.user)
+                    resp = serializers.AttemptResultSerializer(
+                        resp, many=False, context={"user_id":request.user.id}).data
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                else:
+                    resp = models.Attempt.objects.filter(test=test_id).order_by('-started_at')
+                          
                 
             
             paginator = PageNumberPagination()
@@ -1708,7 +1750,7 @@ class TestViewSet(viewsets.ViewSet):
                 return Response('200', status=status.HTTP_200_OK) 
             
     
-    @action(methods=["POST"],
+    @action(methods=["POST", "GET"],
             detail=False,
             url_path="answers",
             url_name="answers")
@@ -1727,9 +1769,22 @@ class TestViewSet(viewsets.ViewSet):
                 return Response({"details": "Attempt, Question, Selected Option required"}, status=status.HTTP_400_BAD_REQUEST)
                  
             try:
-                test = models.Answer.objects.get(id=test)
+                attempt = models.Attempt.objects.get(id=attempt)
             except Exception as e:
-                return Response({"details": "Unknown test"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"details": "Unknown attempt"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                question = models.Question.objects.get(id=question)
+            except Exception as e:
+                return Response({"details": "Unknown question"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                selected_option = models.Option.objects.get(id=selected_option)
+            except Exception as e:
+                return Response({"details": "Unknown selected option"}, status=status.HTTP_400_BAD_REQUEST)
+
+            if selected_option.question_id != question.id:
+                return Response({"details": "Option does not belong to this question"}, status=status.HTTP_400_BAD_REQUEST)
 
                     
             with transaction.atomic():
@@ -1738,9 +1793,10 @@ class TestViewSet(viewsets.ViewSet):
                 attempt=attempt,
                 question=question,
                 defaults={
-                    "attempt": "attempt",
-                    "question": "question",
-                    "selected_option": "selected_option",
+                    "attempt": attempt,
+                    "question": question,
+                    "selected_option": selected_option,
+                    "is_correct": selected_option.is_correct
                 }
             )
 
@@ -1748,6 +1804,23 @@ class TestViewSet(viewsets.ViewSet):
                 authenticated_user, authenticated_user, "Answer created / updated", f"Answer Id: {obj.id}")
             
             return Response('success', status=status.HTTP_200_OK)
+        
+        if request.method == "GET":
+            attempt_id = request.query_params.get('attempt_id')
+            # question_id = request.query_params.get('question_id')
+
+            if not attempt_id:
+                return Response('No filters received', status=status.HTTP_200_OK)
+            
+            answers = models.Answer.objects.filter(
+                attempt=attempt_id,
+            )
+
+            resp = serializers.AnswerSerializer(
+                        answers, many=True).data
+            
+            return Response(resp, status=status.HTTP_200_OK)
+
             
 
 

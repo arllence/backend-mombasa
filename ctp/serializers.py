@@ -43,6 +43,7 @@ class FetchTrainingMaterialSerializer(serializers.ModelSerializer):
     department = SlimFetchSRRSDepartmentSerializer()
     documents = serializers.SerializerMethodField()
     assignment = serializers.SerializerMethodField()
+    test = serializers.SerializerMethodField()
     created_by = SlimUsersSerializer()
     
     class Meta:
@@ -73,6 +74,35 @@ class FetchTrainingMaterialSerializer(serializers.ModelSerializer):
             print(e)
             # logger.error(e)
             return None 
+        
+    def get_test(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            is_completed = False
+            test = models.Test.objects.get(training=obj)
+            is_completed = models.Attempt.objects.filter(
+                learner_id=user_id,
+                test=test,
+                completed_at__isnull=False
+            ).exists()
+            resp = {
+                "id": str(test.id),
+                "is_completed": is_completed
+            }
+            return resp
+        except (ValidationError, ObjectDoesNotExist):
+            resp = {
+                "id": '',
+                "is_completed": False
+            }
+            return resp
+        except Exception as e:
+            print(e)
+            resp = {
+                "id": '',
+                "is_completed": False
+            }
+            return resp
         
         
 class UploadFileSerializer(serializers.Serializer):
@@ -201,7 +231,7 @@ class TestStartSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = models.Test
-        fields = ["id", "title", "duration_minutes", "questions"]
+        fields = ["id", "training", "duration_minutes", "questions"]
 
 # 4️⃣ Attempt & Answer Serializers
 # Answer Submission
@@ -210,25 +240,6 @@ class AnswerSerializer(serializers.ModelSerializer):
         model = models.Answer
         fields = ["question", "selected_option"]
 
-    def validate(self, data):
-        question = data["question"]
-        option = data["selected_option"]
-
-        if option.question_id != question.id:
-            raise serializers.ValidationError(
-                "Option does not belong to this question."
-            )
-        return data
-
-    def create(self, validated_data):
-        attempt = self.context["attempt"]
-        return models.Answer.objects.update_or_create(
-            attempt=attempt,
-            question=validated_data["question"],
-            defaults={
-                "selected_option": validated_data["selected_option"]
-            }
-        )[0]
     
 # Attempt Result Serializer
 class AttemptResultSerializer(serializers.ModelSerializer):
