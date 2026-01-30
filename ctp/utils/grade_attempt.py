@@ -22,7 +22,7 @@ def grade_processor(attempt: Attempt) -> Attempt:
     and generates a certificate if passed.
     """
 
-    if attempt.completed_at:
+    if attempt.completed_at and attempt.passed:
         return attempt  # already graded
 
     answers = attempt.answers.select_related(

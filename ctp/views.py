@@ -292,7 +292,7 @@ class CoreViewSet(viewsets.ViewSet):
             paginator = PageNumberPagination()
             paginator.page_size = 50
             result_page = paginator.paginate_queryset(resp, request)
-            serializer = serializers.FetchTrainingMaterialSerializer(
+            serializer = serializers.SlimFetchTrainingMaterialSerializer(
                 result_page, many=True, context={"user_id":request.user.id})
             return paginator.get_paginated_response(serializer.data)
         
@@ -1660,9 +1660,9 @@ class TestViewSet(viewsets.ViewSet):
             except Exception as e:
                 return Response({"details": "Unknown attempt"}, status=status.HTTP_400_BAD_REQUEST)
             
-            if attempt.completed_at:
+            if attempt.completed_at and attempt.passed:
                 return Response(
-                    {"detail": "Already submitted"},
+                    {"details": "Already submitted"},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
@@ -1672,19 +1672,20 @@ class TestViewSet(viewsets.ViewSet):
             attempt.completed_at = timezone.now()
             attempt.save()
 
-            try:
-                assignmentInstance = models.TrainingAssignment.objects.get(training=attempt.test.training,user=request.user)
-            except Exception as e:
-                return Response({"details": "No assignment"}, status=status.HTTP_400_BAD_REQUEST)
-                    
-            certificate = models.Certificate.objects.get(
-                attempt=attempt
-            )
-            assignmentInstance.certificate = certificate.pdf
-            assignmentInstance.is_completed = True
-            assignmentInstance.date_completed =  date.today()
-            assignmentInstance.completion_date =  date.today()
-            assignmentInstance.save()
+            if attempt.passed:
+                try:
+                    assignmentInstance = models.TrainingAssignment.objects.get(training=attempt.test.training,user=request.user)
+                except Exception as e:
+                    return Response({"details": "No assignment"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                certificate = models.Certificate.objects.get(
+                    attempt=attempt
+                )
+                assignmentInstance.certificate = certificate.pdf
+                assignmentInstance.is_completed = True
+                assignmentInstance.date_completed =  date.today()
+                assignmentInstance.completion_date =  date.today()
+                assignmentInstance.save()
 
             user_util.log_account_activity(
                 authenticated_user, authenticated_user, "Attempt closed", f"Attempt Id: {attempt.id}")
@@ -1750,7 +1751,7 @@ class TestViewSet(viewsets.ViewSet):
                 return Response('200', status=status.HTTP_200_OK) 
             
     
-    @action(methods=["POST", "GET"],
+    @action(methods=["POST", "GET", "PATCH"],
             detail=False,
             url_path="answers",
             url_name="answers")
@@ -1804,6 +1805,29 @@ class TestViewSet(viewsets.ViewSet):
                 authenticated_user, authenticated_user, "Answer created / updated", f"Answer Id: {obj.id}")
             
             return Response('success', status=status.HTTP_200_OK)
+        
+
+        if request.method == "PATCH":
+            """
+            Renews attempt, deletes previous answers
+            """
+            payload = request.data
+           
+            test_id = payload.get('test_id') or None
+            if not test_id:
+                return Response({"details": "Test required"}, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                attempt = models.Attempt.objects.get(test_id=test_id, learner=request.user)
+            except Exception as e:
+                return Response({"details": "Unknown attempt"}, status=status.HTTP_400_BAD_REQUEST)
+            
+            attempt.count += 1
+            attempt.save() 
+            
+            models.Answer.objects.filter(attempt=attempt).delete()
+            return Response('success', status=status.HTTP_200_OK)
+
         
         if request.method == "GET":
             attempt_id = request.query_params.get('attempt_id')

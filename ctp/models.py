@@ -258,6 +258,8 @@ class Attempt(models.Model):
     percentage = models.FloatField(null=True, blank=True)
     passed = models.BooleanField(default=False)
 
+    count = models.PositiveIntegerField(default=1)
+
     started_at = models.DateTimeField(auto_now_add=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
@@ -294,9 +296,6 @@ class Answer(models.Model):
     class Meta:
         db_table = u'"{}\".\"answers"'.format(settings.CENTRALIZED_TRAINING_PLATFORM)
 
-    # def save(self, *args, **kwargs):
-    #     self.is_correct = self.selected_option.is_correct
-    #     super().save(*args, **kwargs)
 
 
 class Certificate(models.Model):

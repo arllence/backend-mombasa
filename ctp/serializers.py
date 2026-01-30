@@ -1,4 +1,5 @@
 from django.db.models import  Q
+from acl.models import Hods
 from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, SlimFetchSRRSDepartmentSerializer
 from srrs.serializers import FetchOHCSerializer, FetchSubDepartmentSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
@@ -44,6 +45,7 @@ class FetchTrainingMaterialSerializer(serializers.ModelSerializer):
     documents = serializers.SerializerMethodField()
     assignment = serializers.SerializerMethodField()
     test = serializers.SerializerMethodField()
+    can_add_test = serializers.SerializerMethodField()
     created_by = SlimUsersSerializer()
     
     class Meta:
@@ -75,35 +77,56 @@ class FetchTrainingMaterialSerializer(serializers.ModelSerializer):
             # logger.error(e)
             return None 
         
-    def get_test(self, obj):
+    def get_can_add_test(self, obj):
         try:
             user_id = str(self.context["user_id"])
-            is_completed = False
+            roles = get_user_roles(user_id)
+            is_department_hod = Hods.objects.filter(hod_id=user_id,department=obj.department).exists()
+            if "SUPERUSER" in roles or is_department_hod or str(obj.created_by.id) == user_id:
+                return True
+            return False
+        except (ValidationError, ObjectDoesNotExist):
+            return False
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False 
+        
+    def get_test(self, obj):
+        user_id = str(self.context["user_id"])
+
+        try:
             test = models.Test.objects.get(training=obj)
-            is_completed = models.Attempt.objects.filter(
+        except models.Test.DoesNotExist:
+            return {
+                "id": "",
+                "is_completed": False,
+                "percentage": None,
+                "passed": None,
+                "pass_mark": None,
+                "attempt_date": None
+            }
+
+        attempt = (
+            models.Attempt.objects
+            .filter(
                 learner_id=user_id,
                 test=test,
                 completed_at__isnull=False
-            ).exists()
-            resp = {
-                "id": str(test.id),
-                "is_completed": is_completed
-            }
-            return resp
-        except (ValidationError, ObjectDoesNotExist):
-            resp = {
-                "id": '',
-                "is_completed": False
-            }
-            return resp
-        except Exception as e:
-            print(e)
-            resp = {
-                "id": '',
-                "is_completed": False
-            }
-            return resp
-        
+            )
+            .only("passed", "percentage")   # 🔥 important
+            .first()
+        )
+
+        return {
+            "id": str(test.id),
+            "is_completed": bool(attempt),
+            "passed": attempt.passed if attempt else None,
+            "percentage": attempt.percentage if attempt else None,
+            "pass_mark": str(test.pass_mark),
+            "attempt_date": str(attempt.completed_at) if attempt else None
+        }
+
         
 class UploadFileSerializer(serializers.Serializer):
     training_id = serializers.CharField()
