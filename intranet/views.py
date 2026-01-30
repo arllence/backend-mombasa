@@ -132,8 +132,16 @@ class GenericsViewSet(viewsets.ViewSet):
     
     @action(methods=["GET"], detail=False, url_path="departments",url_name="departments")
     def departments(self, request):
+        department_ids = (
+            models.Document.objects
+            .all()
+            .values_list('department_id', flat=True)
+            .distinct()
+        )
 
-        resp = models.SRRSDepartment.objects.all().order_by('name')
+        resp = models.SRRSDepartment.objects.filter(id__in=department_ids).order_by('name')
+
+        # resp = models.SRRSDepartment.objects.all().order_by('name')
         serializer = serializers.FullFetchDepartmentSerializer(
             resp, many=True, context={"user_id":request.user.id})
         
