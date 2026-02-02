@@ -346,20 +346,20 @@ class CoreViewSet(viewsets.ViewSet):
             except Exception as e:
                 return Response({"details": "Unknown training"}, status=status.HTTP_400_BAD_REQUEST)
 
-            if assign_to == 'Individuals':   
+            if assign_to.lower() == 'individuals':   
                 try:
-                    users = get_user_model().objects.filter(id__in=assignees)
+                    users = get_user_model().objects.filter(id__in=assignees,is_suspended=False)
                 except Exception as e:
                     print(e)
                     return Response({"details": "Unknown user"}, status=status.HTTP_400_BAD_REQUEST)
                 
-            if assign_to == 'Department':   
+            if assign_to.lower() == 'department':   
                 try:
-                    users = get_user_model().objects.filter(srrs_department__in=departments)
+                    users = get_user_model().objects.filter(srrs_department__in=departments, is_suspended=False)
                 except Exception as e:
                     return Response({"details": "Unknown user"}, status=status.HTTP_400_BAD_REQUEST)
                 
-            if assign_to == 'Everyone':  
+            if assign_to.lower() == 'everyone':  
                 try:
                     users = get_user_model().objects.filter(is_suspended=False)
                 except Exception as e:
@@ -387,7 +387,24 @@ class CoreViewSet(viewsets.ViewSet):
                         ignore_conflicts=True
                     ) 
                 except IntegrityError:
-                    return Response({"details": "Assignments already exists"}, status=status.HTTP_400_BAD_REQUEST)            
+                    return Response({"details": "Assignments already exists"}, status=status.HTTP_400_BAD_REQUEST)  
+
+                # Notify creator
+                try:
+                    subject = f"[TRAINING HUB] Training {training.uid} has been assigned to you"
+                    message = f"Hello, \n\nTraining: {training.title} hass been assigned to you\n\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nVisit Training Hub to review.\n\nRegards\nTraining Hub"
+
+                    mail = {
+                        "email" : [user.email for user in users], 
+                        "subject" : subject,
+                        "message" : message
+                    }
+
+                    Sendmail.objects.create(**mail)
+
+                except Exception as e:
+                    print(e)  
+                    logger.error(e)        
 
                 user_util.log_account_activity(
                     authenticated_user, authenticated_user, "Training Assignment created", f"Training Id: {[x.id for x in createdInstance]}")

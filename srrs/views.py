@@ -2161,12 +2161,12 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
             declined = models.Recruit.objects.filter(status="DECLINED", is_deleted=False).count()
-            pending = models.Recruit.objects.filter(Q(status__in=("REQUESTED"), department__slt=request.user), is_deleted=False).count()
+            pending = models.Recruit.objects.filter(Q(status__in=["REQUESTED"], department__slt=request.user), is_deleted=False).count()
         if any(role in ['HHR', 'HR'] for role in roles):
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
             declined = models.Recruit.objects.filter(status="DECLINED", is_deleted=False).count()
-            pending = models.Recruit.objects.filter(Q(status__in=('SLT APPROVED')), is_ceo_approved=False, is_deleted=False).count()
+            pending = models.Recruit.objects.filter(Q(status__in=['SLT APPROVED']), is_ceo_approved=False, is_deleted=False).count()
         if any(role in ['HOF'] for role in roles):
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
