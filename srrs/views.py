@@ -654,7 +654,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    exclude_status = ['DECLINED','HIRED','REFERRED', 'ON HOLD']
+                    exclude_status = ['DECLINED','HIRED','REFERRED', 'ON HOLD', 'ONHOLD']
                     final_resp = []
 
                     if "HOD" in roles:
