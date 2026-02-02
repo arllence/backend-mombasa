@@ -2162,12 +2162,34 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
             declined = models.Recruit.objects.filter(status="DECLINED", is_deleted=False).count()
-            pending = models.Recruit.objects.filter(Q(status__in=("HR APPROVED")), is_deleted=False).count() + models.Recruit.objects.filter(Q(status__in=("REQUESTED") & Q(department__slt=request.user)), is_deleted=False).count()
+            pending = (
+                    models.Recruit.objects.filter(
+                        Q(status__in=["HR APPROVED"]),
+                        is_deleted=False
+                    ).count()
+                    +
+                    models.Recruit.objects.filter(
+                        Q(status__in=["REQUESTED"]) &
+                        Q(department__slt=request.user),
+                        is_deleted=False
+                    ).count()
+                )
         elif any(role in ['CEO'] for role in roles):
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
             declined = models.Recruit.objects.filter(status="DECLINED", is_deleted=False).count()
-            pending = models.Recruit.objects.filter(Q(status__in=("FINANCE APPROVED")), is_deleted=False).count() + models.Recruit.objects.filter(Q(status__in=("REQUESTED") & Q(department__slt=request.user)), is_deleted=False).count()
+            pending = (
+                        models.Recruit.objects.filter(
+                            Q(status__in=["FINANCE APPROVED"]),
+                            is_deleted=False
+                        ).count()
+                        +
+                        models.Recruit.objects.filter(
+                            Q(status__in=["REQUESTED"]) &
+                            Q(department__slt=request.user),
+                            is_deleted=False
+                        ).count()
+                    )
         else:
             requests = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
             canceled = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="REFERRED", is_deleted=False).count()
