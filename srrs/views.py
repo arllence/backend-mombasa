@@ -17,7 +17,7 @@ from srrs import models
 from srrs import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import user_util
-from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
+from acl.models import Hods, User, Sendmail, SRRSDepartment, SubDepartment, OHC
 from srrs.utils import shared_fxns
 from django.db.models import Sum
 from django.core.mail import send_mail
@@ -666,14 +666,20 @@ class SrrsViewSet(viewsets.ViewSet):
                         #         ).order_by('-date_created')
 
                         # else:
+                        department_ids = (
+                                Hods.objects
+                                .filter(hod=request.user)
+                                .values_list('department_id', flat=True)
+                                .distinct()
+                            )
                         resp = models.Recruit.objects.filter(
-                                Q(department=request.user.srrs_department) | 
+                                Q(department__in=department_ids) | 
                                 Q(created_by=request.user), is_deleted=False
                             ).order_by('-date_created')
 
                         final_resp += list(resp)
 
-                    if "USER_MANAGER" in roles:
+                    if "SUPERUSER" in roles:
                         resp = models.Recruit.objects.filter(Q(is_deleted=False) ).order_by('-date_created')
 
                         final_resp += list(resp)
@@ -684,7 +690,7 @@ class SrrsViewSet(viewsets.ViewSet):
 
                         resp = models.Recruit.objects.filter(
                             Q(department__slt=authenticated_user) | 
-                            Q(preferred_slt=authenticated_user), is_slt_approved=False, is_deleted=False).order_by('-date_created')
+                            Q(preferred_slt=authenticated_user), is_slt_approved=False, is_deleted=False).order_by('-date_created').exclude(status__in=exclude_status)
 
                         final_resp += list(resp)
 
