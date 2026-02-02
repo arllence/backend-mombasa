@@ -372,6 +372,7 @@ class CoreViewSet(viewsets.ViewSet):
                     "completion_date" : completion_date,
                     "assigned_by": request.user
                 }
+
                 bulkCreate = [
                     models.TrainingAssignment(
                         user = user, 
@@ -380,7 +381,11 @@ class CoreViewSet(viewsets.ViewSet):
                     for user in users
                 ]
                 try:
-                    createdInstance = models.TrainingAssignment.objects.bulk_create(bulkCreate)   
+                    # createdInstance = models.TrainingAssignment.objects.bulk_create(bulkCreate)  
+                    createdInstance = models.TrainingAssignment.objects.bulk_create(
+                        bulkCreate,
+                        ignore_conflicts=True
+                    ) 
                 except IntegrityError:
                     return Response({"details": "Assignments already exists"}, status=status.HTTP_400_BAD_REQUEST)            
 
@@ -452,7 +457,11 @@ class CoreViewSet(viewsets.ViewSet):
                 "user": request.user,
                 "assigned_by": request.user
             }
-            models.TrainingAssignment.objects.create(**raw)
+            try:
+                models.TrainingAssignment.objects.create(**raw)
+            except Exception as e:
+                logger.error(e)
+                return Response({"details": "Already assigned to you"}, status=status.HTTP_400_BAD_REQUEST) 
             
             return Response('success', status=status.HTTP_200_OK)
             
