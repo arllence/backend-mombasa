@@ -2166,7 +2166,7 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
             declined = models.Recruit.objects.filter(status="DECLINED", is_deleted=False).count()
-            pending = models.Recruit.objects.filter(Q(status__in=['SLT APPROVED']), is_ceo_approved=False, is_deleted=False).count()
+            pending = models.Recruit.objects.filter(status='SLT APPROVED', is_ceo_approved=False, is_deleted=False).count()
         if any(role in ['HOF'] for role in roles):
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
@@ -2183,7 +2183,7 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
                         is_deleted=False
                     ).count()
                 )
-        elif any(role in ['CEO'] for role in roles):
+        if any(role in ['CEO'] for role in roles):
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
             declined = models.Recruit.objects.filter(status="DECLINED", is_deleted=False).count()
@@ -2199,7 +2199,7 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
                             is_deleted=False
                         ).count()
                     )
-        else:
+        if not any(role in ['CEO','HOF','SLT','HHR', 'HR'] for role in roles):
             requests = models.Recruit.objects.filter(Q(department=request.user.srrs_department) | Q(created_by=request.user), is_deleted=False).count()
             canceled = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="REFERRED", is_deleted=False).count()
             declined = models.Recruit.objects.filter(Q(department=request.user.srrs_department) |  Q(created_by=request.user), status="DECLINED", is_deleted=False).count()
