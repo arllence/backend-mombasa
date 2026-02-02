@@ -666,6 +666,8 @@ class SrrsViewSet(viewsets.ViewSet):
                         #         ).order_by('-date_created')
 
                         # else:
+                        if "CEO" in roles:
+                            exclude_status.append('CEO APPROVED')
                         department_ids = (
                                 Hods.objects
                                 .filter(hod=request.user)
@@ -675,7 +677,7 @@ class SrrsViewSet(viewsets.ViewSet):
                         resp = models.Recruit.objects.filter(
                                 Q(department__in=department_ids) | 
                                 Q(created_by=request.user), is_deleted=False
-                            ).order_by('-date_created')
+                            ).exclude(status__in=exclude_status).order_by('-date_created')
 
                         final_resp += list(resp)
 
