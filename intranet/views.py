@@ -778,16 +778,16 @@ class DocumentManagerViewSet(viewsets.ViewSet):
                 documents = models.QipsDocument.objects.get(Q(id=request_id) & Q(is_deleted=False))
 
             elif topic_id:
-                documents = models.QipsDocument.objects.filter(Q(topic=topic_id) & Q(is_deleted=False))
+                documents = models.QipsDocument.objects.filter(Q(topic=topic_id) & Q(is_deleted=False)).order_by('file_name')
 
             elif sub_topic_id:
-                documents = models.QipsDocument.objects.filter(Q(sub_topic=sub_topic_id) & Q(is_deleted=False))
+                documents = models.QipsDocument.objects.filter(Q(sub_topic=sub_topic_id) & Q(is_deleted=False)).order_by('file_name')
             
             elif category_id:
-                documents = models.QipsDocument.objects.filter(Q(category=category_id) & Q(is_deleted=False))
+                documents = models.QipsDocument.objects.filter(Q(category=category_id) & Q(is_deleted=False)).order_by('file_name')
 
             else:
-                documents = models.QipsDocument.objects.filter(Q(is_deleted=False))
+                documents = models.QipsDocument.objects.filter(Q(is_deleted=False)).order_by('file_name')
             
 
             paginator = PageNumberPagination()

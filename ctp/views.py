@@ -260,15 +260,14 @@ class CoreViewSet(viewsets.ViewSet):
                             resp = models.TrainingMaterial.objects.filter(is_deleted=False).order_by('-date_created')
 
                     elif any(role in ['HOD'] for role in roles):
-                        try:
-                            department_ids = (
-                                    Hods.objects
-                                    .filter(hod=request.user)
-                                    .values_list('department_id', flat=True)
-                                    .distinct()
-                                )
-                            # dept = (Hods.objects.get(hod=request.user)).department
-                        except:
+
+                        department_ids = (
+                                Hods.objects
+                                .filter(hod=request.user)
+                                .values_list('department_id', flat=True)
+                                .distinct()
+                            )
+                        if not department_ids:
                             return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         if filters:
@@ -516,14 +515,15 @@ class CoreViewSet(viewsets.ViewSet):
                             resp = models.TrainingAssignment.objects.filter(is_deleted=False).order_by('-date_created')
 
                     elif any(role in ['HOD'] for role in roles):
-                        try:
-                            department_ids = (
-                                    Hods.objects
-                                    .filter(hod=request.user)
-                                    .values_list('department_id', flat=True)
-                                    .distinct()
-                                )
-                        except:
+
+                        department_ids = (
+                                Hods.objects
+                                .filter(hod=request.user)
+                                .values_list('department_id', flat=True)
+                                .distinct()
+                            )
+
+                        if not department_ids:
                             return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         if filters:
@@ -1165,15 +1165,14 @@ class TestViewSet(viewsets.ViewSet):
                             resp = models.Test.objects.all().order_by('-date_created')
 
                     elif any(role in ['HOD'] for role in roles):
-                        try:
-                            department_ids = (
-                                    Hods.objects
-                                    .filter(hod=request.user)
-                                    .values_list('department_id', flat=True)
-                                    .distinct()
-                                )
-                            # dept = (Hods.objects.get(hod=request.user)).department
-                        except:
+
+                        department_ids = (
+                                Hods.objects
+                                .filter(hod=request.user)
+                                .values_list('department_id', flat=True)
+                                .distinct()
+                            )
+                        if not department_ids:
                             return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         if filters:
@@ -1401,14 +1400,14 @@ class TestViewSet(viewsets.ViewSet):
                             resp = models.Question.objects.all().order_by('-created_at')
 
                     elif any(role in ['HOD'] for role in roles):
-                        try:
-                            department_ids = (
-                                    Hods.objects
-                                    .filter(hod=request.user)
-                                    .values_list('department_id', flat=True)
-                                    .distinct()
-                                )
-                        except:
+
+                        department_ids = (
+                                Hods.objects
+                                .filter(hod=request.user)
+                                .values_list('department_id', flat=True)
+                                .distinct()
+                            )
+                        if not department_ids:
                             return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         if filters:
@@ -1582,14 +1581,14 @@ class TestViewSet(viewsets.ViewSet):
                             resp = models.Option.objects.all().order_by('-date_created')
 
                     elif any(role in ['HOD'] for role in roles):
-                        try:
-                            department_ids = (
-                                    Hods.objects
-                                    .filter(hod=request.user)
-                                    .values_list('department_id', flat=True)
-                                    .distinct()
-                                )
-                        except:
+
+                        department_ids = (
+                                Hods.objects
+                                .filter(hod=request.user)
+                                .values_list('department_id', flat=True)
+                                .distinct()
+                            )
+                        if not department_ids:
                             return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         if filters:
