@@ -392,7 +392,7 @@ class CoreViewSet(viewsets.ViewSet):
                 # Notify creator
                 try:
                     subject = f"[TRAINING HUB] Training {training.uid} has been assigned to you"
-                    message = f"Hello, \n\nTraining: {training.title} hass been assigned to you\n\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nVisit Training Hub to review.\n\nRegards\nTraining Hub"
+                    message = f"Hello, \n\nTraining: {training.title} has been assigned to you\n\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nVisit Training Hub to review.\n\nRegards\nTraining Hub"
 
                     mail = {
                         "email" : [user.email for user in users], 
@@ -630,6 +630,15 @@ class CoreViewSet(viewsets.ViewSet):
                 return Response({"details": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
             
             training_id = payload['training_id']
+
+            test_exists = models.Test.objects.filter(
+                training=training_id,
+                is_deleted=False
+            ).exists()
+
+            if test_exists:
+                return Response({"details": "Upload rejected. Certificate is acquired by taking the test"}, status=status.HTTP_400_BAD_REQUEST)
+
 
             try:
                 targetInstance = models.TrainingAssignment.objects.get(training=training_id,user=request.user)
