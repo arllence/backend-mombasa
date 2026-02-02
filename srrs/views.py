@@ -654,7 +654,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    exclude_status = ['DECLINED','HIRED','REFERRED']
+                    exclude_status = ['DECLINED','HIRED','REFERRED', 'ON HOLD']
                     final_resp = []
 
                     if "HOD" in roles:
@@ -2148,13 +2148,14 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
         roles = user_util.fetchusergroups(request.user.id)
         active_status = ['REQUESTED','CEO APPROVED','HR APPROVED','SLT APPROVED','CLOSED']
 
+        all_pending = models.Recruit.objects.filter(Q(status__in=active_status), is_ceo_approved=False, is_deleted=False).count()
         
-        if any(role in ['HHR', 'HR', 'HOF', 'CEO', 'SUPERUSER'] for role in roles):
+        if any(role in ['SUPERUSER'] for role in roles):
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
             declined = models.Recruit.objects.filter(status="DECLINED", is_deleted=False).count()
             pending = models.Recruit.objects.filter(Q(status__in=active_status), is_ceo_approved=False, is_deleted=False).count()
-        elif any(role in ['SLT'] for role in roles):
+        if any(role in ['SLT'] for role in roles):
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
             declined = models.Recruit.objects.filter(status="DECLINED", is_deleted=False).count()
@@ -2164,7 +2165,7 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
             declined = models.Recruit.objects.filter(status="DECLINED", is_deleted=False).count()
             pending = models.Recruit.objects.filter(Q(status__in=('SLT APPROVED')), is_ceo_approved=False, is_deleted=False).count()
-        elif any(role in ['HOF'] for role in roles):
+        if any(role in ['HOF'] for role in roles):
             requests = models.Recruit.objects.filter(Q(is_deleted=False)).count()
             canceled = models.Recruit.objects.filter(Q(status="REFERRED"), is_deleted=False).count()
             declined = models.Recruit.objects.filter(status="DECLINED", is_deleted=False).count()
@@ -2206,7 +2207,8 @@ class SRRSAnalyticsViewSet(viewsets.ViewSet):
             "requests": requests,
             "canceled": canceled,
             "declined": declined,
-            "pending": pending
+            "pending": pending,
+            "all_pending": all_pending
         }
 
         return Response(resp, status=status.HTTP_200_OK)
