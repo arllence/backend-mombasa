@@ -687,7 +687,7 @@ class SrrsViewSet(viewsets.ViewSet):
                     if "SLT" in roles:
                         # resp = models.Recruit.objects.filter(
                         #     Q(is_deleted=False) & Q(department__slt=authenticated_user) & Q(is_slt_approved=False)).order_by('-date_created')
-
+                        exclude_status.append("CEO APPROVED")
                         resp = models.Recruit.objects.filter(
                             Q(department__slt=authenticated_user) | 
                             Q(preferred_slt=authenticated_user), is_slt_approved=False, is_deleted=False).order_by('-date_created').exclude(status__in=exclude_status)
