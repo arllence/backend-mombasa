@@ -11,6 +11,11 @@ from django.utils import timezone
 from pathlib import Path
 from django.conf import settings
 
+from reportlab.graphics.barcode import qr
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics import renderPDF
+
+
 from acl.models import Hods
 from ctp.models import Attempt, Certificate
 
@@ -73,6 +78,7 @@ def generate_certificate(attempt: Attempt) -> Certificate:
         if hod:
             return f"{hod.hod.first_name} {hod.hod.last_name}"
         return ""
+    
     build_certificate_pdf(
         file_path=file_path,
         learner_name=f"{attempt.learner.first_name} {attempt.learner.last_name}",
@@ -97,6 +103,20 @@ def generate_certificate(attempt: Attempt) -> Certificate:
 
 def generate_certificate_number() -> str:
     return f"CERT-{uuid.uuid4().hex[:10].upper()}"
+
+def draw_qr_code(c, verification_url, x, y, size=80):
+    qr_code = qr.QrCodeWidget(verification_url)
+    bounds = qr_code.getBounds()
+    width = bounds[2] - bounds[0]
+    height = bounds[3] - bounds[1]
+
+    d = Drawing(
+        size,
+        size,
+        transform=[size / width, 0, 0, size / height, 0, 0],
+    )
+    d.add(qr_code)
+    renderPDF.draw(d, c, x, y)
 
 
 def build_certificate_pdf(
@@ -190,10 +210,10 @@ def build_certificate_pdf(
     # Presented to
     # ------------------------------------------------
     c.setFont("Helvetica-Oblique", 14)
-    c.drawCentredString(width / 2, height - 135 * mm, "Presented to:")
+    c.drawCentredString(width / 2, height - 130 * mm, "Presented to:")
 
     c.setFont("Helvetica-Bold", 22)
-    c.drawCentredString(width / 2, height - 150 * mm, learner_name)
+    c.drawCentredString(width / 2, height - 140 * mm, learner_name)
 
     # ------------------------------------------------
     # Signature & Authority
@@ -208,12 +228,31 @@ def build_certificate_pdf(
             mask="auto"
         )
 
+    # ------------------------------------------------
+    # QR Code
+    # ------------------------------------------------
+
+    qr_size = 35 * mm
+    qr_y = 32 * mm  # adjust if you want it higher or lower
+
+    verification_url = f"https://apps.akhskenya.org:9014/certificate/verify/{certificate_code}"
+
+    draw_qr_code(
+        c,
+        verification_url,
+        x=width / 2 - qr_size / 2,
+        y=qr_y,
+        size=qr_size
+    )
+    
+    # Signature line
+
     c.setStrokeColor(red)
-    c.line(width / 2 - 40 * mm, 40 * mm, width / 2 + 40 * mm, 40 * mm)
+    c.line(width / 2 - 40 * mm, 30 * mm, width / 2 + 40 * mm, 30 * mm)
 
     c.setFont("Helvetica-Oblique", 12)
-    c.drawCentredString(width / 2, 32 * mm, hod_name)
-    c.drawCentredString(width / 2, 25 * mm, hod_department)
+    c.drawCentredString(width / 2, 25 * mm, hod_name.capitalize())
+    c.drawCentredString(width / 2, 19 * mm, hod_department)
 
     c.showPage()
     c.save()

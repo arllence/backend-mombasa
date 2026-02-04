@@ -31,6 +31,47 @@ from rest_framework.pagination import PageNumberPagination
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
+
+class GenericViewSet(viewsets.ViewSet):
+    permission_classes = (AllowAny,)
+    search_fields = ['id', ]
+    
+
+    def get_queryset(self):
+        return []
+    
+    @action(methods=["GET", ],
+            detail=False,
+            url_path="verify-certificate",
+            url_name="verify-certificate")
+    def verify_certificate(self, request):
+        if request.method == "GET":
+            cert_id = request.query_params.get('cert_id')
+
+            if cert_id:
+                try:
+                    cert = models.Certificate.objects.get(certificate_number=cert_id)
+                    resp = {
+                        "valid": True,
+                        "name": f"{cert.attempt.learner.first_name} {cert.attempt.learner.last_name}",
+                        "course": f"{cert.attempt.test.training.title}",
+                        "issueDate": f"{cert.issued_at}",
+                        "certificateId": cert.certificate_number
+                    }
+
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    resp = {
+                        "valid": False,
+                        "message": "Certificate not found"
+                    }
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except Exception as e:
+                    print(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+
 class CoreViewSet(viewsets.ViewSet):
     permission_classes = (IsAuthenticated,)
     search_fields = ['id', ]
