@@ -2864,13 +2864,14 @@ class ModuleViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
-            if "INTRANET_ADMIN" not in roles or "SUPERUSER" not in roles:
-                return Response({"details": "Permission Denied"}, 
-                                status=status.HTTP_400_BAD_REQUEST)
+            
+            allowed_roles = {"INTRANET_ADMIN", "SUPERUSER"}
+            if not any(role in allowed_roles for role in roles):
+                return Response({"details": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
 
             request_id = request.query_params.get('request_id')
             if not request_id:
-                return Response({"details": "Cannot complete request !"}, 
+                return Response({"details": "Cannot complete request "}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
             with transaction.atomic():
