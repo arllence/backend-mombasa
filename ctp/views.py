@@ -572,7 +572,7 @@ class CoreViewSet(viewsets.ViewSet):
             else:
                 try:
 
-                    if any(role in ['SUPERUSER','CTP_ADMIN', 'HR'] for role in roles):
+                    if any(role in ['SUPERUSER'] for role in roles):
 
                         if filters:
                             resp = models.TrainingAssignment.objects.filter(
