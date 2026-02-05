@@ -213,7 +213,7 @@ def build_certificate_pdf(
     c.drawCentredString(width / 2, height - 130 * mm, "Presented to:")
 
     c.setFont("Helvetica-Bold", 22)
-    c.drawCentredString(width / 2, height - 140 * mm, learner_name)
+    c.drawCentredString(width / 2, height - 140 * mm, learner_name.capitalize())
 
     # ------------------------------------------------
     # Signature & Authority
