@@ -2011,9 +2011,20 @@ class ReportsViewSet(viewsets.ViewSet):
 
         if department_id:
             filters &= Q(user__srrs_department=department_id)
+            completed = models.TrainingAssignment.objects.filter(
+                user__srrs_department=department_id, is_completed=True
+            ).count()
 
         if training_id:
             filters &= Q(training=training_id)
+            completed = models.TrainingAssignment.objects.filter(
+                training=training_id, is_completed=True
+            ).count()
+
+        if training_id and department_id:
+            completed = models.TrainingAssignment.objects.filter(
+                Q(training=training_id) & Q(user__srrs_department=department_id), is_completed=True
+            ).count()
 
         total = models.TrainingAssignment.objects.filter(filters).count()
         completed = models.TrainingAssignment.objects.filter(
@@ -2046,7 +2057,7 @@ class ReportsViewSet(viewsets.ViewSet):
                 "total_assignments": total,
                 "completed": completed,
                 "pending": pending,
-                "completion_rate": (completed / total * 100) if total > 0 else 0,
+                "completion_rate": round((completed / total * 100),2) if total > 0 else 0,
                 "per_training": list(breakdown),
             }, status=status.HTTP_200_OK
         )
