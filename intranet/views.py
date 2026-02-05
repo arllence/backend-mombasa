@@ -3191,16 +3191,16 @@ class ModuleViewSet(viewsets.ViewSet):
                 links = models.ModuleLink.objects.get(Q(id=request_id) & Q(is_deleted=False))
 
             elif topic_id:
-                links = models.ModuleLink.objects.filter(Q(topic=topic_id) & Q(is_deleted=False))
+                links = models.ModuleLink.objects.filter(Q(topic=topic_id) & Q(is_deleted=False)).order_by('-date_created')
 
             elif sub_topic_id:
-                links = models.ModuleLink.objects.filter(Q(sub_topic=sub_topic_id) & Q(is_deleted=False))
+                links = models.ModuleLink.objects.filter(Q(sub_topic=sub_topic_id) & Q(is_deleted=False)).order_by('-date_created')
             
             elif category_id:
-                links = models.ModuleLink.objects.filter(Q(category=category_id) & Q(is_deleted=False))
+                links = models.ModuleLink.objects.filter(Q(category=category_id) & Q(is_deleted=False)).order_by('-date_created')
 
             else:
-                links = models.ModuleLink.objects.filter(Q(is_deleted=False))
+                links = models.ModuleLink.objects.filter(Q(is_deleted=False)).order_by('-date_created')
             
 
             paginator = PageNumberPagination()
@@ -3213,13 +3213,14 @@ class ModuleViewSet(viewsets.ViewSet):
             
             
         elif request.method == "DELETE":
+
             allowed_roles = {"INTRANET_ADMIN", "SUPERUSER"}
             if not any(role in allowed_roles for role in roles):
                 return Response({"details": "Permission Denied"}, status=status.HTTP_403_FORBIDDEN)
 
             request_id = request.query_params.get('request_id')
             if not request_id:
-                return Response({"details": "Cannot complete request !"}, 
+                return Response({"details": "Cannot complete request"}, 
                                 status=status.HTTP_400_BAD_REQUEST)
             
             with transaction.atomic():
