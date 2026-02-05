@@ -2027,9 +2027,9 @@ class ReportsViewSet(viewsets.ViewSet):
             ).count()
 
         total = models.TrainingAssignment.objects.filter(filters).count()
-        completed = models.TrainingAssignment.objects.filter(
-            user__srrs_department=department_id, is_completed=True
-        ).count()
+        # completed = models.TrainingAssignment.objects.filter(
+        #     user__srrs_department=department_id, is_completed=True
+        # ).count()
         pending = total - completed
 
         # Per-training breakdown
