@@ -86,7 +86,7 @@ def generate_certificate(attempt: Attempt) -> Certificate:
         certificate_code=cert_number,
         org_name="Aga Khan Hospital, Kisumu",
         hod_name=get_hod(attempt),
-        hod_department=attempt.test.training.department.name,
+        hod_department=attempt.test.training.department.name.upper(),
         logo_path=settings.BASE_DIR / "ctp/assets/logo.png",
         # signature_path=settings.BASE_DIR / "assets/signature.png",
         issue_date=attempt.completed_at.date(),
