@@ -581,30 +581,31 @@ class CoreViewSet(viewsets.ViewSet):
                         else:
                             resp = models.TrainingAssignment.objects.filter(is_deleted=False).order_by('-date_created')
 
-                    elif any(role in ['HOD'] for role in roles):
+                    # elif any(role in ['HOD'] for role in roles):
 
-                        department_ids = (
-                                Hods.objects
-                                .filter(hod=request.user)
-                                .values_list('department_id', flat=True)
-                                .distinct()
-                            )
+                    #     department_ids = (
+                    #             Hods.objects
+                    #             .filter(hod=request.user)
+                    #             .values_list('department_id', flat=True)
+                    #             .distinct()
+                    #         )
 
-                        if not department_ids:
-                            return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
+                    #     if not department_ids:
+                    #         return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
                         
-                        if filters:
-                            filters |= (Q(training__department__in=department_ids) | Q(assigned_by=request.user))
-                            resp = models.TrainingAssignment.objects.filter(
-                                    filters
-                                ).order_by('-date_created')
-                        else:
-                            try:
-                                resp = models.TrainingAssignment.objects.filter(
-                                Q(training__department__in=department_ids) | Q(assigned_by=request.user),
-                                is_deleted=False).order_by('-date_created')
-                            except:
-                                resp = []                        
+                    #     if filters:
+                    #         # filters |= (Q(training__department__in=department_ids) | Q(assigned_by=request.user))
+                    #         filters |= (Q(training__department__in=department_ids) )
+                    #         resp = models.TrainingAssignment.objects.filter(
+                    #                 filters
+                    #             ).order_by('-date_created')
+                    #     else:
+                    #         try:
+                    #             resp = models.TrainingAssignment.objects.filter(
+                    #             Q(training__department__in=department_ids),
+                    #             is_deleted=False).order_by('-date_created')
+                    #         except:
+                    #             resp = []                        
 
                     else:
                         if filters:
