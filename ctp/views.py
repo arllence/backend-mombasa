@@ -545,9 +545,9 @@ class CoreViewSet(viewsets.ViewSet):
 
             if query:
                 filters &= (
-                                Q(title__icontains=query) |
-                                Q(uid__icontains=query) |
-                                Q(department__name__icontains=query)
+                                Q(training__title__icontains=query) |
+                                Q(training__uid__icontains=query) |
+                                Q(training__department__name__icontains=query)
                             )
 
             if request_id:
