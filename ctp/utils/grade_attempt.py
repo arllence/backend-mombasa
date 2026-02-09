@@ -76,12 +76,12 @@ def generate_certificate(attempt: Attempt) -> Certificate:
     def get_hod(attempt):
         hod = Hods.objects.filter(department=attempt.test.training.department).first()
         if hod:
-            return f"{hod.hod.first_name.capitalize()} {hod.hod.last_name.capitalize()}"
+            return f"{hod.hod.first_name} {hod.hod.last_name}".title()
         return ""
     
     build_certificate_pdf(
         file_path=file_path,
-        learner_name=f"{attempt.learner.first_name.capitalize()} {attempt.learner.last_name.capitalize()}",
+        learner_name=f"{attempt.learner.first_name} {attempt.learner.last_name}".title(),
         course_title=attempt.test.training.title,
         certificate_code=cert_number,
         org_name="Aga Khan Hospital, Kisumu",
