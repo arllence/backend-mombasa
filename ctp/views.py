@@ -656,6 +656,9 @@ class CoreViewSet(viewsets.ViewSet):
         if request.method == "POST":
 
             payload = json.loads(request.data['payload'])
+            
+            if not request.FILES.getlist('documents'):
+                return Response({"details": "No certificate selected for upload"}, status=status.HTTP_400_BAD_REQUEST)
 
             exts = ['pdf']
             for f in request.FILES.getlist('documents'):
