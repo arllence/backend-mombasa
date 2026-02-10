@@ -433,7 +433,7 @@ class CoreViewSet(viewsets.ViewSet):
                 # Notify creator
                 try:
                     subject = f"[TRAINING HUB] Training {training.uid} has been assigned to you"
-                    message = f"Hello, \n\nTraining: {training.title} has been assigned to you\n\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nVisit Training Hub to review.\n\nRegards\nTraining Hub"
+                    message = f"Hello. \n\nTraining: {training.title} has been assigned to you by {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nVisit Training Hub to review.\n\nRegards\nTraining Hub"
 
                     mail = {
                         "email" : [user.email for user in users], 
