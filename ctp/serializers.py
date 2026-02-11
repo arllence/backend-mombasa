@@ -31,6 +31,7 @@ class UpdateTrainingMaterialSerializer(serializers.Serializer):
 
 class SlimFetchTrainingMaterialSerializer(serializers.ModelSerializer):
     department = SlimFetchSRRSDepartmentSerializer()
+    created_by = SlimUsersSerializer()
     class Meta:
         model = models.TrainingMaterial
         fields = '__all__'
