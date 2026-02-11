@@ -31,6 +31,8 @@ class ExpenditureRequest(models.Model):
     is_ceo_approved = models.BooleanField(default=False)
     is_hof_approved = models.BooleanField(default=False)
     is_cash_office_approved = models.BooleanField(default=False)
+    
+    requires_ceo_approval = models.BooleanField(default=False)
 
     payments_made_to = models.CharField(max_length=300, blank=True)
     payments_date = models.DateField(null=True, blank=True)

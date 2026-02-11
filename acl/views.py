@@ -252,11 +252,11 @@ class AuthenticationViewSet(viewsets.ModelViewSet):
             return Response({"details": "Email is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         with transaction.atomic():
-            email = payload['email']
+            email = payload['email'].lower()
             try:
                 user_details = get_user_model().objects.get(email=email)
             except (ValidationError, ObjectDoesNotExist):
-                return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'details': 'User account not found. Please contact IT support'}, status=status.HTTP_400_BAD_REQUEST)
 
             new_password = user_util.password_generator()
             hashed_password = make_password(new_password)
@@ -321,7 +321,7 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
                 current_password = payload['current_password']
                 password_min_length = 8
 
-                string_check= re.compile('[-@_!#$%^&*()<>?/\|}{~:]') 
+                string_check= re.compile(r'[-@_!#$%^&*()<>?/\|}{~:]') 
 
                 # if(string_check.search(new_password) == None): 
                 #     return Response({'details':
