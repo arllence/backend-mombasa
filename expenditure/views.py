@@ -84,6 +84,9 @@ class CoreViewSet(viewsets.ViewSet):
             amount_kes = payload['amount_kes']
             department = payload['department']
             
+            requires_ceo_approval = (int(amount_kes) > 100000)         
+            
+            
             try:
                 department = SRRSDepartment.objects.get(id=department)
             except Exception as e:
@@ -99,7 +102,8 @@ class CoreViewSet(viewsets.ViewSet):
                     "invoice_number" : invoice_number,
                     "amount_kes" : amount_kes,
                     "department" : department,
-                    "requested_by": request.user
+                    "requested_by": request.user,
+                    "requires_ceo_approval": requires_ceo_approval
                 }
                 newInstance = models.ExpenditureRequest.objects.create(**raw)
 
@@ -133,7 +137,7 @@ class CoreViewSet(viewsets.ViewSet):
                 link = "http://172.20.0.42:8017/" + uri
 
                 subject = f"[EXPENDITURE] Request Raised for {newInstance.reference_no}"
-                message = f"Hello. \nAn expenditure request has been raised\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nTo approve visit: {link}\n\nRegards\nEAS-AKHK"
+                message = f"Hello. \nAn expenditure approval request has been raised\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nTo approve visit: {link}\n\nRegards\nEAS-AKHK"
 
                 try:
                     mail = {
@@ -169,6 +173,8 @@ class CoreViewSet(viewsets.ViewSet):
             amount_kes = payload['amount_kes']
             department = payload['department']
             
+            requires_ceo_approval = (int(amount_kes) > 100000)     
+            
 
             try:
                 expenditureInstance = models.ExpenditureRequest.objects.get(id=request_id)
@@ -182,13 +188,14 @@ class CoreViewSet(viewsets.ViewSet):
 
                     
             with transaction.atomic():
-                # create contract instance
+                # edit expenditure instance
                 raw = {
                     "reference_no" : reference_no,
                     "description" : description,
                     "invoice_number" : invoice_number,
                     "amount_kes" : amount_kes,
-                    "department" : department
+                    "department" : department,
+                    "requires_ceo_approval": requires_ceo_approval
                 }
                 models.ExpenditureRequest.objects.filter(id=request_id).update(**raw)
 
@@ -277,9 +284,12 @@ class CoreViewSet(viewsets.ViewSet):
                         return Response({"details": "Permission Denied"}, status=status.HTTP_400_BAD_REQUEST)
 
                     if request_status == 'DISBURSED':
+                        if not payments_made_to or not payments_date:
+                            return Response({"details": "Payments Date and Made To required"}, status=status.HTTP_400_BAD_REQUEST)
                         requestInstance.payments_made_to = payments_made_to
                         requestInstance.payments_date = payments_date
                         requestInstance.is_cash_office_approved = True
+                        requestInstance.status = "DISBURSED"
                         request_status = "DISBURSED"
 
                     if is_hod:
@@ -297,7 +307,7 @@ class CoreViewSet(viewsets.ViewSet):
                         requestInstance.status = "HOF APPROVED"
                         request_status = "HOF APPROVED"
                         
-                    if is_ceo:
+                    if is_ceo and requestInstance.requires_ceo_approval:
                         requestInstance.is_ceo_approved = True
                         requestInstance.status = "CEO APPROVED"
                         request_status = "CEO APPROVED"                    
@@ -326,7 +336,7 @@ class CoreViewSet(viewsets.ViewSet):
                     # send requestor notification email
                     emails = [requestInstance.requested_by.email]
                     if is_ceo:
-                        emails_x = list(get_user_model().objects.filter(Q(groups__name__in=['CASH_OFFICE','HOF','FINANCE_MANAGER'])).values_list('email', flat=True))
+                        emails_x = list(get_user_model().objects.filter(Q(groups__name__in=['CASH_OFFICE','HOF'])).values_list('email', flat=True))
                         emails += emails_x
                     subject = f"[EXPENDITURE] Request Status: {requestInstance.reference_no} ."
                     message = f"Hello. \nExpenditure approval for: {requestInstance.reference_no}, \nhas been {request_status} by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\n{comment}\n\nRegards\nEAS-AKHK\n--Auto-generated--\n"
@@ -350,7 +360,10 @@ class CoreViewSet(viewsets.ViewSet):
                         if is_finance_manager:
                             emails =  list(get_user_model().objects.filter(Q(groups__name='HOF')).values_list('email', flat=True))
                         if is_hof:
-                            emails =  list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
+                            if requestInstance.requires_ceo_approval:
+                                emails =  list(get_user_model().objects.filter(Q(groups__name='CEO')).values_list('email', flat=True))
+                            else:
+                                emails =  list(get_user_model().objects.filter(Q(groups__name='CASH_OFFICE')).values_list('email', flat=True))
                             
                         subject = f"[EXPENDITURE] Request {requestInstance.reference_no} Pending Approval."
                         message = f"Hello. \nExpenditure request: {requestInstance.reference_no}, \nis pending your approval\nVisit http://172.20.0.42:8017/requests/view/{request_id}\n\nRegards\nEAS-AKHK\n--Auto-generated--\n"
@@ -427,6 +440,8 @@ class CoreViewSet(viewsets.ViewSet):
                 
             else:
                 try:
+                    touched = False
+                    _resps = []
                     if any(role in ['HOD'] for role in roles):
                         departments = list(Hods.objects.filter(hod=request.user).values_list('department__id', flat=True))
   
@@ -437,64 +452,78 @@ class CoreViewSet(viewsets.ViewSet):
                             base_query = base_query.filter(status='CEO APPROVED')
 
                         resp = base_query.order_by('-date_created')
+                        touched = True
+                        _resps += list(resp)
+                        
 
-                    elif any(role in ['FINANCE_MANAGER'] for role in roles):
+                    if any(role in ['FINANCE_MANAGER'] for role in roles):
                         if query == 'approved':
                             resp = models.ExpenditureRequest.objects.filter(status='CEO APPROVED', is_deleted=False).order_by('-date_created')
                         else:
                             resp = models.ExpenditureRequest.objects.filter(Q(status='HOD APPROVED') | Q(requested_by=request.user), is_deleted=False).order_by('-date_created')
+                        touched = True
+                        _resps += list(resp)
 
-                    elif any(role in ['HOF'] for role in roles):
+                    if any(role in ['HOF'] for role in roles):
                         if query == 'approved':
                             resp = models.ExpenditureRequest.objects.filter(status='CEO APPROVED',is_deleted=False).order_by('-date_created')
                         else:
                             resp = models.ExpenditureRequest.objects.filter(Q(status='FINANCE APPROVED') | Q(requested_by=request.user),is_deleted=False).order_by('-date_created')
+                        touched = True
+                        _resps += list(resp)
 
-                    elif any(role in ['CEO'] for role in roles):
+                    if any(role in ['CEO'] for role in roles):
                         if query == 'approved':
                             resp = models.ExpenditureRequest.objects.filter(status='CEO APPROVED', is_deleted=False).order_by('-date_created')
                         else:
-                            resp = models.ExpenditureRequest.objects.filter(Q(status='HOF APPROVED') | Q(requested_by=request.user), is_deleted=False).order_by('-date_created')
+                            resp = models.ExpenditureRequest.objects.filter((Q(status='HOF APPROVED') & Q(requires_ceo_approval=True)) | Q(requested_by=request.user), is_deleted=False).order_by('-date_created')
+                        touched = True
+                        _resps += list(resp)
 
-                    elif any(role in ['SUPERUSER'] for role in roles):
+                    if any(role in ['SUPERUSER'] for role in roles):
                         if query == 'approved':
                             resp = models.ExpenditureRequest.objects.filter(status='CEO APPROVED', is_deleted=False).order_by('-date_created')
                         else:
                             resp = models.ExpenditureRequest.objects.filter(is_deleted=False).order_by('-date_created')
+                        touched = True
+                        _resps += list(resp)
 
-                    elif any(role in ['CASH_OFFICE'] for role in roles):
+                    if any(role in ['CASH_OFFICE'] for role in roles):
                         if query == 'approved':
                             resp = models.ExpenditureRequest.objects.filter(is_cash_office_approved=True, is_deleted=False).order_by('-date_created')
                         else:
-                            resp = models.ExpenditureRequest.objects.filter((Q(status='CEO APPROVED') & Q(is_cash_office_approved=False)) | Q(requested_by=request.user),is_deleted=False).order_by('-date_created')
+                            resp = models.ExpenditureRequest.objects.filter((Q(status='CEO APPROVED') & Q(is_cash_office_approved=False)) | (Q(status='HOF APPROVED') & Q(requires_ceo_approval=False)) | Q(requested_by=request.user),is_deleted=False).order_by('-date_created')
+                        touched = True
+                        _resps += list(resp)
 
-                    else:
+                    if not touched:
                         if query == 'approved':
                             resp = models.ExpenditureRequest.objects.filter(status='CEO APPROVED', requested_by=request.user, is_deleted=False).order_by('-date_created')
                         else:
                             resp = models.ExpenditureRequest.objects.filter(Q(is_deleted=False) & (Q(requested_by=request.user)) ).order_by('-date_created')
+                        _resps += list(resp)
 
 
                     paginator = PageNumberPagination()
                     paginator.page_size = 50
-                    result_page = paginator.paginate_queryset(resp, request)
+                    result_page = paginator.paginate_queryset(_resps, request)
                     serializer = serializers.SlimFetchExpenditureSerializer(
                         result_page, many=True, context={"user_id":request.user.id})
                     return paginator.get_paginated_response(serializer.data)
                 
                 
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown Request !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 except Exception as e:
                     logger.error(e)
                     print(e)
-                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
         
         elif request.method == "DELETE":
             request_id = request.query_params.get('request_id')
             if not request_id:
-                return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             
             with transaction.atomic():
                 try:

@@ -618,17 +618,15 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
         authenticated_user = request.user
         serializer = serializers.EditUserSerializer(data=payload, many=False)
         if serializer.is_valid():
-            # id_number = payload['id_number']
             first_name = payload['first_name']
             last_name = payload['last_name']
             account_id = payload['account_id']
-            # phone_number = payload['phone_number']
             email = payload['email']
 
 
-            email_exists = get_user_model().objects.filter(email=email).exists()
+            email_exists = get_user_model().objects.filter(email=email).exclude(id=account_id).exists()
             if email_exists:
-                return Response({"details": "Email already exists 😒"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"details": "Email already in use 😒"}, status=status.HTTP_400_BAD_REQUEST)
 
                             
             try:

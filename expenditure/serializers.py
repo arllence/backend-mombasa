@@ -93,12 +93,18 @@ class FetchExpenditureSerializer(serializers.ModelSerializer):
 
             # CEO approval logic
             if "CEO" in roles and obj.is_finance_manager_approved and obj.is_hof_approved:
-                if not obj.is_ceo_approved:
-                    return True
+                if obj.requires_ceo_approval:
+                    if not obj.is_ceo_approved:
+                        return True
                 
             if "CASH_OFFICE" in roles:
-                if obj.is_ceo_approved and not obj.is_cash_office_approved:
-                    return True
+                if not obj.is_cash_office_approved:
+                    if obj.requires_ceo_approval:
+                        if obj.is_ceo_approved:
+                            return True
+                    else:
+                        if obj.is_hof_approved:
+                            return True
 
             return False
 
