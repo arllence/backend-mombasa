@@ -64,7 +64,7 @@ class GenericsViewSet(viewsets.ViewSet):
                 is_expired=False
             ).update(is_expired=True)
 
-            if any(role in ['HOD', 'SLT','CEO', 'HR', 'SUPERUSER'] for role in roles):
+            if any(role in ['HOD', 'SLT','CEO', 'HR', 'SUPERUSER', 'MOIC'] for role in roles):
                 rights = True
                 code = f"{random.randint(0, 9999):04}"
 
