@@ -82,7 +82,8 @@ class FetchTrainingMaterialSerializer(serializers.ModelSerializer):
         try:
             user_id = str(self.context["user_id"])
             roles = get_user_roles(user_id)
-            is_department_hod = Hods.objects.filter(hod_id=user_id,department=obj.department).exists()
+            # is_department_hod = Hods.objects.filter(hod_id=user_id,department=obj.department).exists()
+            is_department_hod = False
             if "SUPERUSER" in roles or is_department_hod or str(obj.created_by.id) == user_id:
                 return True
             return False

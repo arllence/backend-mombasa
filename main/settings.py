@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     'asa', 'ams', 'sls', 'dbmanager', 'fms', 'cms',
     'mhd', 'system_directory', 'smr', 'ict_helpdesk', 
     'ipass', 'invoice_tracking', 'ctp', 'security_helpdesk',
-    'expenditure'
+    'expenditure', 'radiology'
 ]
 
 MIDDLEWARE = [
@@ -132,6 +132,7 @@ INVOICE_TRACKING = 'invoice_tracking'
 CENTRALIZED_TRAINING_PLATFORM = 'ctp'
 SECURITY_HELPDESK = 'security_helpdesk'
 EXPENDITURE_SYSTEM = 'expenditure'
+RADIOLOGY_SYSTEM = 'radiology'
 
 
 # Password validation
@@ -278,15 +279,16 @@ CRONJOBS = [
 
 PLATFORM_LINK = 'http://172.20.0.42:8002/'
 
-sentry_sdk.init(
-    dsn="https://9e6cd2e89be1031275909b1804877c9f@o4507420221177856.ingest.us.sentry.io/4507420229107712",
-    # Enable logs to be sent to Sentry
-    enable_logs=True,
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for performance monitoring.
-    traces_sample_rate=1.0,
-    # Set profiles_sample_rate to 1.0 to profile 100%
-    # of sampled transactions.
-    # We recommend adjusting this value in production.
-    profiles_sample_rate=1.0,
-)
+if not DEBUG:
+    sentry_sdk.init(
+        dsn="https://9e6cd2e89be1031275909b1804877c9f@o4507420221177856.ingest.us.sentry.io/4507420229107712",
+        # Enable logs to be sent to Sentry
+        enable_logs=True,
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        traces_sample_rate=1.0,
+        # Set profiles_sample_rate to 1.0 to profile 100%
+        # of sampled transactions.
+        # We recommend adjusting this value in production.
+        profiles_sample_rate=1.0,
+    )
