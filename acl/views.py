@@ -495,7 +495,7 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
             if username :
                 user_details = get_user_model().objects.filter(Q(email__icontains=username) | Q(first_name__icontains=username) | Q(last_name__icontains=username)).order_by('first_name')
             elif username is None or not username:
-                user_details = get_user_model().objects.all().order_by('first_name')
+                user_details = get_user_model().objects.all().exclude(is_suspended=True).order_by('first_name')
                 # print(len(user_details))
         except (ValidationError, ObjectDoesNotExist):
             return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)

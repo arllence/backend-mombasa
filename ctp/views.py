@@ -293,39 +293,40 @@ class CoreViewSet(viewsets.ViewSet):
             else:
                 try:
 
-                    if any(role in ['SUPERUSER','CTP_ADMIN', 'HR'] for role in roles):
+                    # if any(role in ['SUPERUSER','CTP_ADMIN', 'HR'] for role in roles):
 
-                        if filters:
-                            resp = models.TrainingMaterial.objects.filter(filters).exclude(is_deleted=True).order_by('-date_created')
-                        else:
-                            resp = models.TrainingMaterial.objects.filter(is_deleted=False).exclude(is_deleted=True).order_by('-date_created')
+                    #     if filters:
+                    #         resp = models.TrainingMaterial.objects.filter(filters).exclude(is_deleted=True).order_by('-date_created')
+                    #     else:
+                    #         resp = models.TrainingMaterial.objects.filter(is_deleted=False).exclude(is_deleted=True).order_by('-date_created')
 
-                    elif any(role in ['HOD'] for role in roles):
+                    # elif any(role in ['HOD'] for role in roles):
 
-                        department_ids = (
-                                Hods.objects
-                                .filter(hod=request.user)
-                                .values_list('department_id', flat=True)
-                                .distinct()
-                            )
-                        if not department_ids:
-                            return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
+                    #     department_ids = (
+                    #             Hods.objects
+                    #             .filter(hod=request.user)
+                    #             .values_list('department_id', flat=True)
+                    #             .distinct()
+                    #         )
+                    #     if not department_ids:
+                    #         return Response({"details": "Invalid request. HoD role not understood 😕"}, status=status.HTTP_400_BAD_REQUEST)
                         
-                        if filters:
-                            filters |= (Q(created_by=request.user) | Q(department__in=department_ids) )
-                            resp = models.TrainingMaterial.objects.filter(filters).exclude(is_deleted=True).order_by('-date_created')
-                        else:
-                            resp = models.TrainingMaterial.objects.filter(
-                                Q(department__in=department_ids) | 
-                                Q(created_by=request.user) | 
-                                Q(category='GENERAL'), is_deleted=False).order_by('-date_created')                   
+                    #     if filters:
+                    #         filters |= (Q(created_by=request.user) | Q(department__in=department_ids) )
+                    #         resp = models.TrainingMaterial.objects.filter(filters).exclude(is_deleted=True).order_by('-date_created')
+                    #     else:
+                    #         resp = models.TrainingMaterial.objects.filter(
+                    #             Q(department__in=department_ids) | 
+                    #             Q(created_by=request.user) | 
+                    #             Q(category='GENERAL'), is_deleted=False).order_by('-date_created')                   
 
-                    else:
-                        filters &= (Q(created_by=request.user) | 
-                                    Q(department=request.user.srrs_department) |
-                                    Q(category='GENERAL'))
-                        resp = models.TrainingMaterial.objects.filter(filters).exclude(is_deleted=True).order_by('-date_created')
-                
+                    # else:
+                    #     filters &= (Q(created_by=request.user) | 
+                    #                 Q(department=request.user.srrs_department) |
+                    #                 Q(category='GENERAL'))
+                    #     resp = models.TrainingMaterial.objects.filter(filters).exclude(is_deleted=True).order_by('-date_created')
+
+                    resp = models.TrainingMaterial.objects.filter(filters).exclude(is_deleted=True).order_by('-date_created')
                 
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
