@@ -4,7 +4,7 @@ from django.urls import path
 
 router = DefaultRouter(trailing_slash=False)
 
-# router.register('radiology', views.CoreViewSet, basename='radiology')
+router.register('radiology', views.CoreViewSet, basename='radiology')
 # router.register('radiology-reports',views.ReportsViewSet, basename='radiology-reports')
 # router.register('radiology-analytics',views.AnalyticsViewSet, basename='radiology-analytics')
 

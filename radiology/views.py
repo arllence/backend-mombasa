@@ -301,10 +301,10 @@ class CoreViewSet(viewsets.ViewSet):
                     print(e)
                     return Response({"details": "Invalid Request"}, status=status.HTTP_400_BAD_REQUEST)
                 
-                # assign FMS_ADMIN role
-                assign_role = user_util.award_role('CMS_ADMIN', str(admin.id))
+                # assign RADIOLOGY role
+                assign_role = user_util.award_role('RADIOLOGY', str(admin.id))
                 if not assign_role:
-                    return Response({"details": "Unable to assign role CMS_ADMIN"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unable to assign role RADIOLOGY"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 with transaction.atomic():
                     raw = {
@@ -375,7 +375,7 @@ class CoreViewSet(viewsets.ViewSet):
             if request_id:
                 try:
                     user = models.PlatformAdmin.objects.get(id=request_id)
-                    user_util.revoke_role('CMS_ADMIN', str(user.admin.id))
+                    user_util.revoke_role('RADIOLOGY', str(user.admin.id))
                     user.delete()
                     return Response('200', status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -429,7 +429,7 @@ class ReportsViewSet(viewsets.ViewSet):
             q_filters &= Q(expiry_date=expiry_date)
 
         if q_filters:
-            if any(role in ['SUPERUSER','CMS_ADMIN','CEO','MMD'] for role in roles):
+            if any(role in ['SUPERUSER','RADIOLOGY','CEO','MMD'] for role in roles):
                 resp = models.Contract.objects.filter(Q(is_deleted=False) & q_filters).order_by('-date_created')
 
             elif any(role in ['SLT'] for role in roles):
@@ -441,7 +441,7 @@ class ReportsViewSet(viewsets.ViewSet):
                 resp = models.Contract.objects.filter(q_filters & Q(department__in=department_ids) | Q(created_by=request.user), is_deleted=False).order_by('-date_created')
         else:
         
-            if any(role in ['SUPERUSER','CMS_ADMIN','CEO','MMD'] for role in roles):
+            if any(role in ['SUPERUSER','RADIOLOGY','CEO','MMD'] for role in roles):
                 resp = models.Contract.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
                 
             else:

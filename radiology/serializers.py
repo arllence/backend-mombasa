@@ -189,6 +189,7 @@ class ShiftSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        print(validated_data)
         rooms = validated_data.pop("rooms", [])
         equipment = validated_data.pop("equipment", [])
         pending_cases = validated_data.pop("pending_cases", [])
