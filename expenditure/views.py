@@ -132,6 +132,9 @@ class CoreViewSet(viewsets.ViewSet):
 
                 # Send Note Notifications
                 emails = list(Hods.objects.filter(department=department).values_list('hod__email', flat=True))
+                if department.name.lower() == 'maintenance':
+                    if 'ahmad.bashir@akhskenya.org' in emails:
+                        emails = ['ahmad.bashir@akhskenya.org']
 
                 uri = f"requests/view/{str(newInstance.id)}"
                 link = "http://172.20.0.42:8017/" + uri

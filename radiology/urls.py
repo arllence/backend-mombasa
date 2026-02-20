@@ -9,7 +9,7 @@ router.register('radiology', views.CoreViewSet, basename='radiology')
 # router.register('radiology-analytics',views.AnalyticsViewSet, basename='radiology-analytics')
 
 
-router.register(r"radiology/shifts", views.ShiftViewSet, basename="shift")
+router.register("radiology/shifts", views.ShiftViewSet, basename="shift")
 
 
 # urlpatterns = [
