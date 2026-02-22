@@ -1,3 +1,5 @@
+import datetime
+
 from django.db.models import  Q
 from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, SlimFetchSRRSDepartmentSerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
@@ -185,13 +187,16 @@ class ShiftSerializer(serializers.ModelSerializer):
             "status",
             "signed_out_at",
             "confirmed_at",
+            "outgoing_officer",
+            "date",
         )
 
     @transaction.atomic
     def create(self, validated_data):
         user = self.context["request"].user   # ✅ logged-in user
-        print(validated_data)
-        return
+        validated_data['outgoing_officer'] = user
+        validated_data['date'] = datetime.date.today()
+
         rooms = validated_data.pop("rooms", [])
         equipment = validated_data.pop("equipment", [])
         pending_cases = validated_data.pop("pending_cases", [])
@@ -291,7 +296,155 @@ class ShiftSerializer(serializers.ModelSerializer):
 
         return instance
 
+class FetchShiftSerializer(serializers.ModelSerializer):
+    rooms = RoomStatusSerializer(many=True, required=False)
+    equipment = EquipmentStatusSerializer(many=True, required=False)
+    pending_cases = PendingCaseSerializer(many=True, required=False)
+    critical_results = CriticalResultSerializer(many=True, required=False)
+    stock_entries = StockEntrySerializer(many=True, required=False)
+    infection_control = InfectionControlSerializer(required=False)
+    nurse_handover = NurseHandoverSerializer(required=False)
+    can_approve = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
+    outgoing_officer = SlimUsersSerializer()
+    incoming_officer = SlimUsersSerializer()
+    radiologist_on_call = SlimUsersSerializer()
 
+    class Meta:
+        model = models.Shift
+        fields = "__all__"
+ 
+
+    def get_can_approve(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            roles = get_user_roles(user_id)
+
+            # Only certain roles can approve
+            if not any(role in {"CEO", "HOF", "SUPERUSER", "HOD", "FINANCE_MANAGER", "CASH_OFFICE"} for role in roles):
+                return False
+
+            # HOD specific logic
+            if "HOD" in roles:
+                if not obj.is_hod_approved:
+                    return True
+                
+            # FM specific logic
+            if "FINANCE_MANAGER" in roles:
+                if obj.is_hod_approved and not obj.is_finance_manager_approved:
+                    return True
+                
+            # HOF specific logic
+            if "HOF" in roles:
+                if obj.is_finance_manager_approved and not obj.is_hof_approved:
+                    return True
+
+            # CEO approval logic
+            if "CEO" in roles and obj.is_finance_manager_approved and obj.is_hof_approved:
+                if obj.requires_ceo_approval:
+                    if not obj.is_ceo_approved:
+                        return True
+                
+            if "CASH_OFFICE" in roles:
+                if not obj.is_cash_office_approved:
+                    if obj.requires_ceo_approval:
+                        if obj.is_ceo_approved:
+                            return True
+                    else:
+                        if obj.is_hof_approved:
+                            return True
+
+            return False
+
+        except KeyError:
+            print("Missing user_id in context.")
+        except Exception as e:
+            print(f"Error in get_can_approve: {e}")
+
+        return False  
+    
+    def get_can_edit(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            if str(obj.requested_by.id) == user_id and obj.status == 'DRAFT':
+                return True
+            return False
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False  
+        
+
+class SlimFetchShiftSerializer(serializers.ModelSerializer):
+    can_approve = serializers.SerializerMethodField()
+    can_edit = serializers.SerializerMethodField()
+    outgoing_officer = SlimUsersSerializer()
+    incoming_officer = SlimUsersSerializer()
+    radiologist_on_call = SlimUsersSerializer()
+
+    class Meta:
+        model = models.Shift
+        fields = ('id','shift_type', 'date', 'status', 'outgoing_officer','incoming_officer', 'radiologist_on_call', 'can_approve','can_edit', )
+ 
+
+    def get_can_approve(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            roles = get_user_roles(user_id)
+
+            # Only certain roles can approve
+            if not any(role in {"CEO", "HOF", "SUPERUSER", "HOD", "FINANCE_MANAGER", "CASH_OFFICE"} for role in roles):
+                return False
+
+            # HOD specific logic
+            if "HOD" in roles:
+                if not obj.is_hod_approved:
+                    return True
+                
+            # FM specific logic
+            if "FINANCE_MANAGER" in roles:
+                if obj.is_hod_approved and not obj.is_finance_manager_approved:
+                    return True
+                
+            # HOF specific logic
+            if "HOF" in roles:
+                if obj.is_finance_manager_approved and not obj.is_hof_approved:
+                    return True
+
+            # CEO approval logic
+            if "CEO" in roles and obj.is_finance_manager_approved and obj.is_hof_approved:
+                if obj.requires_ceo_approval:
+                    if not obj.is_ceo_approved:
+                        return True
+                
+            if "CASH_OFFICE" in roles:
+                if not obj.is_cash_office_approved:
+                    if obj.requires_ceo_approval:
+                        if obj.is_ceo_approved:
+                            return True
+                    else:
+                        if obj.is_hof_approved:
+                            return True
+
+            return False
+
+        except KeyError:
+            print("Missing user_id in context.")
+        except Exception as e:
+            print(f"Error in get_can_approve: {e}")
+
+        return False  
+    
+    def get_can_edit(self, obj):
+        try:
+            user_id = str(self.context["user_id"])
+            if str(obj.requested_by.id) == user_id and obj.status == 'DRAFT':
+                return True
+            return False
+        except Exception as e:
+            print(e)
+            # logger.error(e)
+            return False  
 
 
 

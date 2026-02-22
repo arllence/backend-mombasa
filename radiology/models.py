@@ -53,7 +53,11 @@ class Shift(models.Model):
         on_delete=models.PROTECT
     )
 
-    radiologist_on_call = models.CharField(max_length=255)
+    radiologist_on_call = models.ForeignKey(
+        User,
+        related_name="radiologist_on_call_shifts",
+        on_delete=models.PROTECT
+    )
 
     status = models.CharField(
         max_length=30,

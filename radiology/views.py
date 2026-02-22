@@ -278,6 +278,57 @@ class CoreViewSet(viewsets.ViewSet):
     def get_queryset(self):
         return []
     
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
+            detail=False,
+            url_path="get-shifts",
+            url_name="get-shifts")
+    def get_shifts(self, request):
+        if request.method == "GET":
+            request_id = request.query_params.get('request_id')
+            query = request.query_params.get('q')
+
+            if request_id:
+                try:
+                    resp = models.Shift.objects.get(id=request_id)
+                    resp = serializers.FetchShiftSerializer(resp, many=False, context={"user_id":request.user.id}).data
+                    return Response(resp, status=status.HTTP_200_OK)
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown request"}, status=status.HTTP_400_BAD_REQUEST)
+                except Exception as e:
+                    print(e)
+                    logger.error(e)
+                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                try:
+                    if query == 'pending':
+                        resp = models.Shift.objects.filter(
+                            Q(status='PENDING') & Q(handover_to=request.user)).order_by('-date_created')
+                        
+                    elif query == 'assigned':
+                        resp = models.Shift.objects.filter(
+                            Q(handover_to=request.user)).order_by('-date_created')
+                        
+                    else:
+                        resp = models.Shift.objects.all()
+
+                    paginator = PageNumberPagination()
+                    paginator.page_size = 50
+                    result_page = paginator.paginate_queryset(resp, request)
+                    serializer = serializers.SlimFetchShiftSerializer(
+                        result_page, many=True, context={"user_id":request.user.id})
+                    return paginator.get_paginated_response(serializer.data)
+                
+                
+                except (ValidationError, ObjectDoesNotExist):
+                    return Response({"details": "Unknown Request"}, status=status.HTTP_400_BAD_REQUEST)
+                
+                except Exception as e:
+                    logger.error(e)
+                    print(e)
+                    return Response({"details": "Cannot complete request !"}, status=status.HTTP_400_BAD_REQUEST)
+        
+    
 
     @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
