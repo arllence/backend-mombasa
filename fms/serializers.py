@@ -1,5 +1,5 @@
 from django.db.models import  Q
-from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, SlimFetchSRRSDepartmentSerializer, FetchSubDepartmentSerializer, FetchOHCSerializer
+from acl.serializers import UsersSerializer, SlimUsersSerializer, FetchSRRSDepartmentSerializer, SlimFetchSRRSDepartmentSerializer, FetchFacilitySerializer
 from acl.utils.user_util import fetchusergroups as get_user_roles
 from fms import models
 from rest_framework import serializers
@@ -14,7 +14,7 @@ class GenericIncidentSerializer(serializers.Serializer):
     type_of_incident = serializers.CharField(max_length=500)
     priority = serializers.CharField(max_length=500)
     department = serializers.CharField()
-    location = serializers.CharField(max_length=500)
+    facility = serializers.CharField(max_length=500)
     affected_person_name = serializers.CharField()
     person_affected = serializers.CharField(max_length=255)
     date_of_incident = serializers.DateField()
@@ -26,7 +26,7 @@ class IncidentSerializer(serializers.Serializer):
     type_of_incident = serializers.CharField(max_length=500)
     priority = serializers.CharField(max_length=500)
     department = serializers.CharField()
-    location = serializers.CharField(max_length=500)
+    facility = serializers.CharField(max_length=500)
     affected_person_name = serializers.CharField()
     person_affected = serializers.CharField(max_length=255)
     date_of_incident = serializers.DateField()
@@ -40,7 +40,7 @@ class PutIncidentSerializer(serializers.Serializer):
     type_of_incident = serializers.CharField(max_length=500)
     priority = serializers.CharField(max_length=500)
     department = serializers.CharField(max_length=500)
-    location = serializers.CharField(max_length=500)
+    facility = serializers.CharField(max_length=500)
     affected_person_name = serializers.CharField(max_length=500)
     person_affected = serializers.CharField(max_length=255)
     date_of_incident = serializers.DateField()
@@ -58,12 +58,11 @@ class FetchIncidentSerializer(serializers.ModelSerializer):
     closed_by = UsersSerializer()
     assigned_to = UsersSerializer()
     department = FetchSRRSDepartmentSerializer()
-    location = FetchSubDepartmentSerializer()
+    facility = FetchFacilitySerializer()
     approvals = serializers.SerializerMethodField()
     is_owner = serializers.SerializerMethodField()
     is_assigned = serializers.SerializerMethodField()
     rca = serializers.SerializerMethodField()
-    ohc = FetchOHCSerializer()
     
     class Meta:
         model = models.Incident
@@ -133,9 +132,8 @@ class FetchIncidentSerializer(serializers.ModelSerializer):
 
 class SlimFetchIncidentSerializer(serializers.ModelSerializer):
     department = SlimFetchSRRSDepartmentSerializer()
-    location = FetchSubDepartmentSerializer()
+    facility = FetchFacilitySerializer()
     is_owner = serializers.SerializerMethodField()
-    ohc = FetchOHCSerializer()
 
     class Meta:
         model = models.Incident

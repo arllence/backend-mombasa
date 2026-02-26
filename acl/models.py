@@ -68,7 +68,7 @@ class SRRSDepartment(models.Model):
         db_table = "srrs_departments"
 
 
-class SubDepartment(models.Model):
+class Facility(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     is_deleted = models.BooleanField(default=False)
@@ -78,20 +78,7 @@ class SubDepartment(models.Model):
         return self.name
 
     class Meta:
-        db_table = "sub_departments"
-
-
-class OHC(models.Model):
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    name = models.CharField(max_length=255)
-    is_deleted = models.BooleanField(default=False)
-    date_created = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = "ohcs"
+        db_table = "facilities"
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -110,25 +97,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     profile_updated = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True, db_index=True)
 
-    department = models.ForeignKey(
-        Department, related_name="user_department", 
-        null=True, blank=True,
-        on_delete=models.DO_NOTHING
-    )
     srrs_department = models.ForeignKey(
         SRRSDepartment, related_name="srrs_user_department", 
         null=True, blank=True,
         on_delete=models.DO_NOTHING,
         db_index=True
     )
-    sub_department = models.ForeignKey(
-        SubDepartment, related_name="srrs_user_sub_department", 
-        null=True, blank=True,
-        on_delete=models.DO_NOTHING,
-        db_index=True
-    )
-    ohc = models.ForeignKey(
-        OHC, related_name="srrs_user_ohc", 
+    facility = models.ForeignKey(
+        Facility, related_name="user_facility", 
         null=True, blank=True,
         on_delete=models.DO_NOTHING,
         db_index=True
@@ -159,8 +135,7 @@ class User(AbstractBaseUser, PermissionsMixin):
             models.Index(fields=["is_suspended"]),
             models.Index(fields=["date_created"]),
             models.Index(fields=["srrs_department"]),
-            models.Index(fields=["sub_department"]),
-            models.Index(fields=["ohc"]),
+            models.Index(fields=["facility"]),
         ]
 
 

@@ -488,6 +488,7 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         """
         authenticated_user = request.user
         username = request.query_params.get('username')
+        serializer = request.query_params.get('serializer')
         # if username is None:
         #     return Response({'details': 'Invalid Filter Criteria'}, status=status.HTTP_400_BAD_REQUEST)
         
@@ -500,7 +501,13 @@ class AccountManagementViewSet(viewsets.ModelViewSet):
         except (ValidationError, ObjectDoesNotExist):
             return Response({'details': 'User does not exist'}, status=status.HTTP_400_BAD_REQUEST)
         
-        user_info = serializers.UsersSerializer(user_details, many=True)
+        if serializer == 'slim':
+            user_info = serializers.SlimUsersSerializer(user_details, many=True)
+        elif serializer == 'tiny':
+            user_info = serializers.TinyUsersSerializer(user_details, many=True)
+        else:
+            user_info = serializers.UsersSerializer(user_details, many=True)
+        
         return Response(user_info.data, status=status.HTTP_200_OK)
 
     @action(methods=["GET"], detail=False, url_path="get-profile-details", url_name="get-profile-details")
@@ -890,6 +897,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                 email = payload['email'].lower()
                 role_name = payload['role_name']
                 department = payload['department_id']
+                facility = payload['facility']
                 emailexists = get_user_model().objects.filter(email=email).exists()
 
 
@@ -902,11 +910,7 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     return Response({'details': 'Role does not exist'}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    if not app:
-                        department = models.Department.objects.get(id=department)
-                    else:
-                        if app == 'srrs':
-                            department = models.SRRSDepartment.objects.get(id=department)
+                    department = models.SRRSDepartment.objects.get(id=department)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({'details': 'Department does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -931,23 +935,13 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
                     if app == 'srrs':
                         newuser.update({"srrs_department": department})
 
-                        sub_department_id = payload['sub_department_id']
-                        ohc_id = payload['ohc_id']
-
-                        if sub_department_id:
-                            sub_department = models.SubDepartment.objects.get(id=sub_department_id)
-                            newuser.update({"sub_department": sub_department})
-
-                        if ohc_id:
-                            ohc = models.OHC.objects.get(id=ohc_id)
-                            newuser.update({"ohc": ohc})
-
+                        if facility:
+                            facility = models.Facility.objects.get(id=facility)
+                            newuser.update({"facility": facility})
 
 
                 create_user = get_user_model().objects.create(**newuser)
                 group_details.user_set.add(create_user)
-
-
 
                 subject = "Platform Access Details"
                 message = f"Dear {first_name}, \nYour email is {email}\nYour password is: {password}\nIf you encounter any challenge while navigating the platform, please let us know.\n\nKind Regards\nAKHK-ICT"
@@ -1559,11 +1553,11 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": "Please upload a CSV file."}, status=status.HTTP_400_BAD_REQUEST)
             
-    @action(methods=["POST", "GET", "PUT"],
+    @action(methods=["POST", "GET", "PUT", "DELETE"],
             detail=False,
-            url_path="sub-departments",
-            url_name="sub-departments")
-    def sub_department(self, request):
+            url_path="facilities",
+            url_name="facilities")
+    def facilities(self, request):
         roles = user_util.fetchusergroups(request.user.id)
         if request.method == "POST":
             payload = request.data
@@ -1577,7 +1571,7 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                         "name": name
                     }
 
-                    models.SubDepartment.objects.create(**raw)
+                    models.Facility.objects.create(**raw)
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -1590,18 +1584,18 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                 data=payload, many=False)
             
             if serializer.is_valid():
-                dept_id = payload['request_id']
+                request_id = payload['request_id']
                 name = payload['name']
 
                 try:
-                    dept = models.SubDepartment.objects.get(id=dept_id)
+                    facility = models.Facility.objects.get(id=request_id)
                 except Exception as e:
                     logger.error(e)
                     return Response({"details": "Unknown Sub Department"}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
-                    dept.name = name
-                    dept.save()
+                    facility.name = name
+                    facility.save()
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -1611,19 +1605,19 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             if request_id:
                 try:
-                    department = models.SubDepartment.objects.get(Q(id=request_id))
-                    department = serializers.FetchSubDepartmentSerializer(department,many=False).data
-                    return Response(department, status=status.HTTP_200_OK)
+                    resp = models.Facility.objects.get(Q(id=request_id))
+                    resp = serializers.FetchFacilitySerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    departments = models.SubDepartment.objects.filter(is_deleted=False).order_by('name')
-                    departments = serializers.FetchSubDepartmentSerializer(departments,many=True).data
-                    return Response(departments, status=status.HTTP_200_OK)
+                    resp = models.Facility.objects.filter(is_deleted=False).order_by('name')
+                    resp = serializers.FetchFacilitySerializer(resp,many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
                     
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
@@ -1631,7 +1625,15 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                 except Exception as e:
                     print(e)
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
-                
+        
+        elif request.method == "DELETE":
+            request_id = request.query_params.get('request_id') 
+            if not request_id:
+                return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)    
+            
+            raw = {"is_deleted": True}
+            models.Facility.objects.filter(id=request_id).update(**raw)
+            return Response(200, status=status.HTTP_200_OK)
 
     @action(methods=["POST", "GET", "PUT"],
             detail=False,

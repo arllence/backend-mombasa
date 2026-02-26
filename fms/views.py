@@ -3,6 +3,8 @@ import datetime
 import json
 import logging
 import uuid
+from django.conf import settings
+from acl.serializers import SlimFetchSRRSDepartmentSerializer
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, JSONParser
 from rest_framework.response import Response
@@ -17,14 +19,13 @@ from fms import models
 from fms import serializers
 from django.db import IntegrityError, DatabaseError
 from acl.utils import track_user, user_util
-from acl.models import User, Sendmail, SRRSDepartment, SubDepartment, OHC
+from acl.models import User, Sendmail, SRRSDepartment, Facility
 from fms.utils import shared_fxns
 from django.utils import timezone
 from string import Template
 
 from rest_framework.pagination import PageNumberPagination
 
-from intranet.serializers import FullFetchDepartmentSerializer
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
 
@@ -32,6 +33,7 @@ def read_template(filename):
     with open("acl/emails/" + filename, 'r', encoding='utf8') as template_file:
         template_file_content = template_file.read()
         return Template(template_file_content)
+    
 class GenericsViewSet(viewsets.ViewSet):
     permission_classes = (AllowAny,)
     search_fields = ['id', ]
@@ -44,23 +46,23 @@ class GenericsViewSet(viewsets.ViewSet):
     def departments(self, request):
 
         resp = SRRSDepartment.objects.all().order_by('name')
-        serializer = FullFetchDepartmentSerializer(
+        serializer = SlimFetchSRRSDepartmentSerializer(
             resp, many=True, context={"user_id":request.user.id})
         
         return Response(serializer.data, status=status.HTTP_200_OK)
     
     @action(methods=["POST", "GET", "PUT"],
             detail=False,
-            url_path="sub-departments",
-            url_name="sub-departments")
-    def sub_department(self, request):
+            url_path="facilities",
+            url_name="facilities")
+    def facility(self, request):
         if request.method == "GET":
             request_id = request.query_params.get('request_id')
             if request_id:
                 try:
-                    department = SubDepartment.objects.get(Q(id=request_id))
-                    department = serializers.FetchSubDepartmentSerializer(department,many=False).data
-                    return Response(department, status=status.HTTP_200_OK)
+                    resp = Facility.objects.get(Q(id=request_id))
+                    resp = serializers.FetchFacilitySerializer(resp,many=False).data
+                    return Response(resp, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Unknown department!"}, status=status.HTTP_400_BAD_REQUEST)
                 except Exception as e:
@@ -68,9 +70,9 @@ class GenericsViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-                    departments = SubDepartment.objects.filter(is_deleted=False).order_by('name')
-                    departments = serializers.FetchSubDepartmentSerializer(departments,many=True).data
-                    return Response(departments, status=status.HTTP_200_OK)
+                    resp = Facility.objects.filter(is_deleted=False).order_by('name')
+                    resp = serializers.FetchFacilitySerializer(resp,many=True).data
+                    return Response(resp, status=status.HTTP_200_OK)
                     
                 except (ValidationError, ObjectDoesNotExist):
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
@@ -80,38 +82,6 @@ class GenericsViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
                 
 
-    @action(methods=["POST", "GET", "PUT"],
-            detail=False,
-            url_path="ohc",
-            url_name="ohc")
-    def ohc(self, request): 
-        if request.method == "GET":
-            request_id = request.query_params.get('request_id')
-            if request_id:
-                try:
-                    ohc = OHC.objects.get(Q(id=request_id))
-                    ohc = serializers.FetchOHCSerializer(ohc,many=False).data
-                    return Response(ohc, status=status.HTTP_200_OK)
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Unknown ohc!"}, status=status.HTTP_400_BAD_REQUEST)
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
-            else:
-                try:
-                    ohcs = OHC.objects.filter(is_deleted=False).order_by('name')
-                    ohcs = serializers.FetchOHCSerializer(ohcs,many=True).data
-                    return Response(ohcs, status=status.HTTP_200_OK)
-                    
-                except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                except Exception as e:
-                    print(e)
-                    return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
-            
-
-    
     @action(methods=["POST", "GET", "PUT", "PATCH", "DELETE"],
             detail=False,
             url_path="incident",
@@ -134,7 +104,7 @@ class GenericsViewSet(viewsets.ViewSet):
                 type_of_incident = payload['type_of_incident']
                 priority = payload['priority']
                 department = payload['department']
-                location = payload['location']
+                facility = payload['facility']
                 affected_person_name = payload['affected_person_name']
                 person_affected = payload['person_affected']
                 date_of_incident = payload['date_of_incident']
@@ -143,7 +113,6 @@ class GenericsViewSet(viewsets.ViewSet):
                 subject = payload['subject']
                 message = payload['message']
 
-                ohc = payload.get('ohc') or None
                 ks_number = payload.get('ks_number') or None
                 affected_person_phone = payload.get('affected_person_phone') or None
                 name = payload.get('name') or 'Anonymous'
@@ -164,21 +133,14 @@ class GenericsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    location = SubDepartment.objects.get(id=location)
+                    facility = Facility.objects.get(id=facility)
                 except Exception as e:
-                    return Response({"details": "Unknown Location"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                if ohc:
-                    try:
-                        ohc = OHC.objects.get(id=ohc)
-                    except Exception as e:
-                        return Response({"details": "Unknown OHC "}, status=status.HTTP_400_BAD_REQUEST)
-
+                    return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
                     raw = {
                         "department": department,
-                        "location": location,
+                        "facility": facility,
                         "type_of_incident": type_of_incident,
                         "priority": priority,
                         "attachment": attachment,
@@ -187,7 +149,6 @@ class GenericsViewSet(viewsets.ViewSet):
                         "date_of_incident": date_of_incident,
                         "time_of_incident": time_of_incident,
                         "type_of_issue": type_of_issue,
-                        "ohc": ohc,
                         "subject": subject,
                         "message": message,
                         "ks_number": ks_number,
@@ -224,8 +185,8 @@ class GenericsViewSet(viewsets.ViewSet):
                                 <td>{type_of_incident}</td>
                             </tr>
                             <tr>
-                                <th>Location</th>
-                                <td>{location}</td>
+                                <th>Facility</th>
+                                <td>{facility.name}</td>
                             </tr>
                             <tr>
                                 <th>Department</th>
@@ -252,7 +213,7 @@ class GenericsViewSet(viewsets.ViewSet):
 
                     """
                     uri = f"requests/view/{str(incident.id)}"
-                    link = "http://172.20.0.42:8006/" + uri
+                    link = f"{settings.PLATFORM_LINK}" + uri
                     platform = 'View Incident'
 
                     message_template = read_template("general_template.html")
@@ -274,14 +235,6 @@ class GenericsViewSet(viewsets.ViewSet):
                             
                             Sendmail.objects.create(**mail)
 
-                            # html test: To remove after
-                            mail = {
-                                "email" : ["bobkings.otieno@akhskenya.org"], 
-                                "subject" : subject,
-                                "message" : message,
-                                "is_html" : True
-                            }
-                            Sendmail.objects.create(**mail)
                     except Exception as e:
                         logger.error(e)
 
@@ -325,7 +278,7 @@ class FmsViewSet(viewsets.ViewSet):
                 type_of_incident = payload['type_of_incident']
                 priority = payload['priority']
                 department = payload['department']
-                location = payload['location']
+                facility = payload['facility']
                 affected_person_name = payload['affected_person_name']
                 person_affected = payload['person_affected']
                 date_of_incident = payload['date_of_incident']
@@ -334,7 +287,6 @@ class FmsViewSet(viewsets.ViewSet):
                 subject = payload['subject']
                 message = payload['message']
 
-                ohc = payload.get('ohc') or None
                 ks_number = payload.get('ks_number') or None
                 affected_person_phone = payload.get('affected_person_phone') or None
 
@@ -353,21 +305,14 @@ class FmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    location = SubDepartment.objects.get(id=location)
+                    facility = Facility.objects.get(id=facility)
                 except Exception as e:
-                    return Response({"details": "Unknown Location"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                if ohc:
-                    try:
-                        ohc = OHC.objects.get(id=ohc)
-                    except Exception as e:
-                        return Response({"details": "Unknown OHC "}, status=status.HTTP_400_BAD_REQUEST)
-
+                    return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
 
                 with transaction.atomic():
                     raw = {
                         "department": department,
-                        "location": location,
+                        "facility": facility,
                         "created_by": authenticated_user,
                         "type_of_incident": type_of_incident,
                         "priority": priority,
@@ -377,7 +322,6 @@ class FmsViewSet(viewsets.ViewSet):
                         "date_of_incident": date_of_incident,
                         "time_of_incident": time_of_incident,
                         "type_of_issue": type_of_issue,
-                        "ohc": ohc,
                         "subject": subject,
                         "message": message,
                         "ks_number": ks_number,
@@ -438,7 +382,7 @@ class FmsViewSet(viewsets.ViewSet):
                 type_of_incident = payload['type_of_incident']
                 priority = payload['priority']
                 department = payload['department']
-                location = payload['location']
+                facility = payload['facility']
                 affected_person_name = payload['affected_person_name']
                 person_affected = payload['person_affected']
                 date_of_incident = payload['date_of_incident']
@@ -447,7 +391,6 @@ class FmsViewSet(viewsets.ViewSet):
                 subject = payload['subject']
                 message = payload['message']
 
-                ohc = payload.get('ohc') or None
                 ks_number = payload.get('ks_number') or None
                 affected_person_phone = payload.get('affected_person_phone') or None
 
@@ -462,21 +405,15 @@ class FmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Unknown Department"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 try:
-                    location = SubDepartment.objects.get(id=location)
+                    facility = Facility.objects.get(id=facility)
                 except Exception as e:
-                    return Response({"details": "Unknown Location"}, status=status.HTTP_400_BAD_REQUEST)
-                
-                if ohc:
-                    try:
-                        ohc = OHC.objects.get(id=ohc)
-                    except Exception as e:
-                        return Response({"details": "Unknown OHC "}, status=status.HTTP_400_BAD_REQUEST)
-
+                    return Response({"details": "Unknown facility"}, status=status.HTTP_400_BAD_REQUEST)
+            
 
                 with transaction.atomic():
                     raw = {
                         "department": department,
-                        "location": location,
+                        "facility": facility,
                         "created_by": authenticated_user,
                         "type_of_incident": type_of_incident,
                         "priority": priority,
@@ -485,7 +422,6 @@ class FmsViewSet(viewsets.ViewSet):
                         "date_of_incident": date_of_incident,
                         "time_of_incident": time_of_incident,
                         "type_of_issue": type_of_issue,
-                        "ohc": ohc,
                         "subject": subject,
                         "message": message,
                         "ks_number": ks_number,
@@ -561,7 +497,7 @@ class FmsViewSet(viewsets.ViewSet):
                     # emails.append('bobkings.otieno@akhskenya.org') # test email
                     # emails = list(get_user_model().objects.filter(Q(groups__name__in=['FMS_ADMIN'])).values_list('email', flat=True))
                     subject = f"Incident {incidentInstance.uid} Closed [FMS-AKHK]"
-                    message = f"Hello. \nIncident: {incidentInstance.uid} from department: {incidentInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nFMS-AKHK"
+                    message = f"Hello. \nFeedback: {incidentInstance.uid} from department: {incidentInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nFMS-AKHK"
 
                     if incidentInstance.created_by:
                         emails.append(str(incidentInstance.created_by.email))
@@ -608,18 +544,23 @@ class FmsViewSet(viewsets.ViewSet):
                     return Response({"details": "Cannot complete request"}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 try:
-
-                    if "FMS_ADMIN" in roles or "SUPERUSER" in roles:
+                    if query.lower() == 'assigned':
 
                         resp = models.Incident.objects.filter(
-                                is_deleted=False
-                            ).order_by('-date_created')
+                                Q(assigned_to=request.user) 
+                            ).exclude(status='CLOSED').order_by('-date_created')
 
                     else:
-                        resp = models.Incident.objects.filter(
-                                Q(assigned_to=request.user) |
-                                Q(created_by=request.user) 
-                            ).order_by('-date_created')
+                        if "FMS_ADMIN" in roles or "SUPERUSER" in roles:
+
+                            resp = models.Incident.objects.filter(
+                                    is_deleted=False
+                                ).order_by('-date_created')
+
+                        else:
+                            resp = models.Incident.objects.filter(
+                                    Q(created_by=request.user) 
+                                ).exclude(status='CLOSED').order_by('-date_created')
 
 
                     paginator = PageNumberPagination()
@@ -924,7 +865,7 @@ class FmsViewSet(viewsets.ViewSet):
             else:
                 return Response({"details": "Request incomplete"}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=["POST","GET"],
+    @action(methods=["POST","PUT","GET"],
             detail=False,
             url_path="rca",
             url_name="rca")
@@ -1008,10 +949,12 @@ class FmsViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             if request_id:
                 try:
-                    resp = models.Rca.objects.filter(Q(incident=request_id))
-
-                    resp = serializers.FetchRCASerializer(
-                        resp, many=True, context={"user_id":request.user.id}).data
+                    try:
+                        resp = models.Rca.objects.get(Q(incident=request_id))
+                        resp = serializers.FetchRCASerializer(
+                        resp, many=False, context={"user_id":request.user.id}).data
+                    except Exception as e:
+                        resp = {}
                     return Response(resp, status=status.HTTP_200_OK)
                 
                 except Exception as e:

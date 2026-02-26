@@ -64,15 +64,11 @@ class SlimFetchSRRSDepartmentSerializer(serializers.ModelSerializer):
         model = models.SRRSDepartment
         fields = '__all__'
 
-class FetchSubDepartmentSerializer(serializers.ModelSerializer):
+class FetchFacilitySerializer(serializers.ModelSerializer):
     class Meta:
-        model = models.SubDepartment
+        model = models.Facility
         fields = '__all__'
 
-class FetchOHCSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.OHC
-        fields = '__all__'
 
 class FetchHODsSerializer(serializers.ModelSerializer):
     hod = SlimUsersSerializer()
@@ -132,15 +128,13 @@ class UsersSerializer(serializers.ModelSerializer):
     is_active = serializers.CharField()
     is_suspended = serializers.CharField()
     profile_updated = serializers.BooleanField()
-    department = FetchDepartmentSerializer()
     srrs_department = FetchSRRSDepartmentSerializer()
-    sub_department = FetchSubDepartmentSerializer()
-    ohc = FetchOHCSerializer()
+    facility = FetchFacilitySerializer()
     user_groups = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = get_user_model()
         fields = [
-            'id', 'email', 'first_name', 'last_name', 'employee_no', 'profile_updated', 'is_active', 'is_suspended','department', 'srrs_department', 'sub_department', 'ohc','user_groups', 'date_created'
+            'id', 'email', 'first_name', 'last_name', 'employee_no', 'profile_updated', 'is_active', 'is_suspended', 'srrs_department', 'facility','user_groups', 'date_created'
         ]
 
     def get_user_groups(self, obj):
@@ -158,6 +152,19 @@ class SlimUsersSerializer(serializers.ModelSerializer):
         model = get_user_model()
         fields = [
             'id', 'email', 'first_name', 'last_name', 'profile_updated'
+        ]
+        
+class TinyUsersSerializer(serializers.ModelSerializer):
+    id = serializers.CharField()
+    email = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    is_suspended = serializers.CharField()
+    srrs_department = FetchSRRSDepartmentSerializer()
+    class Meta:
+        model = get_user_model()
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'srrs_department', 'is_suspended'
         ]
 
 class CreateUserSerializer(serializers.Serializer):

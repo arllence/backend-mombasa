@@ -1,5 +1,5 @@
 import uuid
-from acl.models import User, SRRSDepartment, SubDepartment, OHC
+from acl.models import Facility, User, SRRSDepartment
 from django.db import models
 from django.conf import settings
 
@@ -26,14 +26,9 @@ class Incident(models.Model):
        related_name="srrs_fms_department",
        null=True, blank=True
     )
-    location = models.ForeignKey(
-       SubDepartment, on_delete=models.DO_NOTHING, 
-       related_name="srrs_fms_sub_department",
-       null=True, blank=True
-    )
-    ohc = models.ForeignKey(
-       OHC, on_delete=models.DO_NOTHING, 
-       related_name="srrs_fms_ohc",
+    facility = models.ForeignKey(
+       Facility, on_delete=models.DO_NOTHING, 
+       related_name="fms_facility",
        null=True, blank=True
     )
 

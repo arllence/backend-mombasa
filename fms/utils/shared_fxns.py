@@ -49,7 +49,7 @@ def identify_file_type(ext):
 
 def generate_unique_identifier():
     characters = string.ascii_uppercase + string.digits
-    uid ='AKHK-' + ''.join(random.choices(characters, k=6))
+    uid = ''.join(random.choices(characters, k=6))
 
     is_existing = Incident.objects.filter(uid=uid).exists()
     if is_existing:
