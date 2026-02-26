@@ -214,7 +214,7 @@ class GenericsViewSet(viewsets.ViewSet):
                     """
                     uri = f"requests/view/{str(incident.id)}"
                     link = f"{settings.PLATFORM_LINK}" + uri
-                    platform = 'View Incident'
+                    platform = 'View Feedback'
 
                     message_template = read_template("general_template.html")
                     message = message_template.substitute(
@@ -345,8 +345,8 @@ class FmsViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     emails = list(get_user_model().objects.filter(Q(groups__name__in=['FMS_ADMIN'])).values_list('email', flat=True))
-                    subject = f"New Incident Reported: {uid} .  [FMS-AKHK]"
-                    message = f"Hello. \nNew Incident: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nFMS-AKHK"
+                    subject = f"New Feedback Reported: {uid} .  [FMS-AKHM]"
+                    message = f"Hello. \nNew Feedback: {uid} from department: {department.name}, \nhas been raised by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}\nPending Assigning.\n\nRegards\nFMS-AKHM"
 
                     try:
                         if emails:
@@ -494,10 +494,9 @@ class FmsViewSet(viewsets.ViewSet):
 
                     # Notify Platform Admins
                     emails = list(models.StatusChange.objects.filter(Q(status='ASSIGNED') | Q(status='REASSIGNED'),incident=incidentInstance ).values_list('action_by__email', flat=True))
-                    # emails.append('bobkings.otieno@akhskenya.org') # test email
-                    # emails = list(get_user_model().objects.filter(Q(groups__name__in=['FMS_ADMIN'])).values_list('email', flat=True))
-                    subject = f"Incident {incidentInstance.uid} Closed [FMS-AKHK]"
-                    message = f"Hello. \nFeedback: {incidentInstance.uid} from department: {incidentInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nFMS-AKHK"
+
+                    subject = f"Feedback {incidentInstance.uid} Closed [FMS-AKHM]"
+                    message = f"Hello. \nFeedback: {incidentInstance.uid} from department: {incidentInstance.department.name}, \nhas been closed by: {request.user.first_name} {request.user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\n\nRegards\nFMS-AKHM"
 
                     if incidentInstance.created_by:
                         emails.append(str(incidentInstance.created_by.email))
@@ -669,8 +668,8 @@ class FmsViewSet(viewsets.ViewSet):
 
                     # Notify the assignee
                     emails = [assigned_to.email]
-                    subject = f"Incident {incidentInstance.uid}  Assigned To You  [FMS-AKHK]"
-                    message = f"Hello, \nAn incident of id: {incidentInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending your action.\nLogin: http://172.20.0.42:8006/\n\nRegards\nFMS-AKHK"
+                    subject = f"Incident {incidentInstance.uid}  Assigned To You  [FMS-AKHM]"
+                    message = f"Hello, \nAn incident of id: {incidentInstance.uid} has been assigned to you\nby {authenticated_user.first_name} {authenticated_user.last_name} on {str(datetime.datetime.now().strftime('%m/%d/%Y, %H:%M:%S'))}.\nPending your action.\nLogin: {settings.PLATFORM_LINK}/\n\nRegards\nFMS-AKHM"
                     
                     try:
                         mail = {
