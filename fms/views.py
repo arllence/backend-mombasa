@@ -1026,7 +1026,7 @@ class ReportsViewSet(viewsets.ViewSet):
         else:
             resp = models.Incident.objects.filter(Q(is_deleted=False)).order_by('-date_created')[:50]
 
-        resp = serializers.FetchIncidentSerializer(resp, many=True, context={"user_id":request.user.id}).data
+        resp = serializers.SlimFetchIncidentSerializer(resp, many=True, context={"user_id":request.user.id}).data
 
         return Response(resp, status=status.HTTP_200_OK)
     
