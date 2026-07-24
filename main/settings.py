@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'acl',
     'fms',
+    'attendance'
 ]
 
 MIDDLEWARE = [
@@ -49,6 +50,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'attendance.apps.AttendanceConfig',
+    'attendance.middleware.AttendanceMiddleware'
 ]
 
 ROOT_URLCONF = 'main.urls'
@@ -105,14 +108,14 @@ ASSET_MANAGEMENT_SYSTEM = 'ams'
 STAFF_SICK_SHEET = 'sls'
 INTRANET = 'intranet'
 DB_MANAGER = 'db_manager'
-FEEDBACK_MANAGEMENT_SYSTEM = 'fms'
+FEEDBACK_MANAGEMENT_SYSTEM = 'feedback'
 CONTRACT_MANAGEMENT_SYSTEM = 'cms'
 MAINTENANCE_HELPDESK_SYSTEM = 'mhd'
 SYSTEM_DIRECTORY = 'system_directory'
 STAFF_MEAL_REQUEST = 'smr'
 ICT_HELPDESK = 'ict_helpdesk'
 IPASS = 'ipass'
-INVOICE_TRACKING = 'invoice_tracking'
+INVOICE_TRACKING = 'psd'
 CENTRALIZED_TRAINING_PLATFORM = 'ctp'
 SECURITY_HELPDESK = 'security_helpdesk'
 EXPENDITURE_SYSTEM = 'expenditure'
@@ -159,7 +162,7 @@ LOGGING = {
         'file': {
             'level': 'WARNING',
             'class': 'logging.FileHandler',
-            'filename': f'/opt/logs/{app_name}/general/{loggername}.log',
+            'filename': f'/opt/logs/{app_name}/{loggername}.log',
             'formatter': 'verbose',
         },
     },
@@ -236,6 +239,8 @@ CORS_ALLOW_HEADERS = [
     'x-csrftoken',
     'x-requested-with',
     'Access-Control-Allow-Origin',
+    'deviceid',
+    'app',
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -256,6 +261,10 @@ CRONJOBS = [
 ]
 
 PLATFORM_LINK = os.getenv('PLATFORM_LINK')
+
+ATTENDANCE_LICENSE_URL = os.environ.get("ATTENDANCE_LICENSE_URL")
+ATTENDANCE_HMAC_SECRET = os.environ.get("ATTENDANCE_HMAC_SECRET")
+ATTENDANCE_SALT = os.environ.get("ATTENDANCE_SALT")
 
 # if not DEBUG:
 #     sentry_sdk.init(

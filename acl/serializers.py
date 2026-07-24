@@ -29,7 +29,13 @@ class SlimFetchSltSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Slt
         fields = '__all__'
-    
+
+class SlimFetchLeadSerializer(serializers.ModelSerializer):
+    lead = SlimUsersSerializer()
+    class Meta:
+        model = models.Lead
+        fields = ('lead',)
+         
 class FetchDepartmentSerializer(serializers.ModelSerializer):
     slt = SlimFetchSltSerializer()
     hod = SlimUsersSerializer()
@@ -42,6 +48,7 @@ class FetchSRRSDepartmentSerializer(serializers.ModelSerializer):
     slt = SlimUsersSerializer()
     hr_partner = SlimUsersSerializer()
     hods = serializers.SerializerMethodField()
+    department_lead = SlimFetchLeadSerializer(many=True)
     class Meta:
         model = models.SRRSDepartment
         fields = '__all__'
@@ -63,12 +70,21 @@ class SlimFetchSRRSDepartmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.SRRSDepartment
         fields = '__all__'
-
+        
 class FetchFacilitySerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Facility
         fields = '__all__'
 
+# class FetchSubDepartmentSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = models.SubDepartment
+#         fields = '__all__'
+
+# class FetchOHCSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = models.OHC
+#         fields = '__all__'
 
 class FetchHODsSerializer(serializers.ModelSerializer):
     hod = SlimUsersSerializer()
@@ -119,7 +135,12 @@ class UpdateUserProfileSerializer(serializers.Serializer):
     cluster = serializers.CharField()
     department = serializers.CharField()
 
+class UserFacilitySerializer(serializers.Serializer):
+    facility = serializers.UUIDField()
 
+class UpdateUserFacilitySerializer(serializers.Serializer):
+    user_id = serializers.UUIDField()
+    facility = serializers.UUIDField()
 class UsersSerializer(serializers.ModelSerializer):
     id = serializers.CharField()
     email = serializers.CharField()
@@ -130,11 +151,14 @@ class UsersSerializer(serializers.ModelSerializer):
     profile_updated = serializers.BooleanField()
     srrs_department = FetchSRRSDepartmentSerializer()
     facility = FetchFacilitySerializer()
+    # ohc = FetchOHCSerializer()
     user_groups = serializers.SerializerMethodField(read_only=True)
     class Meta:
         model = get_user_model()
         fields = [
-            'id', 'email', 'first_name', 'last_name', 'employee_no', 'profile_updated', 'is_active', 'is_suspended', 'srrs_department', 'facility','user_groups', 'date_created'
+            'id', 'email', 'first_name', 'last_name', 'employee_no', 'staff_status', 'profile_updated', 'is_active', 'is_suspended',
+            'srrs_department', 'facility',
+            'user_groups', 'date_created'
         ]
 
     def get_user_groups(self, obj):
@@ -160,11 +184,27 @@ class TinyUsersSerializer(serializers.ModelSerializer):
     first_name = serializers.CharField()
     last_name = serializers.CharField()
     is_suspended = serializers.CharField()
-    srrs_department = FetchSRRSDepartmentSerializer()
+    srrs_department = SlimFetchSRRSDepartmentSerializer()
     class Meta:
         model = get_user_model()
         fields = [
             'id', 'email', 'first_name', 'last_name', 'srrs_department', 'is_suspended'
+        ]
+
+class CustomReportingUsersSerializer(serializers.ModelSerializer):
+    id = serializers.CharField()
+    email = serializers.CharField()
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    employee_no = serializers.CharField()
+    staff_status = serializers.CharField()
+    srrs_department = SlimFetchSRRSDepartmentSerializer()
+    # sub_department = FetchSubDepartmentSerializer()
+    # ohc = FetchOHCSerializer()
+    class Meta:
+        model = get_user_model()
+        fields = [
+            'id', 'email', 'first_name', 'last_name', 'sub_department', 'staff_status', 'employee_no', 'ohc', 'srrs_department'
         ]
 
 class CreateUserSerializer(serializers.Serializer):

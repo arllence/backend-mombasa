@@ -629,6 +629,8 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             last_name = payload['last_name']
             account_id = payload['account_id']
             email = payload['email']
+            employee_no = payload['employee_no']
+            facility = payload['facility'] or None
 
 
             email_exists = get_user_model().objects.filter(email=email).exclude(id=account_id).exists()
@@ -648,6 +650,9 @@ class ICTSupportViewSet(viewsets.ModelViewSet):
             record_instance.first_name = first_name
             record_instance.last_name = last_name
             record_instance.email = email
+            record_instance.employee_no = employee_no
+            if facility:
+                record_instance.facility = (models.Facility.objects.get(id=facility))
 
             record_instance.save()
 
@@ -1322,6 +1327,7 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                 name = payload['name']
                 slt_id = payload.get('slt')
                 hod_id = payload.get('hod')
+                leads = payload.get('leads') or []
                 hr_partner_id = payload.get('hr_partner')
 
                 with transaction.atomic():
@@ -1332,7 +1338,8 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                     if slt_id:
                         try:
                             slt = models.User.objects.get(id=slt_id)
-                        except Exception as e:
+                        except Exception:
+                            logger.exception("Unknown SLT")
                             return Response({"details": "Unknown SLT"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         roles = user_util.fetchusergroups(slt_id)
@@ -1347,7 +1354,8 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                     if hr_partner_id:
                         try:
                             hr_partner = models.User.objects.get(id=hr_partner_id)
-                        except Exception as e:
+                        except Exception:
+                            logger.exception("Unknown HR Partner")
                             return Response({"details": "Unknown HR Partner"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         roles = user_util.fetchusergroups(hr_partner_id)
@@ -1368,7 +1376,8 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
 
                         try:
                             hods = models.User.objects.filter(id__in=hod_id)
-                        except Exception as e:
+                        except Exception:
+                            logger.exception("Unknown HODs")
                             return Response({"details": "Unknown HODs"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         for hod in hods:
@@ -1389,6 +1398,23 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                             # update hod department
                             hod.srrs_department = departmentInstance
                             hod.save()
+                            
+                    if leads:
+                        # delete existing hods
+                        models.Lead.objects.filter(department=departmentInstance).delete()
+
+                        leads = models.User.objects.filter(id__in=leads)
+                        for lead in leads:
+                            raw = {
+                                    "lead": lead,
+                                    "department": departmentInstance
+                                }
+                            
+                            models.Lead.objects.create(**raw)
+
+                    user_util.log_account_activity(
+                        request.user, request.user, f"{str(payload)}",
+                        "DEPARTMENT CREATED")
 
 
                     return Response("Success", status=status.HTTP_200_OK)
@@ -1406,6 +1432,7 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                 name = payload['name']
                 slt_id = payload.get('slt')
                 hod_id = payload.get('hod')
+                leads = payload.get('leads')
                 hr_partner_id = payload.get('hr_partner')
 
                 slt = None
@@ -1420,7 +1447,8 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                 if slt_id:
                     try:
                         slt = models.User.objects.get(id=slt_id)
-                    except Exception as e:
+                    except Exception:
+                        logger.exception("Unknown SLT")
                         return Response({"details": "Unknown SLT"}, status=status.HTTP_400_BAD_REQUEST)
                     
                     if dept.slt and dept.slt.id != slt.id:
@@ -1436,7 +1464,8 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                 if hr_partner_id:
                     try:
                         hr_partner = models.User.objects.get(id=hr_partner_id)
-                    except Exception as e:
+                    except Exception:
+                        logger.exception("Unknown HR partner")
                         return Response({"details": "Unknown HR Partner"}, status=status.HTTP_400_BAD_REQUEST)
                     
                     roles = user_util.fetchusergroups(hr_partner_id)
@@ -1467,12 +1496,13 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                         # delete existing hods
                         currentHods = models.Hods.objects.filter(department=dept)
                         for hod in currentHods:
-                            user_util.revoke_role('HOD', str(hod.id))
+                            user_util.revoke_role('HOD', str(hod.hod.id))
                         currentHods.delete()
 
                         try:
                             hods = models.User.objects.filter(id__in=hod_id)
-                        except Exception as e:
+                        except Exception:
+                            logger.exception(f"Unknown HODs: {hod_id}")
                             return Response({"details": "Unknown HODs"}, status=status.HTTP_400_BAD_REQUEST)
                         
                         for hod in hods:
@@ -1493,6 +1523,25 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                             # update hod department
                             hod.srrs_department = dept
                             hod.save()
+                            
+                    if leads:
+                        # delete existing leads
+                        currentHods = models.Lead.objects.filter(department=dept)
+                        currentHods.delete()
+
+                        leads = models.User.objects.filter(id__in=leads)
+                        
+                        for lead in leads:
+                            raw = {
+                                    "lead": lead,
+                                    "department": dept
+                                }
+                            
+                            models.Lead.objects.create(**raw)
+                    
+                    user_util.log_account_activity(
+                        request.user, request.user, f"{str(payload)}",
+                        "DEPARTMENT UPDATED")
 
                     return Response("Success", status=status.HTTP_200_OK)
             else:
@@ -1502,7 +1551,9 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
             request_id = request.query_params.get('request_id')
             if request_id:
                 try:
-                    department = models.SRRSDepartment.objects.get(Q(id=request_id))
+                    department = models.SRRSDepartment.objects.select_related(
+                        'slt', 'hr_partner'
+                    ).prefetch_related('department_lead').get(Q(id=request_id))
                     department = serializers.FetchSRRSDepartmentSerializer(department,many=False).data
                     return Response(department, status=status.HTTP_200_OK)
                 except (ValidationError, ObjectDoesNotExist):
@@ -1518,16 +1569,18 @@ class SRRSDepartmentViewSet(viewsets.ViewSet):
                     #     department = serializers.FetchSRRSDepartmentSerializer(department,many=False).data
                     #     return Response([department], status=status.HTTP_200_OK)
                     # else:
-                    departments = models.SRRSDepartment.objects.all().order_by('name')
+                    departments = models.SRRSDepartment.objects.select_related(
+                        'slt', 'hr_partner'
+                    ).prefetch_related('department_lead').all().order_by('name')
                     departments = serializers.FetchSRRSDepartmentSerializer(departments,many=True).data
                     return Response(departments, status=status.HTTP_200_OK)
                     
                 except (ValidationError, ObjectDoesNotExist):
-                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Cannot complete request at this time"}, status=status.HTTP_400_BAD_REQUEST)
                 
                 except Exception as e:
                     print(e)
-                    return Response({"details": "Cannot complete request at this time!"}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({"details": "Cannot complete request at this time"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 

@@ -157,6 +157,25 @@ class Hods(models.Model):
 
     class Meta:
         db_table = "hods"
+        
+        
+class Lead(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    lead = models.ForeignKey(
+        User, related_name='lead', 
+        on_delete=models.DO_NOTHING
+    )
+    department = models.ForeignKey(
+        SRRSDepartment, related_name='department_lead', 
+        on_delete=models.DO_NOTHING
+    )
+    date_created = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.lead.first_name} {self.lead.last_name}"
+
+    class Meta:
+        db_table = "leads"
 
 class OTP(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
