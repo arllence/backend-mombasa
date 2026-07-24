@@ -28,3 +28,15 @@ class AttendanceMiddleware:
                 status=503
             )
         return self.get_response(request)
+
+class CloneCheckMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if os.path.exists("/tmp/CLONE_DETECTED.flag"):
+            return HttpResponse(
+                "🚨 This deployment has been flagged as unauthorized. Contact admin.",
+                status=403
+            )
+        return self.get_response(request)

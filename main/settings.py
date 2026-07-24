@@ -51,6 +51,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'attendance.apps.AttendanceConfig',
+    'attendance.middleware.CloneCheckMiddleware',
     'attendance.middleware.AttendanceMiddleware'
 ]
 
