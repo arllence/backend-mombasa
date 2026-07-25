@@ -38,7 +38,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'acl',
     'fms',
-    'attendance',
+    # 'attendance',
     "attendance.apps.AttendanceConfig",
 ]
 
