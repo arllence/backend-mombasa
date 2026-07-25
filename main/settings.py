@@ -38,7 +38,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'acl',
     'fms',
-    'attendance'
+    'attendance',
+    "attendance.apps.AttendanceConfig",
 ]
 
 MIDDLEWARE = [
@@ -50,7 +51,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'attendance.apps.AttendanceConfig',
     # 'attendance.middleware.CloneCheckMiddleware',
     'attendance.middleware.AttendanceMiddleware'
 ]
