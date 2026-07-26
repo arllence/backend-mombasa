@@ -18,7 +18,7 @@ class AttendanceConfig(AppConfig):
         # Don't block Django's own management commands
         SKIP_COMMANDS = {
             "migrate", "makemigrations", "collectstatic", "shell",
-            "createsuperuser", "test", "showmigrations", "dbshell",
+            "createsuperuser", "test", "showmigrations", "dbshell", "mark_attendance",
         }
         if len(sys.argv) > 1 and sys.argv[1] in SKIP_COMMANDS:
             return
