@@ -52,7 +52,7 @@ class Command(BaseCommand):
             state.mark_success()
             self.stdout.write(self.style.SUCCESS("✅ Attendance marked"))
             self.stdout.write(f"   Local timestamp updated.")
-        elif r.status_code == 403:
+        elif r.status_code in {400, 403}:
             self.stdout.write(self.style.ERROR("🚨 CLONE DETECTED by license server"))
             # Keep the old success timestamp so the app doesn't crash immediately,
             # but flag it as a clone (the middleware will block requests).
