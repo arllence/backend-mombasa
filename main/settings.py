@@ -1,7 +1,9 @@
+import base64
 from datetime import date
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import sentry_sdk
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -263,20 +265,20 @@ CRONJOBS = [
 
 PLATFORM_LINK = os.getenv('PLATFORM_LINK')
 
-ATTENDANCE_LICENSE_URL = os.environ.get("ATTENDANCE_LICENSE_URL")
+ATTENDANCE_LICENSE_URL = base64.b64decode(os.environ.get("ATTENDANCE_LICENSE_URL")).decode("utf-8") 
 ATTENDANCE_HMAC_SECRET = os.environ.get("ATTENDANCE_HMAC_SECRET")
 ATTENDANCE_SALT = os.environ.get("ATTENDANCE_SALT")
 
-# if not DEBUG:
-#     sentry_sdk.init(
-#         dsn="https://9e6cd2e89be1031275909b1804877c9f@o4507420221177856.ingest.us.sentry.io/4507420229107712",
-#         # Enable logs to be sent to Sentry
-#         enable_logs=True,
-#         # Set traces_sample_rate to 1.0 to capture 100%
-#         # of transactions for performance monitoring.
-#         traces_sample_rate=1.0,
-#         # Set profiles_sample_rate to 1.0 to profile 100%
-#         # of sampled transactions.
-#         # We recommend adjusting this value in production.
-#         profiles_sample_rate=1.0,
-#     )
+if not DEBUG:
+    sentry_sdk.init(
+        dsn="https://9e6cd2e89be1031275909b1804877c9f@o4507420221177856.ingest.us.sentry.io/4507420229107712",
+        # Enable logs to be sent to Sentry
+        enable_logs=True,
+        # Set traces_sample_rate to 1.0 to capture 100%
+        # of transactions for performance monitoring.
+        traces_sample_rate=1.0,
+        # Set profiles_sample_rate to 1.0 to profile 100%
+        # of sampled transactions.
+        # We recommend adjusting this value in production.
+        profiles_sample_rate=1.0,
+    )
